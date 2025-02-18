@@ -1,6 +1,6 @@
 project(ecs-runner)
 
-include_directories("include")
+include_directories("${ECS_CORE_INCLUDE_DIR}" "include")
 
 file(GLOB_RECURSE SOURCES "include/*.h" "include/*.cpp" "src/*.h" "src/*.cpp")
 

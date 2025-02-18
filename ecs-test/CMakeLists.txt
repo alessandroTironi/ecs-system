@@ -32,7 +32,7 @@ set_target_properties(gtest_main PROPERTIES
     MSVC_RUNTIME_LIBRARY "${CMAKE_MSVC_RUNTIME_LIBRARY}"
 )
 
-include_directories("include")
+include_directories("${ECS_CORE_INCLUDE_DIR}" "include")
 
 # Create the unit test executable
 add_executable(ecs_test "src/test_ecs.cpp")
