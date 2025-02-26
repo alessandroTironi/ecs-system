@@ -1,11 +1,22 @@
 #include "ECSInstance.h"
 #include "ISystem.h"
 
+#include <assert.h>
+#include <iostream>
+
 using namespace ecs;
 
-Instance::Instance()
+Instance::Instance(size_t maxEntities)
 {
+    m_maxEntities = maxEntities;
 
+    m_activeEntities.reserve(m_maxEntities);
+    m_availableEntities.reserve(m_maxEntities);
+
+    for (entity_id idx = 0; idx < m_maxEntities; ++idx)
+    {
+        m_availableEntities.push_back(m_maxEntities - idx);
+    }
 }
 
 void Instance::Initialize()
@@ -32,4 +43,33 @@ void Instance::RemoveSystem(const std::shared_ptr<ISystem>& system)
 {
     const type_hash_t systemHash = GetTypeHash(system.get());
     m_registeredSystems.erase(systemHash);
+}
+
+void Instance::AddEntity(entity_id& addedEntity)
+{
+    if (m_availableEntities.size() == 0)
+    {
+        throw std::exception("Reached maximum allowed amount of entities.");
+    }
+
+    addedEntity = m_availableEntities.back();
+    m_availableEntities.pop_back();
+    m_activeEntities.emplace_back(addedEntity);
+}
+
+void Instance::RemoveEntity(entity_id entityToRemove)
+{
+    for (auto entityIt = m_activeEntities.begin(); entityIt != m_activeEntities.end(); ++entityIt)
+    {
+        const entity_t& entity = *entityIt;
+        if (entity.getUniqueID() == entityToRemove)
+        {
+            std::cout << "Found and removed" << std::endl;
+            m_activeEntities.erase(entityIt);
+
+            // TODO remove all components
+
+            break;
+        }
+    }
 }

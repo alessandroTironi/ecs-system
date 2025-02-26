@@ -61,3 +61,36 @@ TEST(TestECSInstance, TestUpdate)
 
     delete instance;
 }
+
+TEST(TestECSInstance, TestAddEntity)
+{
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e1, e2;
+    ASSERT_NO_THROW(instance.AddEntity(e1));
+    ASSERT_EQ(instance.GetNumActiveEntities(), 1);
+
+    ASSERT_NO_THROW(instance.AddEntity(e2));
+    ASSERT_EQ(instance.GetNumActiveEntities(), 2);
+    ASSERT_FALSE(e1 == e2);
+
+    while (instance.GetNumActiveEntities() < instance.GetMaxNumEntities())
+    {
+        ecs::entity_id dumb;
+        instance.AddEntity(dumb);
+    }
+
+    ecs::entity_id dumb2;
+    ASSERT_THROW(instance.AddEntity(dumb2), std::exception);
+}
+
+TEST(TestECSInstance, TestRemoveEntity)
+{
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e1 = 0;
+    ASSERT_NO_THROW(instance.RemoveEntity(e1));
+    ASSERT_EQ(instance.GetNumActiveEntities(), 0);
+
+    instance.AddEntity(e1);
+    ASSERT_NO_THROW(instance.RemoveEntity(e1));
+    ASSERT_EQ(instance.GetNumActiveEntities(), 0);
+}

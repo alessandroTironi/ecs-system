@@ -2,9 +2,11 @@
 
 #include <memory>
 #include <vector>
+#include <array>
 #include <unordered_map>
 #include <typeinfo>
 #include "Types.h"
+#include "Entity.h"
 
 namespace ecs 
 {
@@ -13,11 +15,13 @@ namespace ecs
     class Instance 
     {
     public:
-        Instance();
+        Instance(size_t maxEntities = 1000);
         ~Instance() = default;
 
         void Initialize();
         void Update(real_t deltaTime);
+
+        inline size_t GetMaxNumEntities() const { return m_maxEntities; }
 
         /* Registers the provided system to this ECS instance. */
         void AddSystem(std::shared_ptr<ISystem> system);
@@ -36,8 +40,19 @@ namespace ecs
 
         inline size_t GetSystemsCount() const { return m_registeredSystems.size(); }
 
+        void AddEntity(entity_id& addedEntity);
+        void RemoveEntity(entity_id entityToRemove);
+        inline size_t GetNumActiveEntities() const { return m_activeEntities.size(); }
+
     protected:
         /* Stores all the Systems registered to this ECS instance. */
         std::unordered_map<type_hash_t, std::shared_ptr<ISystem>> m_registeredSystems;
+
+        std::vector<entity_t> m_activeEntities;
+
+        std::vector<entity_id> m_availableEntities;
+
+    private:
+        size_t m_maxEntities;
     };
 }
