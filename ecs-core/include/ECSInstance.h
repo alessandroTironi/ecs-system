@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <typeinfo>
 #include "Types.h"
+#include "ComponentArray.h"
 #include "Entity.h"
 
 namespace ecs 
@@ -51,6 +52,8 @@ namespace ecs
         std::vector<entity_t> m_activeEntities;
 
         std::vector<entity_id> m_availableEntities;
+
+        std::unordered_map<type_hash_t, std::unique_ptr<component_array_base>> m_componentArraysMap;
 
     private:
         size_t m_maxEntities;

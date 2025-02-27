@@ -1,10 +1,21 @@
 #include <gtest/gtest.h>
 #include "ECSInstance.h"
 #include "ISystem.h"
+#include "ComponentArray.h"
+#include <stdexcept>
 
 class MockSystem : public ecs::ISystem
 {
     void Update(ecs::real_t deltaTime) override {}
+};
+
+struct MockComponent : public ecs::IComponent 
+{
+public:
+    MockComponent() {}
+    MockComponent(float aFloat) : m_float(aFloat) {}
+
+    float m_float = 0.0f;
 };
 
 TEST(TestECSInstance, TestConstructor)
@@ -93,4 +104,85 @@ TEST(TestECSInstance, TestRemoveEntity)
     instance.AddEntity(e1);
     ASSERT_NO_THROW(instance.RemoveEntity(e1));
     ASSERT_EQ(instance.GetNumActiveEntities(), 0);
+}
+
+TEST(TestComponentArray, TestInitialization)
+{
+    ecs::component_array<MockComponent> componentArray;
+
+    ASSERT_EQ(componentArray.GetNumComponents(), 0);
+}
+
+TEST(TestComponentArray, TestAddComponent)
+{
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e1, e2;
+    instance.AddEntity(e1);
+    instance.AddEntity(e2);
+
+    ecs::component_array<MockComponent> componentArray;
+    MockComponent& component1 = componentArray.add_component(e1);
+    ASSERT_EQ(componentArray.GetNumComponents(), 1);
+
+    MockComponent& component2 = componentArray.add_component(e2);
+    ASSERT_EQ(componentArray.GetNumComponents(), 2);
+}
+
+TEST(TestComponentArray, TestMaxCapacity)
+{
+    ecs::component_array<MockComponent> componentArray;
+    for (size_t e = 0; e < componentArray.capacity(); ++e)
+    {
+        MockComponent& dumbComponent = componentArray.add_component(e);
+    }
+
+    ASSERT_THROW(componentArray.add_component(componentArray.capacity() + 1), std::exception);
+}
+
+TEST(TestComponentArray, TestMultipleComponents)
+{
+    ecs::component_array<MockComponent> componentArray;
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e;
+
+    instance.AddEntity(e);
+    MockComponent& c1 = componentArray.add_component(e);
+    ASSERT_THROW(MockComponent& c2 = componentArray.add_component(e), std::invalid_argument);
+}
+
+TEST(TestComponentArray, TestRemoveUnexistingComponent)
+{
+    ecs::component_array<MockComponent> componentArray;
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e;
+
+    instance.AddEntity(e);
+    ASSERT_FALSE(componentArray.remove_component(e));
+}
+
+TEST(TestComponentArray, TestRemoveComponent)
+{
+    ecs::component_array<MockComponent> componentArray;
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e;
+
+    instance.AddEntity(e);
+    MockComponent& c = componentArray.add_component(e);
+    ASSERT_TRUE(componentArray.remove_component(e));
+    ASSERT_EQ(componentArray.GetNumComponents(), 0);
+}
+
+TEST(TestComponentArray, TestAddRemoveAddRemoveComponent)
+{
+    ecs::component_array<MockComponent> componentArray;
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e;
+
+    instance.AddEntity(e);
+    MockComponent& c = componentArray.add_component(e);
+    componentArray.remove_component(e);
+    ASSERT_NO_THROW(componentArray.add_component(e));
+    ASSERT_EQ(componentArray.GetNumComponents(), 1);
+    ASSERT_NO_THROW(componentArray.remove_component(e));
+    ASSERT_EQ(componentArray.GetNumComponents(), 0);
 }

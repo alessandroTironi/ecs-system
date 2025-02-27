@@ -6,6 +6,8 @@
 
 namespace ecs
 {
+    class Instance;
+
     typedef size_t entity_id;
 
     struct entity_t
