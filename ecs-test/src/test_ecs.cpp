@@ -18,6 +18,14 @@ public:
     float m_float = 0.0f;
 };
 
+struct IntComponent : public ecs::IComponent 
+{
+public:
+    IntComponent() {}
+
+    int m_int = 0;
+};
+
 TEST(TestECSInstance, TestConstructor)
 {
     ecs::Instance* instance = nullptr;
@@ -185,4 +193,24 @@ TEST(TestComponentArray, TestAddRemoveAddRemoveComponent)
     ASSERT_EQ(componentArray.GetNumComponents(), 1);
     ASSERT_NO_THROW(componentArray.remove_component(e));
     ASSERT_EQ(componentArray.GetNumComponents(), 0);
+}
+
+TEST(TestComponentArray, TestGetComponent)
+{
+    ecs::component_array<IntComponent> componentArray;
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e1, e2;
+
+    instance.AddEntity(e1);
+    instance.AddEntity(e2);
+
+    IntComponent& c1 = componentArray.add_component(e1);
+    c1.m_int = 2;
+    ASSERT_EQ(c1.m_int, componentArray.get_component(e1).m_int);
+
+    ASSERT_THROW(componentArray.get_component(e2), std::out_of_range);
+
+    IntComponent& c2 = componentArray.add_component(e2);
+    c2.m_int = 3;
+    ASSERT_FALSE(componentArray.get_component(e1).m_int == componentArray.get_component(e2).m_int);
 }

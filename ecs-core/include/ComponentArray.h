@@ -66,7 +66,7 @@ namespace ecs
 
         ComponentType& get_component(entity_id entity)
         {
-            return m_components[m_indicesMap[entity]];
+            return m_components[m_indicesMap.at(entity)];
         }
 
         inline size_t GetNumComponents() const { return m_indicesMap.size(); }
