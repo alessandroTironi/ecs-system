@@ -31,7 +31,7 @@ namespace ecs
         template<typename SystemType>
         std::shared_ptr<SystemType> AddSystem()
         {
-            std::shared_ptr<SystemType> system = std::shared_ptr<SystemType>(new SystemType());
+            std::shared_ptr<SystemType> system = std::make_shared<SystemType>() ;
             AddSystem(system);
             return system;
         }
