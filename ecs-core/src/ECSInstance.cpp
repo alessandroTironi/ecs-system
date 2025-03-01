@@ -64,7 +64,6 @@ void Instance::RemoveEntity(entity_id entityToRemove)
         const entity_t& entity = *entityIt;
         if (entity.getUniqueID() == entityToRemove)
         {
-            std::cout << "Found and removed" << std::endl;
             m_activeEntities.erase(entityIt);
 
             // TODO remove all components
