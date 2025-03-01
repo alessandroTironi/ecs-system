@@ -89,6 +89,19 @@ namespace ecs
             }
         }
 
+        template<typename ComponentType> 
+        void RemoveComponent(const entity_id entity) 
+        {
+            const type_hash_t componentType = GetTypeHash(ComponentType);
+            auto optionalComponentArray = m_componentArraysMap.find(componentType);
+            if (optionalComponentArray != m_componentArraysMap.end())
+            {
+                std::shared_ptr<component_array<ComponentType>> componentArray =
+                    std::static_pointer_cast<component_array<ComponentType>>(optionalComponentArray->second);
+                componentArray->remove_component(entity);
+            }
+        }
+
     protected:
         /* Stores all the Systems registered to this ECS instance. */
         std::unordered_map<type_hash_t, std::shared_ptr<ISystem>> m_registeredSystems;

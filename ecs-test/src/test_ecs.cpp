@@ -262,3 +262,17 @@ TEST(TestECSInstance, TestGetComponent)
     ASSERT_NO_THROW(IntComponent& c3 = instance.GetComponent<IntComponent>(e3));
     ASSERT_THROW(IntComponent& c2 = instance.GetComponent<IntComponent>(e2), std::out_of_range);
 }
+
+TEST(TestECSInstance, TestRemoveComponent)
+{
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e1, e2;
+    instance.AddEntity(e1);
+    instance.AddEntity(e2);
+
+    instance.AddComponent<IntComponent>(e1);
+    ASSERT_NO_THROW(instance.RemoveComponent<IntComponent>(e2));
+    ASSERT_NO_THROW(instance.RemoveComponent<IntComponent>(e1));
+
+    ASSERT_THROW(instance.GetComponent<IntComponent>(e1), std::out_of_range);
+}
