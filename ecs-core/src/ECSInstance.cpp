@@ -15,7 +15,7 @@ Instance::Instance(size_t maxEntities)
 
     for (entity_id idx = 0; idx < m_maxEntities; ++idx)
     {
-        m_availableEntities.push_back(m_maxEntities - idx);
+        m_availableEntities.push_back(m_maxEntities - 1 - idx);
     }
 }
 
@@ -54,21 +54,17 @@ void Instance::AddEntity(entity_id& addedEntity)
 
     addedEntity = m_availableEntities.back();
     m_availableEntities.pop_back();
-    m_activeEntities.emplace_back(addedEntity);
+    m_activeEntities[addedEntity] = entity_t();
 }
 
 void Instance::RemoveEntity(entity_id entityToRemove)
 {
-    for (auto entityIt = m_activeEntities.begin(); entityIt != m_activeEntities.end(); ++entityIt)
+    auto optionalEntity = m_activeEntities.find(entityToRemove);
+    if (optionalEntity != m_activeEntities.end())
     {
-        const entity_t& entity = *entityIt;
-        if (entity.getUniqueID() == entityToRemove)
-        {
-            m_activeEntities.erase(entityIt);
+        // @TODO remove all components
 
-            // TODO remove all components
-
-            break;
-        }
+        m_availableEntities.push_back(optionalEntity->first);
+        m_activeEntities.erase(optionalEntity);
     }
 }

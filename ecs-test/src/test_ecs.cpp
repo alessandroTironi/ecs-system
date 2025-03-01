@@ -102,6 +102,23 @@ TEST(TestECSInstance, TestAddEntity)
     ASSERT_THROW(instance.AddEntity(dumb2), std::exception);
 }
 
+TEST(TestECSInstance, TestGetEntity)
+{
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e1, e2, e3;
+    instance.AddEntity(e1);
+
+    ASSERT_NO_THROW(instance.GetEntity(e1));
+
+    instance.AddEntity(e2);
+    instance.AddEntity(e3);
+    instance.RemoveEntity(e2);
+
+    ASSERT_NO_THROW(instance.GetEntity(e1));
+    ASSERT_NO_THROW(instance.GetEntity(e3));
+    ASSERT_THROW(instance.GetEntity(e2), std::out_of_range);
+}
+
 TEST(TestECSInstance, TestRemoveEntity)
 {
     ecs::Instance instance = ecs::Instance();

@@ -2,8 +2,7 @@
 
 using namespace ecs;
 
-entity_t::entity_t(entity_id uniqueID)
+entity_t::entity_t()
 {
-    m_uniqueID = uniqueID;
     m_componentsSignature.reset();
 }
