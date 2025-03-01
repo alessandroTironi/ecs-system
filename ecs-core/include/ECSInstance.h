@@ -70,6 +70,25 @@ namespace ecs
             return componentArray->add_component(entityID);
         }
 
+        template<typename ComponentType>
+        ComponentType& GetComponent(entity_id entity) const
+        {
+            const type_hash_t componentType = GetTypeHash(ComponentType);
+            auto optionalComponentArray = m_componentArraysMap.find(componentType);
+            if (optionalComponentArray == m_componentArraysMap.end())
+            {
+                throw std::out_of_range("No components of given type have been found");
+            }
+            else
+            {
+                // retrieve already existing component array
+                std::shared_ptr<component_array_base> foundArray = optionalComponentArray->second;
+                std::shared_ptr<component_array<ComponentType>> componentArray = 
+                    std::static_pointer_cast<component_array<ComponentType>>(foundArray);
+                return componentArray->get_component(entity);
+            }
+        }
+
     protected:
         /* Stores all the Systems registered to this ECS instance. */
         std::unordered_map<type_hash_t, std::shared_ptr<ISystem>> m_registeredSystems;
