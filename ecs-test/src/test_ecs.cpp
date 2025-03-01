@@ -242,5 +242,5 @@ TEST(TestECSInstance, TestAddComponent)
 
     ASSERT_NO_THROW(IntComponent& c1 = instance.AddComponent<IntComponent>(e1));
     ASSERT_NO_THROW(IntComponent& c2 = instance.AddComponent<IntComponent>(e2));
-    //ASSERT_THROW(IntComponent& c3 = instance.AddComponent<IntComponent>(e1), std::invalid_argument);
+    ASSERT_THROW(IntComponent& c3 = instance.AddComponent<IntComponent>(e1), std::invalid_argument);
 }
