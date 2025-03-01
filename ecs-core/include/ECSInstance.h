@@ -45,6 +45,30 @@ namespace ecs
         void RemoveEntity(entity_id entityToRemove);
         inline size_t GetNumActiveEntities() const { return m_activeEntities.size(); }
 
+        template<typename ComponentType>
+        ComponentType& AddComponent(const entity_id entityID)
+        {
+            const type_hash_t componentType = GetTypeHash(ComponentType);
+            auto optionalComponentArray = m_componentArraysMap.find(componentType);
+            std::shared_ptr<component_array<ComponentType>> componentArray;
+            if (optionalComponentArray == m_componentArraysMap.end())
+            {
+                // instantiate new component array
+                componentArray = std::make_shared<component_array<ComponentType>>();
+                m_componentArraysMap[componentType] = componentArray;
+            }
+            else
+            {
+                // retrieve already existing component array
+                std::shared_ptr<component_array_base> foundArray = optionalComponentArray->second;
+                componentArray = std::static_pointer_cast<component_array<ComponentType>>(
+                    foundArray
+                );
+            }
+
+            return componentArray->add_component(entityID);
+        }
+
     protected:
         /* Stores all the Systems registered to this ECS instance. */
         std::unordered_map<type_hash_t, std::shared_ptr<ISystem>> m_registeredSystems;
@@ -53,7 +77,7 @@ namespace ecs
 
         std::vector<entity_id> m_availableEntities;
 
-        std::unordered_map<type_hash_t, std::unique_ptr<component_array_base>> m_componentArraysMap;
+        std::unordered_map<type_hash_t, std::shared_ptr<component_array_base>> m_componentArraysMap;
 
     private:
         size_t m_maxEntities;

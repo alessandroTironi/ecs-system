@@ -214,3 +214,16 @@ TEST(TestComponentArray, TestGetComponent)
     c2.m_int = 3;
     ASSERT_FALSE(componentArray.get_component(e1).m_int == componentArray.get_component(e2).m_int);
 }
+
+TEST(TestECSInstance, TestAddComponent)
+{
+    ecs::Instance instance = ecs::Instance();
+    ecs::entity_id e1, e2;
+
+    instance.AddEntity(e1);
+    instance.AddEntity(e2);
+
+    ASSERT_NO_THROW(IntComponent& c1 = instance.AddComponent<IntComponent>(e1));
+    ASSERT_NO_THROW(IntComponent& c2 = instance.AddComponent<IntComponent>(e2));
+    //ASSERT_THROW(IntComponent& c3 = instance.AddComponent<IntComponent>(e1), std::invalid_argument);
+}
