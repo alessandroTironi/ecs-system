@@ -35,7 +35,10 @@ set_target_properties(gtest_main PROPERTIES
 include_directories("${ECS_CORE_INCLUDE_DIR}" "include")
 
 # Create the unit test executable
-add_executable(ecs_test "src/test_ecs.cpp")
+add_executable(ecs_test 
+  "src/test_ecs.cpp" 
+  "src/test_component_array.cpp"
+)
 
 # Link to the sprite-eater-core library and gtest
 target_link_libraries(ecs_test

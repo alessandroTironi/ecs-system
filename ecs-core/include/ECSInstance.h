@@ -5,6 +5,7 @@
 #include <array>
 #include <unordered_map>
 #include <typeinfo>
+#include <stdexcept>
 #include "Types.h"
 #include "ComponentArray.h"
 #include "Entity.h"
@@ -49,58 +50,106 @@ namespace ecs
         template<typename ComponentType>
         ComponentType& AddComponent(const entity_id entityID)
         {
-            const type_hash_t componentType = GetTypeHash(ComponentType);
-            auto optionalComponentArray = m_componentArraysMap.find(componentType);
-            std::shared_ptr<component_array<ComponentType>> componentArray;
+            const type_hash_t cType = GetTypeHash(ComponentType);
+            auto optionalComponentArray = m_componentArraysMap.find(cType);
+            std::shared_ptr<component_array<ComponentType>> array = nullptr;
             if (optionalComponentArray == m_componentArraysMap.end())
             {
-                // instantiate new component array
-                componentArray = std::make_shared<component_array<ComponentType>>();
-                m_componentArraysMap[componentType] = componentArray;
+                array = std::make_shared<component_array<ComponentType>>();
+                m_componentArraysMap[cType] = array;
             }
             else
             {
-                // retrieve already existing component array
-                std::shared_ptr<component_array_base> foundArray = optionalComponentArray->second;
-                componentArray = std::static_pointer_cast<component_array<ComponentType>>(
-                    foundArray
+                array = std::static_pointer_cast<component_array<ComponentType>>(
+                    optionalComponentArray->second
                 );
             }
 
-            return componentArray->add_component(entityID);
+            return array->add_component(entityID);
         }
 
         template<typename ComponentType>
-        ComponentType& GetComponent(entity_id entity) const
+        ComponentType& GetComponent(const entity_id entity) const
         {
-            const type_hash_t componentType = GetTypeHash(ComponentType);
-            auto optionalComponentArray = m_componentArraysMap.find(componentType);
+            const type_hash_t cType = GetTypeHash(ComponentType);
+            auto optionalComponentArray = m_componentArraysMap.find(cType);
+            std::shared_ptr<component_array<ComponentType>> array = nullptr;
             if (optionalComponentArray == m_componentArraysMap.end())
             {
-                throw std::out_of_range("No components of given type have been found");
+                throw std::out_of_range("No component of given type found for this entity.");
             }
             else
             {
-                // retrieve already existing component array
-                std::shared_ptr<component_array_base> foundArray = optionalComponentArray->second;
-                std::shared_ptr<component_array<ComponentType>> componentArray = 
-                    std::static_pointer_cast<component_array<ComponentType>>(foundArray);
-                return componentArray->get_component(entity);
+                array = std::static_pointer_cast<component_array<ComponentType>>(
+                    optionalComponentArray->second
+                );
             }
+
+            return array->get(entity);
+        }
+
+        template<typename ComponentType>
+        bool DoesComponentExist(entity_id entity) const 
+        { 
+            const type_hash_t cType = GetTypeHash(ComponentType);
+            auto optionalComponentArray = m_componentArraysMap.find(cType);
+            std::shared_ptr<component_array<ComponentType>> array = nullptr;
+            if (optionalComponentArray == m_componentArraysMap.end())
+            {
+                return false;
+            }
+            else
+            {
+                array = std::static_pointer_cast<component_array<ComponentType>>(
+                    optionalComponentArray->second
+                );
+            }
+
+            ComponentType component;
+            return array->find(entity, component);
+        }
+
+        template<typename ComponentType>
+        size_t GetNumComponents() const 
+        {
+            const type_hash_t cType = GetTypeHash(ComponentType);
+            auto optionalComponentArray = m_componentArraysMap.find(cType);
+            std::shared_ptr<component_array<ComponentType>> array = nullptr;
+            if (optionalComponentArray == m_componentArraysMap.end())
+            {
+                return 0;
+            }
+            else
+            {
+                array = std::static_pointer_cast<component_array<ComponentType>>(
+                    optionalComponentArray->second
+                );
+            }
+
+            return array->size();
         }
 
         template<typename ComponentType> 
         void RemoveComponent(const entity_id entity) 
         {
-            const type_hash_t componentType = GetTypeHash(ComponentType);
-            auto optionalComponentArray = m_componentArraysMap.find(componentType);
-            if (optionalComponentArray != m_componentArraysMap.end())
+            const type_hash_t cType = GetTypeHash(ComponentType);
+            auto optionalComponentArray = m_componentArraysMap.find(cType);
+            std::shared_ptr<component_array<ComponentType>> array = nullptr;
+            if (optionalComponentArray == m_componentArraysMap.end())
             {
-                std::shared_ptr<component_array<ComponentType>> componentArray =
-                    std::static_pointer_cast<component_array<ComponentType>>(optionalComponentArray->second);
-                componentArray->remove_component(entity);
+                return;
             }
+            else
+            {
+                array = std::static_pointer_cast<component_array<ComponentType>>(
+                    optionalComponentArray->second
+                );
+            }
+
+            array->remove_component(entity);
         }
+
+
 
     protected:
         /* Stores all the Systems registered to this ECS instance. */
