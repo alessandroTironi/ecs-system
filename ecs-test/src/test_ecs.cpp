@@ -135,7 +135,7 @@ TEST(TestComponentArray, TestInitialization)
 {
     ecs::component_array<MockComponent> componentArray;
 
-    ASSERT_EQ(componentArray.GetNumComponents(), 0);
+    ASSERT_EQ(componentArray.size(), 0);
 }
 
 TEST(TestComponentArray, TestAddComponent)
@@ -147,10 +147,10 @@ TEST(TestComponentArray, TestAddComponent)
 
     ecs::component_array<MockComponent> componentArray;
     MockComponent& component1 = componentArray.add_component(e1);
-    ASSERT_EQ(componentArray.GetNumComponents(), 1);
+    ASSERT_EQ(componentArray.size(), 1);
 
     MockComponent& component2 = componentArray.add_component(e2);
-    ASSERT_EQ(componentArray.GetNumComponents(), 2);
+    ASSERT_EQ(componentArray.size(), 2);
 }
 
 TEST(TestComponentArray, TestMaxCapacity)
@@ -194,7 +194,7 @@ TEST(TestComponentArray, TestRemoveComponent)
     instance.AddEntity(e);
     MockComponent& c = componentArray.add_component(e);
     ASSERT_TRUE(componentArray.remove_component(e));
-    ASSERT_EQ(componentArray.GetNumComponents(), 0);
+    ASSERT_EQ(componentArray.size(), 0);
 }
 
 TEST(TestComponentArray, TestAddRemoveAddRemoveComponent)
@@ -207,9 +207,9 @@ TEST(TestComponentArray, TestAddRemoveAddRemoveComponent)
     MockComponent& c = componentArray.add_component(e);
     componentArray.remove_component(e);
     ASSERT_NO_THROW(componentArray.add_component(e));
-    ASSERT_EQ(componentArray.GetNumComponents(), 1);
+    ASSERT_EQ(componentArray.size(), 1);
     ASSERT_NO_THROW(componentArray.remove_component(e));
-    ASSERT_EQ(componentArray.GetNumComponents(), 0);
+    ASSERT_EQ(componentArray.size(), 0);
 }
 
 TEST(TestComponentArray, TestGetComponent)

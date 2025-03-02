@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "Types.h"
+#include "Entity.h"
 
 #include <stdexcept>
 
@@ -52,12 +53,13 @@ namespace ecs
 
         bool remove_component(entity_id entity)
         {
-            if (m_indicesMap.find(entity) == m_indicesMap.end())
+            auto optionalIndex = m_indicesMap.find(entity);
+            if (optionalIndex == m_indicesMap.end())
             {
                 return false;
             }
 
-            const size_t index = m_indicesMap[entity]; // @TODO this is a double lookup, find a way to avoid it and reuse result from find()
+            const size_t index = optionalIndex->second; 
             m_freeIndicesList.push_back(index);
 
             m_indicesMap.erase(entity);
@@ -69,7 +71,7 @@ namespace ecs
             return m_components[m_indicesMap.at(entity)];
         }
 
-        inline size_t GetNumComponents() const { return m_indicesMap.size(); }
+        inline size_t size() const { return m_indicesMap.size(); }
 
     private:
         std::array<ComponentType, MaxSize> m_components;
