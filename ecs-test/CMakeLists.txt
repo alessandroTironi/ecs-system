@@ -38,6 +38,7 @@ include_directories("${ECS_CORE_INCLUDE_DIR}" "include")
 add_executable(ecs_test 
   "src/test_ecs.cpp" 
   "src/test_component_array.cpp"
+  "src/test_unique_ids.cpp"
 )
 
 # Link to the sprite-eater-core library and gtest
