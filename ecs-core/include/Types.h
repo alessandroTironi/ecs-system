@@ -3,7 +3,6 @@
 #include <array>
 #include <unordered_map>
 #include <vector>
-#include "Entity.h"
 
 namespace ecs
 {

@@ -5,11 +5,11 @@
 #include "Types.h"
 #include "IDGenerator.h"
 
-namespace esc
+namespace ecs
 {
     typedef unsigned short component_id;
 
-    class ComponentDatabase
+    class ComponentsDatabase
     {
     public:
         template<typename ComponentType>
@@ -19,24 +19,11 @@ namespace esc
             return GetComponentID(componentHash);
         }
 
-        static component_id GetComponentID(const type_hash_t componentHash)
-        {
-            auto optionalID = s_componentsClassMap.find(componentHash);
-            if (optionalID == s_componentsClassMap.end())
-            {
-                const component_id newID = s_componentIDGenerator.GenerateNewUniqueID();
-                s_componentsClassMap[componentHash] = newID;
-                return newID;
-            }
-            else
-            {
-                return optionalID->second;
-            }
-        }
+        static component_id GetComponentID(const type_hash_t componentHash);
 
     private:
         static IDGenerator<component_id> s_componentIDGenerator;
 
         static std::unordered_map<size_t, component_id> s_componentsClassMap;
-    }
+    };
 }

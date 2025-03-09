@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <bitset>
+#include "Types.h"
 
 #define MAX_COMPONENTS 1000
 
