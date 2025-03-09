@@ -88,68 +88,34 @@ namespace ecs
             return array->get(entity);
         }
 
+        bool DoesComponentExist(entity_id entity, const type_hash_t componentType) const;
+
         template<typename ComponentType>
         bool DoesComponentExist(entity_id entity) const 
         { 
             const type_hash_t cType = GetTypeHash(ComponentType);
-            auto optionalComponentArray = m_componentArraysMap.find(cType);
-            std::shared_ptr<component_array<ComponentType>> array = nullptr;
-            if (optionalComponentArray == m_componentArraysMap.end())
-            {
-                return false;
-            }
-            else
-            {
-                array = std::static_pointer_cast<component_array<ComponentType>>(
-                    optionalComponentArray->second
-                );
-            }
-
-            ComponentType component;
-            return array->find(entity, component);
+            return DoesComponentExist(entity, cType);
         }
+
+        size_t GetNumComponents(const type_hash_t componentType) const;
 
         template<typename ComponentType>
         size_t GetNumComponents() const 
         {
             const type_hash_t cType = GetTypeHash(ComponentType);
-            auto optionalComponentArray = m_componentArraysMap.find(cType);
-            std::shared_ptr<component_array<ComponentType>> array = nullptr;
-            if (optionalComponentArray == m_componentArraysMap.end())
-            {
-                return 0;
-            }
-            else
-            {
-                array = std::static_pointer_cast<component_array<ComponentType>>(
-                    optionalComponentArray->second
-                );
-            }
-
-            return array->size();
+            return GetNumComponents(cType);
         }
+
+        void RemoveComponent(const entity_id entity, const type_hash_t componentType);
 
         template<typename ComponentType> 
         void RemoveComponent(const entity_id entity) 
         {
             const type_hash_t cType = GetTypeHash(ComponentType);
-            auto optionalComponentArray = m_componentArraysMap.find(cType);
-            std::shared_ptr<component_array<ComponentType>> array = nullptr;
-            if (optionalComponentArray == m_componentArraysMap.end())
-            {
-                return;
-            }
-            else
-            {
-                array = std::static_pointer_cast<component_array<ComponentType>>(
-                    optionalComponentArray->second
-                );
-            }
-
-            array->remove_component(entity);
+            RemoveComponent(entity, cType);
         }
 
-
+        void RemoveAllComponents(const entity_id entity);
 
     protected:
         /* Stores all the Systems registered to this ECS instance. */

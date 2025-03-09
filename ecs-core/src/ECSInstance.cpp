@@ -62,9 +62,66 @@ void Instance::RemoveEntity(entity_id entityToRemove)
     auto optionalEntity = m_activeEntities.find(entityToRemove);
     if (optionalEntity != m_activeEntities.end())
     {
-        // @TODO remove all components
+        RemoveAllComponents(entityToRemove);
 
         m_availableEntities.push_back(optionalEntity->first);
         m_activeEntities.erase(optionalEntity);
+    }
+}
+
+bool Instance::DoesComponentExist(entity_id entity, const type_hash_t componentType) const
+{
+    auto optionalComponentArray = m_componentArraysMap.find(componentType);
+    std::shared_ptr<component_array<IComponent>> array = nullptr;
+    if (optionalComponentArray == m_componentArraysMap.end())
+    {
+        return false;
+    }
+    else
+    {
+        array = std::static_pointer_cast<component_array<IComponent>>(
+            optionalComponentArray->second
+        );
+    }
+
+    IComponent component;
+    return array->find(entity, component);
+}
+
+size_t Instance::GetNumComponents(const type_hash_t componentType) const
+{
+    auto optionalComponentArray = m_componentArraysMap.find(componentType);
+    std::shared_ptr<component_array<IComponent>> array = nullptr;
+    if (optionalComponentArray == m_componentArraysMap.end())
+    {
+        return 0;
+    }
+    
+    return optionalComponentArray->second->size();
+}
+
+void Instance::RemoveComponent(const entity_id entity, const type_hash_t componentType)
+{
+    auto optionalComponentArray = m_componentArraysMap.find(componentType);
+    std::shared_ptr<component_array<IComponent>> array = nullptr;
+    if (optionalComponentArray == m_componentArraysMap.end())
+    {
+        return;
+    }
+    else
+    {
+        array = std::static_pointer_cast<component_array<IComponent>>(
+            optionalComponentArray->second
+        );
+    }
+
+    array->remove_component(entity);
+}
+
+void Instance::RemoveAllComponents(const entity_id entity)
+{
+    for (auto it = m_componentArraysMap.begin(); it != m_componentArraysMap.end(); ++it)
+    {
+        RemoveComponent(entity, it->first);
     }
 }
