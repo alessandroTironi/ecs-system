@@ -15,6 +15,9 @@ namespace ecs
     public:
         entity_t();
 
+        void add_component(const type_hash_t componentHash);
+        void remove_component(const type_hash_t componentHash);
+        bool has_component(const type_hash_t componentHash) const;
     private:
         std::bitset<MAX_COMPONENTS> m_componentsSignature;
     };
