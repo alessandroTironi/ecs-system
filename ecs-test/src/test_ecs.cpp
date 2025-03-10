@@ -188,7 +188,7 @@ TEST(TestECSInstance, TestRemoveAllComponents)
 
     instance.RemoveEntity(e);
     ASSERT_EQ(instance.GetNumComponents<IntComponent>(), 0);
-    //ASSERT_THROW(instance.GetComponent<IntComponent>(e), std::out_of_range);
+    ASSERT_THROW(instance.GetComponent<IntComponent>(e), std::out_of_range);
 }
 
 TEST(TestECSInstance, TestDoesComponentExist)
