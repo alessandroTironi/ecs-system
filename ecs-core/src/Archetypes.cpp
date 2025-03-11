@@ -2,7 +2,7 @@
 
 ecs::archetype::archetype()
 {
-    m_components.reserve(4);
+    
 }
 
 ecs::archetype::archetype(std::initializer_list<ecs::component_id> components)
@@ -12,18 +12,16 @@ ecs::archetype::archetype(std::initializer_list<ecs::component_id> components)
         throw std::invalid_argument("Attempted to create an archetype with no components");
     }
 
-    m_components.reserve(components.size());
     m_components = std::move(components);
 }
 
-ecs::archetype::archetype(const std::vector<ecs::component_id>&& components)
+ecs::archetype::archetype(const std::set<ecs::component_id>&& components)
 {
     if (components.size() == 0)
     {
         throw std::invalid_argument("Attempted to create an archetype with no components");
     }
 
-    m_components.reserve(components.size());
     m_components = std::move(components);
 }
 

@@ -68,10 +68,10 @@ TEST_F(TestArchetypes, TestEmptyArchetype)
 
 TEST_F(TestArchetypes, TestVectorMoveConstructor)
 {
-    std::vector<ecs::component_id> components = {};
+    std::set<ecs::component_id> components = {};
     ASSERT_THROW(ecs::archetype(std::move(components)), std::invalid_argument) <<   "It should not be possible to create an empty archetype: "
                                                                                     "An invalid_argument exception should be thrown";
-    std::vector<ecs::component_id> components2 = { 0 };
+    std::set<ecs::component_id> components2 = { 0 };
     ASSERT_NO_THROW(ecs::archetype(components2));
 }
 

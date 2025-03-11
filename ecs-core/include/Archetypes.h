@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <vector>
+#include <set>
 #include <initializer_list>
 #include "Types.h"
 #include "ComponentsDatabase.h"
@@ -12,7 +12,7 @@ namespace ecs
     public:
         archetype();
         archetype(std::initializer_list<component_id> components);
-        archetype(const std::vector<component_id>&& components);
+        archetype(const std::set<component_id>&& components);
 
         static archetype make(std::initializer_list<component_id> components);
 
@@ -33,7 +33,7 @@ namespace ecs
         inline size_t get_num_components() const { return m_components.size(); }
 
     private:
-        std::vector<component_id> m_components;
+        std::set<component_id> m_components;
 
     };
 }
