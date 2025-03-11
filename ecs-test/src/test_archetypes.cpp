@@ -39,6 +39,9 @@ protected:
     void SetUp() override
     {
         m_emptyArchetype = ecs::archetype();
+        m_archetype1 = ecs::archetype::make<FloatComponent>();
+        m_archetype2 = ecs::archetype::make<FloatComponent, IntComponent>();
+        m_archetype3 = ecs::archetype::make<FloatComponent, IntComponent, DoubleComponent>();
     }
 
     void TearDown() override
@@ -46,6 +49,9 @@ protected:
     }
 
     ecs::archetype m_emptyArchetype;
+    ecs::archetype m_archetype1;
+    ecs::archetype m_archetype2;
+    ecs::archetype m_archetype3;
 };
 
 TEST_F(TestArchetypes, TestNullArchetype)
@@ -74,4 +80,12 @@ TEST_F(TestArchetypes, TestTemplateMakeFunction)
     ASSERT_NO_THROW(ecs::archetype::make<FloatComponent>());
     static constexpr auto createTwoComponents = []() { ecs::archetype::make<FloatComponent, IntComponent>(); };
     ASSERT_NO_THROW(createTwoComponents());
+}
+
+TEST_F(TestArchetypes, TestNumComponents)
+{
+    EXPECT_EQ(m_emptyArchetype.get_num_components(), 0);
+    EXPECT_EQ(m_archetype1.get_num_components(), 1);
+    EXPECT_EQ(m_archetype2.get_num_components(), 2);
+    EXPECT_EQ(m_archetype3.get_num_components(), 3);
 }

@@ -30,6 +30,8 @@ namespace ecs
 
         inline bool is_null() const { return m_components.empty(); }
 
+        inline size_t get_num_components() const { return m_components.size(); }
+
     private:
         std::vector<component_id> m_components;
 
