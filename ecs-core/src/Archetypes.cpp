@@ -1,6 +1,33 @@
 #include "Archetypes.h"
 
-ecs::archetype ecs::archetype::make(const std::vector<component_id>& components)
+ecs::archetype::archetype()
 {
-    return ecs::archetype();
+    m_components.reserve(4);
+}
+
+ecs::archetype::archetype(std::initializer_list<ecs::component_id> components)
+{
+    if (components.size() == 0)
+    {
+        throw std::invalid_argument("Attempted to create an archetype with no components");
+    }
+
+    m_components.reserve(components.size());
+    m_components = std::move(components);
+}
+
+ecs::archetype::archetype(const std::vector<ecs::component_id>&& components)
+{
+    if (components.size() == 0)
+    {
+        throw std::invalid_argument("Attempted to create an archetype with no components");
+    }
+
+    m_components.reserve(components.size());
+    m_components = std::move(components);
+}
+
+ecs::archetype ecs::archetype::make(std::initializer_list<component_id> components)
+{
+    return ecs::archetype(std::move(components));
 }
