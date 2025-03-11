@@ -16,6 +16,18 @@ namespace ecs
 
         static archetype make(std::initializer_list<component_id> components);
 
+        template<typename FirstComponent, typename... OtherComponents>
+        static archetype make()
+        {
+            std::initializer_list<component_id> components = 
+            { 
+                ComponentsDatabase::GetComponentID(GetTypeHash(FirstComponent)), 
+                ComponentsDatabase::GetComponentID(GetTypeHash(OtherComponents))... 
+            };
+
+            return make(components);
+        }
+
         inline bool is_null() const { return m_components.empty(); }
 
     private:

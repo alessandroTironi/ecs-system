@@ -65,6 +65,13 @@ TEST_F(TestArchetypes, TestVectorMoveConstructor)
     std::vector<ecs::component_id> components = {};
     ASSERT_THROW(ecs::archetype(std::move(components)), std::invalid_argument) <<   "It should not be possible to create an empty archetype: "
                                                                                     "An invalid_argument exception should be thrown";
-    components.push_back(0);
-    ASSERT_NO_THROW(ecs::archetype(components));
+    std::vector<ecs::component_id> components2 = { 0 };
+    ASSERT_NO_THROW(ecs::archetype(components2));
+}
+
+TEST_F(TestArchetypes, TestTemplateMakeFunction)
+{
+    ASSERT_NO_THROW(ecs::archetype::make<FloatComponent>());
+    static constexpr auto createTwoComponents = []() { ecs::archetype::make<FloatComponent, IntComponent>(); };
+    ASSERT_NO_THROW(createTwoComponents());
 }
