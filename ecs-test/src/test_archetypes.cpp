@@ -117,6 +117,8 @@ TEST_F(TestArchetypes, TestComponentsOrder)
     for (auto componentsIt = m_archetype3.begin(); componentsIt != m_archetype3.end(); ++componentsIt)
     {
         const ecs::component_id thisId = *componentsIt;
-        EXPECT_EQ(thisId, componentIDs[index++]);
+        EXPECT_EQ(thisId, componentIDs[index++]) << "Components of an archetype should always be sorted by their serial ID, "
+                                                    "to ensure consistency of hashes.";
     }   
 }
+
