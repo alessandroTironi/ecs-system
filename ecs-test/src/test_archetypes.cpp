@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
+#include <algorithm>
 #include "Archetypes.h"
 #include "ComponentArray.h"
 
@@ -100,3 +101,22 @@ TEST_F(TestArchetypes, TestIterator)
     ASSERT_NE(m_archetype3.begin(), m_archetype3.end()) <<  "For non-empty archetypes, begin() and end() should not be equal";
 }
 
+TEST_F(TestArchetypes, TestComponentsOrder)
+{
+    std::vector<ecs::component_id> componentIDs =
+    {
+        ecs::ComponentsDatabase::GetComponentID<FloatComponent>(),
+        ecs::ComponentsDatabase::GetComponentID<DoubleComponent>(),
+        ecs::ComponentsDatabase::GetComponentID<IntComponent>(),
+    };
+
+    std::sort(componentIDs.begin(), componentIDs.end());
+    ASSERT_TRUE(componentIDs[0] < componentIDs[1] && componentIDs[1] < componentIDs[2]);
+
+    size_t index = 0;
+    for (auto componentsIt = m_archetype3.begin(); componentsIt != m_archetype3.end(); ++componentsIt)
+    {
+        const ecs::component_id thisId = *componentsIt;
+        EXPECT_EQ(thisId, componentIDs[index++]);
+    }   
+}
