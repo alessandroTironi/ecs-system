@@ -89,3 +89,14 @@ TEST_F(TestArchetypes, TestNumComponents)
     EXPECT_EQ(m_archetype2.get_num_components(), 2);
     EXPECT_EQ(m_archetype3.get_num_components(), 3);
 }
+
+TEST_F(TestArchetypes, TestIterator)
+{
+    ASSERT_NO_THROW(m_emptyArchetype.begin());
+    ASSERT_NO_THROW(m_emptyArchetype.end());
+    ASSERT_EQ(m_emptyArchetype.begin(), m_emptyArchetype.end()) <<  "For empty archetypes, begin() and end() should be equal";
+    ASSERT_NO_THROW(m_archetype3.begin());
+    ASSERT_NO_THROW(m_archetype3.end());
+    ASSERT_NE(m_archetype3.begin(), m_archetype3.end()) <<  "For non-empty archetypes, begin() and end() should not be equal";
+}
+

@@ -2,6 +2,7 @@
 
 #include <set>
 #include <initializer_list>
+#include <stdexcept>
 #include "Types.h"
 #include "ComponentsDatabase.h"
 
@@ -31,6 +32,9 @@ namespace ecs
         inline bool is_null() const { return m_components.empty(); }
 
         inline size_t get_num_components() const { return m_components.size(); }
+
+        inline auto begin() { return m_components.begin(); }
+        inline auto end() { return m_components.end(); }
 
     private:
         std::set<component_id> m_components;
