@@ -33,11 +33,29 @@ namespace ecs
 
         inline size_t get_num_components() const { return m_components.size(); }
 
-        inline auto begin() { return m_components.begin(); }
-        inline auto end() { return m_components.end(); }
+        inline auto begin() const { return m_components.begin(); }
+        inline auto end() const { return m_components.end(); }
 
     private:
         std::set<component_id> m_components;
 
+    };
+}
+
+namespace std
+{
+    template<>
+    struct hash<ecs::archetype>
+    {
+        size_t operator()(const ecs::archetype& archetype) const
+        {
+            size_t seed = archetype.get_num_components();
+            for (auto componentIt = archetype.begin(); componentIt != archetype.end(); ++componentIt)
+            {
+                seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            }
+
+            return seed;
+        }
     };
 }

@@ -122,3 +122,18 @@ TEST_F(TestArchetypes, TestComponentsOrder)
     }   
 }
 
+TEST_F(TestArchetypes, TestHashing)
+{
+    const auto hash1 = std::hash<ecs::archetype>{}(m_archetype1);
+    const auto hash2 = std::hash<ecs::archetype>{}(m_archetype2);
+    const auto hash3 = std::hash<ecs::archetype>{}(m_archetype3);
+
+    EXPECT_NE(hash1, hash2) << "Different archetypes should have different hashes";
+    EXPECT_NE(hash2, hash3) << "Different archetypes should have different hashes";
+    EXPECT_NE(hash1, hash3) << "Different archetypes should have different hashes";
+
+    EXPECT_EQ(hash1, std::hash<ecs::archetype>{}(ecs::archetype::make<FloatComponent>()))
+        << "Archetypes with the same components should have the same hash";
+    EXPECT_EQ(hash2, std::hash<ecs::archetype>{}(ecs::archetype::make<IntComponent, FloatComponent>()))
+        << "Archetypes with the same components declared in different order should have the same hash";
+}
