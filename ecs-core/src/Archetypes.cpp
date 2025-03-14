@@ -110,6 +110,16 @@ void* ecs::packed_component_array::add_component()
     return address;
 }
 
+void* ecs::packed_component_array::get_component(const size_t index) const
+{
+    if (index >= m_size)
+    {
+        throw std::out_of_range("Index out of bounds");
+    }
+
+    return static_cast<void*>(static_cast<char*>(m_data.get()) + m_instanceSize * index);
+}
+
 //--------------------------------------------------------------
 // ARCHETYPE DATABASE
 //--------------------------------------------------------------

@@ -171,3 +171,14 @@ TEST_F(TestArchetypes, TestAddComponentRealloc)
     ASSERT_EQ(packedArray.capacity(), 4) 
         << "The capacity of the packed array should be doubled when it reaches its limit";
 }
+
+TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
+{
+    ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    void* newComponent1 = packedArray.add_component();
+    void* newComponent2 = packedArray.add_component();
+
+    EXPECT_EQ(newComponent1, packedArray.get_component(0));
+    EXPECT_EQ(newComponent2, packedArray.get_component(1));
+    ASSERT_THROW(packedArray.get_component(2), std::out_of_range);
+}

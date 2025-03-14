@@ -114,6 +114,7 @@ namespace ecs
         inline size_t capacity() const { return m_capacity; }
 
         void* add_component();
+        void* get_component(const size_t index) const;
 
     private:
         std::unique_ptr<void, void(*)(void*)> m_data;
