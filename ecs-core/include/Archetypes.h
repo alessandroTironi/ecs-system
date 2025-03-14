@@ -113,6 +113,8 @@ namespace ecs
         inline size_t component_size() const { return m_instanceSize; }
         inline size_t reserved_size() const { return m_reservedSize; }
 
+        void* add_component();
+
     private:
         std::unique_ptr<void, void(*)(void*)> m_data;
         size_t m_count;

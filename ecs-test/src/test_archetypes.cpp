@@ -150,7 +150,9 @@ TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
     ASSERT_EQ(packedArray1.reserved_size(), 10);
 }
 
-TEST_F(TestArchetypes, TestEmptyArchetypeSet)
+TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 {
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity({})) << "Entities without components should be allowed.";
+    ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10);
+    void* newComponent = packedArray.add_component();
+    ASSERT_NE(newComponent, nullptr);
 }

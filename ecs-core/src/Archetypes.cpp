@@ -93,6 +93,14 @@ ecs::packed_component_array::~packed_component_array()
     m_data.release();
 }
 
+void* ecs::packed_component_array::add_component()
+{
+    // address of the next free slot of the array
+    void* address = static_cast<void*>(static_cast<char*>(m_data.get()) + m_instanceSize * m_count);
+    m_count += 1;
+    return address;
+}
+
 //--------------------------------------------------------------
 // ARCHETYPE DATABASE
 //--------------------------------------------------------------
