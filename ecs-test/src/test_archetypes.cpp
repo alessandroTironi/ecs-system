@@ -204,3 +204,10 @@ TEST_F(TestArchetypes, TestTemplatePackedComponentArray)
     component.m_value = 3.14f;
     ASSERT_NEAR(packedArray.get_component(0).m_value, 3.14f, 0.0001f);
 }
+
+TEST_F(TestArchetypes, TestEmplaceComponentInPackedArray)
+{
+    ecs::packed_component_array<FloatComponent> packedArray;
+    FloatComponent& component = packedArray.emplace_component(3.14f);
+    ASSERT_NEAR(packedArray.get_component(0).m_value, 3.14f, 0.0001f);
+}

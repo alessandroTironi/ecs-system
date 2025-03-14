@@ -139,6 +139,13 @@ namespace ecs
             return *static_cast<ComponentType*>(packed_component_array_t::add_component());
         }
 
+        template<typename... Args>
+        ComponentType& emplace_component(Args&&... args)
+        {
+            ComponentType* component = static_cast<ComponentType*>(packed_component_array_t::add_component());
+            return *new (component) ComponentType(std::forward<Args>(args)...);
+        }
+
         ComponentType& get_component(const size_t index) const
         {
             return *static_cast<ComponentType*>(packed_component_array_t::get_component(index));
