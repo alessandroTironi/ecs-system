@@ -141,8 +141,8 @@ TEST_F(TestArchetypes, TestHashing)
 
 TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
 {
-    ecs::packed_component_array packedArray1;
-    ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10));
+    ecs::packed_component_array_t packedArray1;
+    ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array_t(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10));
     ASSERT_EQ(packedArray1.component_size(), sizeof(FloatComponent));
     ASSERT_EQ(packedArray1.size(), 0);
     ASSERT_EQ(packedArray1.hash(), GetTypeHash(FloatComponent));
@@ -152,7 +152,7 @@ TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
 
 TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 {
-    ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10);
+    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10);
     void* newComponent = packedArray.add_component();
     EXPECT_EQ(packedArray.size(), 1);
     ASSERT_NE(newComponent, nullptr) << "Adding a component to a packed array should always return a valid pointer";
@@ -160,7 +160,7 @@ TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 
 TEST_F(TestArchetypes, TestAddComponentRealloc)
 {
-    ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
     void* newComponent1 = packedArray.add_component();
     void* newComponent2 = packedArray.add_component();
     void* newComponent3 = packedArray.add_component();
@@ -174,7 +174,7 @@ TEST_F(TestArchetypes, TestAddComponentRealloc)
 
 TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 {
-    ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
     void* newComponent1 = packedArray.add_component();
     void* newComponent2 = packedArray.add_component();
 
@@ -185,7 +185,7 @@ TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 
 TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
 {
-    ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
     void* c1 = packedArray.add_component();
     void* c2 = packedArray.add_component();
 
@@ -195,4 +195,12 @@ TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
     packedArray.delete_at(1);
     EXPECT_EQ(packedArray.size(), 1);
     EXPECT_EQ(packedArray.capacity(), 2);
+}
+
+TEST_F(TestArchetypes, TestTemplatePackedComponentArray)
+{
+    ecs::packed_component_array<FloatComponent> packedArray;
+    FloatComponent& component = packedArray.add_component();
+    component.m_value = 3.14f;
+    ASSERT_NEAR(packedArray.get_component(0).m_value, 3.14f, 0.0001f);
 }

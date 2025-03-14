@@ -73,17 +73,17 @@ namespace ecs
 
 namespace ecs
 {
-    struct packed_component_array
+    struct packed_component_array_t
     {
     public:
-        packed_component_array();
-        packed_component_array(const type_hash_t& hash, const size_t& sizeOfInstance,
+        packed_component_array_t();
+        packed_component_array_t(const type_hash_t& hash, const size_t& sizeOfInstance,
             const size_t initialSize = 4);
-        packed_component_array(const packed_component_array& other);
-        packed_component_array(packed_component_array&& other) noexcept;
-        ~packed_component_array();
+        packed_component_array_t(const packed_component_array_t& other);
+        packed_component_array_t(packed_component_array_t&& other) noexcept;
+        ~packed_component_array_t();
 
-        packed_component_array& operator=(packed_component_array&& other)
+        packed_component_array_t& operator=(packed_component_array_t&& other)
         {
             std::cout << "Calling move operator assignment" << std::endl;
             std::swap(m_data, other.m_data);
@@ -95,7 +95,7 @@ namespace ecs
             return *this;
         }
 
-        packed_component_array& operator=(const packed_component_array& other)
+        packed_component_array_t& operator=(const packed_component_array_t& other)
         {
             std::cout << "Calling copy operator assignment" << std::endl;
             m_hash = other.hash();
@@ -124,6 +124,25 @@ namespace ecs
         component_id m_serial;
         size_t m_instanceSize;
         size_t m_capacity;
+    };
+
+    template<typename ComponentType>
+    struct packed_component_array : public packed_component_array_t
+    {
+    public:
+        packed_component_array() 
+            : packed_component_array_t(GetTypeHash(ComponentType), sizeof(ComponentType))
+        {}
+
+        ComponentType& add_component()
+        {
+            return *static_cast<ComponentType*>(packed_component_array_t::add_component());
+        }
+
+        ComponentType& get_component(const size_t index) const
+        {
+            return *static_cast<ComponentType*>(packed_component_array_t::get_component(index));
+        }
     };
 
     class ArchetypesDatabase

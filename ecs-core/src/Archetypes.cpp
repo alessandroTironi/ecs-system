@@ -35,13 +35,13 @@ ecs::archetype ecs::archetype::make(std::initializer_list<component_id> componen
 // packed_component_array
 //--------------------------------------------------------------
 
-ecs::packed_component_array::packed_component_array() : m_data(nullptr, [](void*){}),
+ecs::packed_component_array_t::packed_component_array_t() : m_data(nullptr, [](void*){}),
     m_size{0}, m_hash{0}, m_serial{0}, m_instanceSize{0}, m_capacity{0}
 {
 
 }
 
-ecs::packed_component_array::packed_component_array(const type_hash_t& hash, const size_t& sizeOfInstance,
+ecs::packed_component_array_t::packed_component_array_t(const type_hash_t& hash, const size_t& sizeOfInstance,
     const size_t initialSize) : m_data(nullptr, [](void*){})
 {
     m_hash = hash;
@@ -62,7 +62,7 @@ ecs::packed_component_array::packed_component_array(const type_hash_t& hash, con
     m_data = std::unique_ptr<void, void(*)(void*)>(memory, deleter);
 }
 
-ecs::packed_component_array::packed_component_array(const ecs::packed_component_array& other)
+ecs::packed_component_array_t::packed_component_array_t(const ecs::packed_component_array_t& other)
     : m_data(nullptr, [](void*){})
 {
     std::cout << "Calling copy constructor" << std::endl;
@@ -75,7 +75,7 @@ ecs::packed_component_array::packed_component_array(const ecs::packed_component_
     std::memcpy(other.m_data.get(), m_data.get(), m_instanceSize * m_capacity);
 }
 
-ecs::packed_component_array::packed_component_array(ecs::packed_component_array&& other) noexcept
+ecs::packed_component_array_t::packed_component_array_t(ecs::packed_component_array_t&& other) noexcept
 : m_data(nullptr, [](void*){})
 {
     std::cout << "Calling move constructor" << std::endl;
@@ -88,12 +88,12 @@ ecs::packed_component_array::packed_component_array(ecs::packed_component_array&
     std::swap(m_capacity, other.m_capacity);
 }
 
-ecs::packed_component_array::~packed_component_array()
+ecs::packed_component_array_t::~packed_component_array_t()
 {
     m_data.release();
 }
 
-void* ecs::packed_component_array::add_component()
+void* ecs::packed_component_array_t::add_component()
 {
     if (m_size == m_capacity)
     {
@@ -110,7 +110,7 @@ void* ecs::packed_component_array::add_component()
     return address;
 }
 
-void* ecs::packed_component_array::get_component(const size_t index) const
+void* ecs::packed_component_array_t::get_component(const size_t index) const
 {
     if (index >= m_size)
     {
@@ -120,7 +120,7 @@ void* ecs::packed_component_array::get_component(const size_t index) const
     return static_cast<void*>(static_cast<char*>(m_data.get()) + m_instanceSize * index);
 }
 
-void ecs::packed_component_array::delete_at(const size_t index)
+void ecs::packed_component_array_t::delete_at(const size_t index)
 {
     if (index >= m_size)
     {
