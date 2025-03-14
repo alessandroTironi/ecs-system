@@ -144,15 +144,30 @@ TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
     ecs::packed_component_array packedArray1;
     ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10));
     ASSERT_EQ(packedArray1.component_size(), sizeof(FloatComponent));
-    ASSERT_EQ(packedArray1.count(), 0);
+    ASSERT_EQ(packedArray1.size(), 0);
     ASSERT_EQ(packedArray1.hash(), GetTypeHash(FloatComponent));
     ASSERT_EQ(packedArray1.component_serial(), ecs::ComponentsDatabase::GetComponentID<FloatComponent>());
-    ASSERT_EQ(packedArray1.reserved_size(), 10);
+    ASSERT_EQ(packedArray1.capacity(), 10);
 }
 
 TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 {
     ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10);
     void* newComponent = packedArray.add_component();
-    ASSERT_NE(newComponent, nullptr);
+    EXPECT_EQ(packedArray.size(), 1);
+    ASSERT_NE(newComponent, nullptr) << "Adding a component to a packed array should always return a valid pointer";
+}
+
+TEST_F(TestArchetypes, TestAddComponentRealloc)
+{
+    ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    void* newComponent1 = packedArray.add_component();
+    void* newComponent2 = packedArray.add_component();
+    void* newComponent3 = packedArray.add_component();
+    ASSERT_NE(newComponent3, nullptr) 
+        << "Adding a component to a packed array that reached the maximum capacity should reallocate memory and return a valid pointer";
+    EXPECT_TRUE(packedArray.size() <= packedArray.capacity()) 
+        << "The size of the packed array should always be less than or equal to its capacity";
+    ASSERT_EQ(packedArray.capacity(), 4) 
+        << "The capacity of the packed array should be doubled when it reaches its limit";
 }

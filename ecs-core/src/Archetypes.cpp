@@ -36,7 +36,7 @@ ecs::archetype ecs::archetype::make(std::initializer_list<component_id> componen
 //--------------------------------------------------------------
 
 ecs::packed_component_array::packed_component_array() : m_data(nullptr, [](void*){}),
-    m_count{0}, m_hash{0}, m_serial{0}, m_instanceSize{0}, m_reservedSize{0}
+    m_size{0}, m_hash{0}, m_serial{0}, m_instanceSize{0}, m_capacity{0}
 {
 
 }
@@ -46,12 +46,12 @@ ecs::packed_component_array::packed_component_array(const type_hash_t& hash, con
 {
     m_hash = hash;
     m_serial = ComponentsDatabase::GetComponentID(hash);
-    m_count = 0;
+    m_size = 0;
     m_instanceSize = sizeOfInstance;
-    m_reservedSize = initialSize;
+    m_capacity = initialSize;
 
     // allocate data
-    void* memory = ::operator new[](m_instanceSize * m_reservedSize);
+    void* memory = ::operator new[](m_instanceSize * m_capacity);
     
     // Custom deleter that properly destroys all elements and deallocates memory
     auto deleter = [](void* ptr) 
@@ -69,10 +69,10 @@ ecs::packed_component_array::packed_component_array(const ecs::packed_component_
 
     m_hash = other.hash();
     m_serial = other.component_serial();
-    m_count = other.count();
+    m_size = other.size();
     m_instanceSize = other.component_size();
-    m_reservedSize = other.reserved_size();
-    std::memcpy(other.m_data.get(), m_data.get(), m_instanceSize * m_reservedSize);
+    m_capacity = other.capacity();
+    std::memcpy(other.m_data.get(), m_data.get(), m_instanceSize * m_capacity);
 }
 
 ecs::packed_component_array::packed_component_array(ecs::packed_component_array&& other) noexcept
@@ -81,11 +81,11 @@ ecs::packed_component_array::packed_component_array(ecs::packed_component_array&
     std::cout << "Calling move constructor" << std::endl;
 
     std::swap(m_data, other.m_data);
-    std::swap(m_count, other.m_count);
+    std::swap(m_size, other.m_size);
     std::swap(m_hash, other.m_hash);
     std::swap(m_serial, other.m_serial);
     std::swap(m_instanceSize, other.m_instanceSize);
-    std::swap(m_reservedSize, other.m_reservedSize);
+    std::swap(m_capacity, other.m_capacity);
 }
 
 ecs::packed_component_array::~packed_component_array()
@@ -95,9 +95,18 @@ ecs::packed_component_array::~packed_component_array()
 
 void* ecs::packed_component_array::add_component()
 {
+    if (m_size == m_capacity)
+    {
+        // reallocate memory
+        m_capacity *= 2;
+        void* newMemory = ::operator new[](m_instanceSize * m_capacity);
+        std::memcpy(m_data.get(), newMemory, m_instanceSize * m_size);
+        m_data.reset(newMemory);
+    }
+
     // address of the next free slot of the array
-    void* address = static_cast<void*>(static_cast<char*>(m_data.get()) + m_instanceSize * m_count);
-    m_count += 1;
+    void* address = static_cast<void*>(static_cast<char*>(m_data.get()) + m_instanceSize * m_size);
+    m_size += 1;
     return address;
 }
 
