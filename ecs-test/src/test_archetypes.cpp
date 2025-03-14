@@ -182,3 +182,17 @@ TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
     EXPECT_EQ(newComponent2, packedArray.get_component(1));
     ASSERT_THROW(packedArray.get_component(2), std::out_of_range);
 }
+
+TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
+{
+    ecs::packed_component_array packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    void* c1 = packedArray.add_component();
+    void* c2 = packedArray.add_component();
+
+    ASSERT_THROW(packedArray.delete_at(2), std::out_of_range)
+        << "Attempting to delete a component at an invalid index should throw an out_of_range exception";
+
+    packedArray.delete_at(1);
+    EXPECT_EQ(packedArray.size(), 1);
+    EXPECT_EQ(packedArray.capacity(), 2);
+}

@@ -120,6 +120,20 @@ void* ecs::packed_component_array::get_component(const size_t index) const
     return static_cast<void*>(static_cast<char*>(m_data.get()) + m_instanceSize * index);
 }
 
+void ecs::packed_component_array::delete_at(const size_t index)
+{
+    if (index >= m_size)
+    {
+        throw std::out_of_range("Index out of bounds");
+    }
+
+    // move the last element to the deleted element 
+    void* last = get_component(m_size - 1);
+    void* toDelete = get_component(index);
+    std::memcpy(last, toDelete, m_instanceSize);
+    m_size -= 1;
+}
+
 //--------------------------------------------------------------
 // ARCHETYPE DATABASE
 //--------------------------------------------------------------

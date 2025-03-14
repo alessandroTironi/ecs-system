@@ -115,6 +115,7 @@ namespace ecs
 
         void* add_component();
         void* get_component(const size_t index) const;
+        void delete_at(const size_t index);
 
     private:
         std::unique_ptr<void, void(*)(void*)> m_data;
