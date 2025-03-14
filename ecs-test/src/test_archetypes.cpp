@@ -47,6 +47,7 @@ protected:
 
     void TearDown() override
     {
+        ecs::ArchetypesDatabase::Reset();
     }
 
     ecs::archetype m_emptyArchetype;
@@ -136,4 +137,20 @@ TEST_F(TestArchetypes, TestHashing)
         << "Archetypes with the same components should have the same hash";
     EXPECT_EQ(hash2, std::hash<ecs::archetype>{}(ecs::archetype::make<IntComponent, FloatComponent>()))
         << "Archetypes with the same components declared in different order should have the same hash";
+}
+
+TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
+{
+    ecs::packed_component_array packedArray1;
+    ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10));
+    ASSERT_EQ(packedArray1.component_size(), sizeof(FloatComponent));
+    ASSERT_EQ(packedArray1.count(), 0);
+    ASSERT_EQ(packedArray1.hash(), GetTypeHash(FloatComponent));
+    ASSERT_EQ(packedArray1.component_serial(), ecs::ComponentsDatabase::GetComponentID<FloatComponent>());
+    ASSERT_EQ(packedArray1.reserved_size(), 10);
+}
+
+TEST_F(TestArchetypes, TestEmptyArchetypeSet)
+{
+    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity({})) << "Entities without components should be allowed.";
 }
