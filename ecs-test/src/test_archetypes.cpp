@@ -211,3 +211,9 @@ TEST_F(TestArchetypes, TestEmplaceComponentInPackedArray)
     FloatComponent& component = packedArray.emplace_component(3.14f);
     ASSERT_NEAR(packedArray.get_component(0).m_value, 3.14f, 0.0001f);
 }
+
+TEST_F(TestArchetypes, TestAddEntity)
+{
+    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity({ GetTypeHash(FloatComponent) }));
+    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 1);
+}

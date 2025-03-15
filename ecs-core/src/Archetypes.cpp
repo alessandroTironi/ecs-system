@@ -143,14 +143,14 @@ std::unordered_map<size_t, ecs::ArchetypesDatabase::archetype_set> ecs::Archetyp
 ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype)
 {
     m_archetype = std::move(archetype);
+    for (auto componentSerialIt = archetype.begin(); componentSerialIt != archetype.end(); ++componentSerialIt)
+    {
+        // @todo 
+        m_componentArraysMap.emplace(*componentSerialIt, std::make_shared<packed_component_array_t>());
+    }
 }
 
-void ecs::ArchetypesDatabase::AddEntity(std::initializer_list<type_hash_t> componentTypes)
-{
-    throw std::runtime_error("Not implemented");
-}
-
-void ecs::ArchetypesDatabase::AddEntity(const std::vector<type_hash_t>& componentTypes)
+void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_list<ArchetypesDatabase::component_data> componentsData)
 {
     throw std::runtime_error("Not implemented");
 }

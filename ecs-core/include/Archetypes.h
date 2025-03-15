@@ -44,24 +44,6 @@ namespace ecs
     };
 }
 
-namespace std
-{
-    template<>
-    struct hash<ecs::archetype>
-    {
-        size_t operator()(const ecs::archetype& archetype) const
-        {
-            size_t seed = archetype.get_num_components();
-            for (auto componentIt = archetype.begin(); componentIt != archetype.end(); ++componentIt)
-            {
-                seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            }
-
-            return seed;
-        }
-    };
-}
-
 namespace ecs
 {
     template<typename FirstComponent, typename... OtherComponents>
@@ -69,6 +51,63 @@ namespace ecs
     {
         return std::hash<ecs::archetype>{}(archetype::make<FirstComponent, OtherComponents...>());
     }
+
+    static size_t CalculateArchetypeHash(std::initializer_list<type_hash_t> componentTypes)
+    {
+        size_t seed = componentTypes.size();
+        for (auto componentIt = componentTypes.begin(); componentIt != componentTypes.end(); ++componentIt)
+        {
+            const component_id componentSerial = ComponentsDatabase::GetComponentID(*componentIt);
+            seed ^= std::hash<ecs::component_id>{}(componentSerial) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
+    }
+
+    static size_t CalculateArchetypeHash(std::initializer_list<component_id> componentIDs)
+    {
+        size_t seed = componentIDs.size();
+        for (auto componentIt = componentIDs.begin(); componentIt != componentIDs.end(); ++componentIt)
+        {
+            seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
+    }
+
+    static size_t CalculateArchetypeHash(const std::set<component_id> componentIDs)
+    {
+        size_t seed = componentIDs.size();
+        for (auto componentIt = componentIDs.begin(); componentIt != componentIDs.end(); ++componentIt)
+        {
+            seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
+    }
+
+    static size_t CalculateArchetypeHash(const archetype& archetype)
+    {
+        size_t seed = archetype.get_num_components();
+        for (auto componentIt = archetype.begin(); componentIt != archetype.end(); ++componentIt)
+        {
+            seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
+    }
+}
+
+namespace std
+{
+    template<>
+    struct hash<ecs::archetype>
+    {
+        size_t operator()(const ecs::archetype& archetype) const
+        {
+            return ecs::CalculateArchetypeHash(archetype);
+        }
+    };
 }
 
 namespace ecs
@@ -155,9 +194,37 @@ namespace ecs
     class ArchetypesDatabase
     {
     public:
-        static void AddEntity(std::initializer_list<type_hash_t> componentTypes);
-        static void AddEntity(const std::vector<type_hash_t>& componentTypes);
+        struct component_data
+        {
+            component_data() = default;
+            component_data(const type_hash_t& hash, const size_t& dataSize, const size_t initialCapacity = 8)
+                : m_hash(hash), m_dataSize(dataSize), m_initialCapacity(initialCapacity)
+            {}
+            template<typename ComponentType>
+            static component_data make(const size_t initialCapacity)
+            {
+                return component_data(GetTypeHash(ComponentType), sizeof(ComponentType), initialCapacity);
+            }
 
+            inline type_hash_t hash() const { return m_hash; }
+            inline size_t data_size() const { return m_dataSize; }
+            inline size_t initial_capacity() const { return m_initialCapacity; }
+
+        private:
+            type_hash_t m_hash;
+            size_t m_dataSize;
+            size_t m_initialCapacity;
+        };
+
+        static void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
+
+        template<typename... Components>
+        static void AddEntity(entity_id entity)
+        {
+            AddEntity(entity, { component_data::make<Components>(8)...});
+        }
+
+        static size_t GetNumArchetypes() { return s_archetypesMap.size(); }
         static void Reset();
 
     private:
@@ -167,7 +234,8 @@ namespace ecs
             archetype_set(const archetype& archetype);
         private:
             archetype m_archetype;
-            std::unordered_map<component_id, std::shared_ptr<component_array_base>> m_componentArraysMap;
+            std::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;
+            std::unordered_map<entity_id, size_t> m_entityToIndexMap;
         };
 
         static std::unordered_map<size_t, archetype_set> s_archetypesMap;
