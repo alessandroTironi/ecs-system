@@ -70,7 +70,7 @@ TEST_F(TestArchetypes, TestEmptyArchetype)
 
 TEST_F(TestArchetypes, TestVectorMoveConstructor)
 {
-    std::set<ecs::component_id> components = {};
+    std::set<ecs::type_hash_t> components = {};
     ASSERT_THROW(ecs::archetype(std::move(components)), std::invalid_argument) <<   "It should not be possible to create an empty archetype: "
                                                                                     "An invalid_argument exception should be thrown";
     std::set<ecs::component_id> components2 = { 0 };
@@ -104,11 +104,11 @@ TEST_F(TestArchetypes, TestIterator)
 
 TEST_F(TestArchetypes, TestComponentsOrder)
 {
-    std::vector<ecs::component_id> componentIDs =
+    std::vector<ecs::type_hash_t> componentIDs =
     {
-        ecs::ComponentsDatabase::GetComponentID<FloatComponent>(),
-        ecs::ComponentsDatabase::GetComponentID<DoubleComponent>(),
-        ecs::ComponentsDatabase::GetComponentID<IntComponent>(),
+        GetTypeHash(FloatComponent),
+        GetTypeHash(DoubleComponent),
+        GetTypeHash(IntComponent),
     };
 
     std::sort(componentIDs.begin(), componentIDs.end());
@@ -117,14 +117,19 @@ TEST_F(TestArchetypes, TestComponentsOrder)
     size_t index = 0;
     for (auto componentsIt = m_archetype3.begin(); componentsIt != m_archetype3.end(); ++componentsIt)
     {
-        const ecs::component_id thisId = *componentsIt;
-        EXPECT_EQ(thisId, componentIDs[index++]) << "Components of an archetype should always be sorted by their serial ID, "
-                                                    "to ensure consistency of hashes.";
+        const ecs::type_hash_t thisHash = *componentsIt;
+        EXPECT_EQ(thisHash, componentIDs[index++]) 
+            <<  "Components of an archetype should always be sorted by their serial ID, "
+                "to ensure consistency of hashes.";
     }   
 }
 
 TEST_F(TestArchetypes, TestHashing)
 {
+    ecs::ComponentsDatabase::RegisterComponent<FloatComponent>();
+    ecs::ComponentsDatabase::RegisterComponent<IntComponent>(); 
+    ecs::ComponentsDatabase::RegisterComponent<DoubleComponent>();
+
     const auto hash1 = std::hash<ecs::archetype>{}(m_archetype1);
     const auto hash2 = std::hash<ecs::archetype>{}(m_archetype2);
     const auto hash3 = std::hash<ecs::archetype>{}(m_archetype3);
@@ -216,6 +221,7 @@ TEST_F(TestArchetypes, TestEmplaceComponentInPackedArray)
 
 TEST_F(TestArchetypes, TestAddEntity)
 {
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity({ GetTypeHash(FloatComponent) }));
+    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0));
     EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 1);
+    
 }

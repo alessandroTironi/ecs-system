@@ -15,32 +15,33 @@ namespace ecs
     {
     public:
         archetype();
-        archetype(std::initializer_list<component_id> signature);
-        archetype(const std::set<component_id>&& signature);
+        archetype(std::initializer_list<type_hash_t> signature);
+        archetype(std::initializer_list<component_data> componentsData);
+        archetype(const std::set<type_hash_t>&& signature);
 
-        static archetype make(std::initializer_list<component_id> components);
+        static archetype make(std::initializer_list<type_hash_t> components);
 
         template<typename FirstComponent, typename... OtherComponents>
         static archetype make()
         {
-            std::initializer_list<component_id> signature = 
+            std::initializer_list<type_hash_t> signature = 
             { 
-                ComponentsDatabase::GetComponentID<FirstComponent>(), 
-                ComponentsDatabase::GetComponentID<OtherComponents>()... 
+                GetTypeHash(FirstComponent), 
+                GetTypeHash(OtherComponents)... 
             };
 
             return make(signature);
         }
 
-        inline bool is_null() const { return m_signature.empty(); }
+        inline bool is_null() const { return m_componentTypes.empty(); }
 
-        inline size_t get_num_components() const { return m_signature.size(); }
+        inline size_t get_num_components() const { return m_componentTypes.size(); }
 
-        inline auto begin() const { return m_signature.begin(); }
-        inline auto end() const { return m_signature.end(); }
+        inline auto begin() const { return m_componentTypes.begin(); }
+        inline auto end() const { return m_componentTypes.end(); }
 
     private:
-        std::set<component_id> m_signature;
+        std::set<type_hash_t> m_componentTypes;
     };
 }
 
@@ -51,20 +52,6 @@ namespace ecs
     {
         return std::hash<ecs::archetype>{}(archetype::make<FirstComponent, OtherComponents...>());
     }
-
-    /*
-    static size_t CalculateArchetypeHash(std::initializer_list<type_hash_t> componentTypes)
-    {
-        size_t seed = componentTypes.size();
-        for (auto componentIt = componentTypes.begin(); componentIt != componentTypes.end(); ++componentIt)
-        {
-            const component_id componentSerial = ComponentsDatabase::GetComponentID(*componentIt);
-            seed ^= std::hash<ecs::component_id>{}(componentSerial) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-
-        return seed;
-    }
-        */
 
     static size_t CalculateArchetypeHash(std::initializer_list<component_id> componentIDs)
     {
@@ -93,11 +80,13 @@ namespace ecs
         size_t seed = archetype.get_num_components();
         for (auto componentIt = archetype.begin(); componentIt != archetype.end(); ++componentIt)
         {
-            seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<ecs::component_id>{}(ComponentsDatabase::GetComponentID(*componentIt)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
 
         return seed;
     }
+
+    static size_t CalculateArchetypeHash(std::initializer_list<component_data> componentsData);
 }
 
 namespace std
@@ -196,8 +185,6 @@ namespace ecs
     class ArchetypesDatabase
     {
     public:
-        static void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
-
         template<typename... Components>
         static void AddEntity(entity_id entity)
         {
@@ -212,7 +199,11 @@ namespace ecs
         struct archetype_set
         {
         public:
+            archetype_set() = default;
             archetype_set(const archetype& archetype);
+
+            /* Adds one element to each packed_component_array struct, returning the common index. */
+            size_t add_entity(entity_id entity);
         private:
             archetype m_archetype;
             std::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;
@@ -220,5 +211,8 @@ namespace ecs
         };
 
         static std::unordered_map<size_t, archetype_set> s_archetypesMap;
+
+        static void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
+        static void AddEntity(entity_id entity, const archetype& archetype);
     };
 }

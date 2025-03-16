@@ -6,27 +6,35 @@ ecs::archetype::archetype()
     
 }
 
-ecs::archetype::archetype(std::initializer_list<ecs::component_id> components)
+ecs::archetype::archetype(std::initializer_list<ecs::type_hash_t> components)
 {
     if (components.size() == 0)
     {
         throw std::invalid_argument("Attempted to create an archetype with no components");
     }
 
-    m_signature = std::move(components);
+    m_componentTypes = std::move(components);
 }
 
-ecs::archetype::archetype(const std::set<ecs::component_id>&& components)
+ecs::archetype::archetype(std::initializer_list<ecs::component_data> componentsData)
+{
+    for (auto componentDataIt = componentsData.begin(); componentDataIt != componentsData.end(); ++componentDataIt)
+    {
+        m_componentTypes.insert((*componentDataIt).hash());
+    }
+}
+
+ecs::archetype::archetype(const std::set<ecs::type_hash_t>&& components)
 {
     if (components.size() == 0)
     {
         throw std::invalid_argument("Attempted to create an archetype with no components");
     }
 
-    m_signature = std::move(components);
+    m_componentTypes = std::move(components);
 }
 
-ecs::archetype ecs::archetype::make(std::initializer_list<component_id> components)
+ecs::archetype ecs::archetype::make(std::initializer_list<type_hash_t> components)
 {
     return ecs::archetype(std::move(components));
 }
@@ -135,6 +143,21 @@ void ecs::packed_component_array_t::delete_at(const size_t index)
 }
 
 //--------------------------------------------------------------
+// ARCHETYPE HASHING
+//--------------------------------------------------------------
+
+size_t ecs::CalculateArchetypeHash(std::initializer_list<ecs::component_data> componentsData)
+{
+    size_t seed = componentsData.size();
+    for (auto componentIt = componentsData.begin(); componentIt != componentsData.end(); ++componentIt)
+    {
+        seed ^= std::hash<ecs::component_id>{}(ComponentsDatabase::GetComponentID((*componentIt).hash())) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    return seed;
+}
+
+//--------------------------------------------------------------
 // ARCHETYPE DATABASE
 //--------------------------------------------------------------
 
@@ -143,12 +166,55 @@ std::unordered_map<size_t, ecs::ArchetypesDatabase::archetype_set> ecs::Archetyp
 ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype)
 {
     m_archetype = std::move(archetype);
-    // @todo
+
+    for (auto componentIt = m_archetype.begin(); componentIt != m_archetype.end(); ++componentIt)
+    {
+        ecs::component_data componentData;
+        if (!ecs::ComponentsDatabase::TryGetComponentData(*componentIt, componentData))
+        {
+            throw std::invalid_argument("Component not found in the database. Call RegisterComponent() first.");
+        }
+        
+        m_componentArraysMap.emplace(componentData.serial(), std::make_shared<packed_component_array_t>(componentData.hash(),
+            componentData.data_size(), componentData.serial(), componentData.initial_capacity()));
+    }
+}
+
+size_t ecs::ArchetypesDatabase::archetype_set::add_entity(entity_id entity)
+{
+    size_t entityIndex = 0;
+    for (auto packedArrayIt = m_componentArraysMap.begin(); packedArrayIt != m_componentArraysMap.end(); ++packedArrayIt)
+    {
+        entityIndex = packedArrayIt->second->size();
+        packedArrayIt->second->add_component();
+    }
+
+    m_entityToIndexMap[entity] = entityIndex;
+    return entityIndex;
 }
 
 void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_list<ecs::component_data> componentsData)
 {
-    throw std::runtime_error("Not implemented");
+    const size_t archetypeHash = CalculateArchetypeHash(componentsData);
+    AddEntity(entity, archetype(componentsData));
+}
+
+void ecs::ArchetypesDatabase::AddEntity(entity_id entity, const ecs::archetype& archetype)
+{
+    const size_t archetypeHash = CalculateArchetypeHash(archetype);
+    auto optionalArchetypeSet = s_archetypesMap.find(archetypeHash);
+    if (optionalArchetypeSet == s_archetypesMap.end())
+    {
+        // create and add new archetype set 
+        s_archetypesMap.emplace(archetypeHash, archetype_set(archetype));
+        // @todo can we avoid a second lookup here?
+        s_archetypesMap[archetypeHash].add_entity(entity);
+    }
+    else
+    {
+        // just add the entity
+        optionalArchetypeSet->second.add_entity(entity);
+    }
 }
 
 void ecs::ArchetypesDatabase::Reset()

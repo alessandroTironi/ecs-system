@@ -18,3 +18,17 @@ ecs::component_id ecs::ComponentsDatabase::AddComponentData(const type_hash_t co
 		return optionalComponentData->second.serial();
 	}
 }
+
+bool ecs::ComponentsDatabase::TryGetComponentData(const type_hash_t componentHash, component_data& outComponentData)
+{
+	auto optionalComponentData = s_componentsClassMap.find(componentHash);
+	if (optionalComponentData == s_componentsClassMap.end())
+	{
+		return false;
+	}
+	else
+	{
+		outComponentData = optionalComponentData->second;
+		return true;
+	}
+}

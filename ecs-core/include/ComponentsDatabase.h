@@ -31,12 +31,20 @@ namespace ecs
             auto optionalComponentData = s_componentsClassMap.find(componentHash);
             if (optionalComponentData == s_componentsClassMap.end())
             {
-                throw std::invalid_argument("Component not found in the database");
+                throw std::invalid_argument("Component not found in the database. Call RegisterComponent() first.");
             }
             else
             {
                 return optionalComponentData->second.serial();
             }
+        }
+
+        static bool TryGetComponentData(const type_hash_t componentHash, component_data& outComponentData);
+
+        template<typename ComponentType>
+        static void RegisterComponent(const size_t initialCapacity = 8)
+        {
+            AddComponentData(GetTypeHash(ComponentType), sizeof(ComponentType), initialCapacity);
         }
 
     private:
