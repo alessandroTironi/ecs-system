@@ -42,10 +42,10 @@ ecs::packed_component_array_t::packed_component_array_t() : m_data(nullptr, [](v
 }
 
 ecs::packed_component_array_t::packed_component_array_t(const type_hash_t& hash, const size_t& sizeOfInstance,
-    const size_t initialSize) : m_data(nullptr, [](void*){})
+    const component_id serial, const size_t initialSize) : m_data(nullptr, [](void*){})
 {
     m_hash = hash;
-    m_serial = ComponentsDatabase::GetComponentID(hash);
+    m_serial = serial;
     m_size = 0;
     m_instanceSize = sizeOfInstance;
     m_capacity = initialSize;
@@ -143,14 +143,10 @@ std::unordered_map<size_t, ecs::ArchetypesDatabase::archetype_set> ecs::Archetyp
 ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype)
 {
     m_archetype = std::move(archetype);
-    for (auto componentSerialIt = archetype.begin(); componentSerialIt != archetype.end(); ++componentSerialIt)
-    {
-        // @todo 
-        m_componentArraysMap.emplace(*componentSerialIt, std::make_shared<packed_component_array_t>());
-    }
+    // @todo
 }
 
-void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_list<ArchetypesDatabase::component_data> componentsData)
+void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_list<ecs::component_data> componentsData)
 {
     throw std::runtime_error("Not implemented");
 }

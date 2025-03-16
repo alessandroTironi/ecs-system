@@ -25,8 +25,8 @@ namespace ecs
         {
             std::initializer_list<component_id> signature = 
             { 
-                ComponentsDatabase::GetComponentID(GetTypeHash(FirstComponent)), 
-                ComponentsDatabase::GetComponentID(GetTypeHash(OtherComponents))... 
+                ComponentsDatabase::GetComponentID<FirstComponent>(), 
+                ComponentsDatabase::GetComponentID<OtherComponents>()... 
             };
 
             return make(signature);
@@ -52,6 +52,7 @@ namespace ecs
         return std::hash<ecs::archetype>{}(archetype::make<FirstComponent, OtherComponents...>());
     }
 
+    /*
     static size_t CalculateArchetypeHash(std::initializer_list<type_hash_t> componentTypes)
     {
         size_t seed = componentTypes.size();
@@ -63,6 +64,7 @@ namespace ecs
 
         return seed;
     }
+        */
 
     static size_t CalculateArchetypeHash(std::initializer_list<component_id> componentIDs)
     {
@@ -117,7 +119,7 @@ namespace ecs
     public:
         packed_component_array_t();
         packed_component_array_t(const type_hash_t& hash, const size_t& sizeOfInstance,
-            const size_t initialSize = 4);
+            const component_id serial, const size_t initialSize = 4);
         packed_component_array_t(const packed_component_array_t& other);
         packed_component_array_t(packed_component_array_t&& other) noexcept;
         ~packed_component_array_t();
@@ -170,7 +172,7 @@ namespace ecs
     {
     public:
         packed_component_array() 
-            : packed_component_array_t(GetTypeHash(ComponentType), sizeof(ComponentType))
+            : packed_component_array_t(GetTypeHash(ComponentType), sizeof(ComponentType), ComponentsDatabase::GetComponentID<ComponentType>())
         {}
 
         ComponentType& add_component()
@@ -194,34 +196,13 @@ namespace ecs
     class ArchetypesDatabase
     {
     public:
-        struct component_data
-        {
-            component_data() = default;
-            component_data(const type_hash_t& hash, const size_t& dataSize, const size_t initialCapacity = 8)
-                : m_hash(hash), m_dataSize(dataSize), m_initialCapacity(initialCapacity)
-            {}
-            template<typename ComponentType>
-            static component_data make(const size_t initialCapacity)
-            {
-                return component_data(GetTypeHash(ComponentType), sizeof(ComponentType), initialCapacity);
-            }
-
-            inline type_hash_t hash() const { return m_hash; }
-            inline size_t data_size() const { return m_dataSize; }
-            inline size_t initial_capacity() const { return m_initialCapacity; }
-
-        private:
-            type_hash_t m_hash;
-            size_t m_dataSize;
-            size_t m_initialCapacity;
-        };
-
         static void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
 
         template<typename... Components>
         static void AddEntity(entity_id entity)
         {
-            AddEntity(entity, { component_data::make<Components>(8)...});
+            AddEntity(entity, { component_data(GetTypeHash(Components), sizeof(Components), 
+                ComponentsDatabase::GetComponentID<Components>(), 8)...});
         }
 
         static size_t GetNumArchetypes() { return s_archetypesMap.size(); }

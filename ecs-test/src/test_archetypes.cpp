@@ -142,7 +142,8 @@ TEST_F(TestArchetypes, TestHashing)
 TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
 {
     ecs::packed_component_array_t packedArray1;
-    ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array_t(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10));
+    ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array_t(GetTypeHash(FloatComponent), sizeof(FloatComponent),
+        ecs::ComponentsDatabase::GetComponentID<FloatComponent>(), 10));
     ASSERT_EQ(packedArray1.component_size(), sizeof(FloatComponent));
     ASSERT_EQ(packedArray1.size(), 0);
     ASSERT_EQ(packedArray1.hash(), GetTypeHash(FloatComponent));
@@ -185,7 +186,8 @@ TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 
 TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
 {
-    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 
+        ecs::ComponentsDatabase::GetComponentID<FloatComponent>(), 2);
     void* c1 = packedArray.add_component();
     void* c2 = packedArray.add_component();
 

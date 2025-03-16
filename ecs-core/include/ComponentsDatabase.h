@@ -4,11 +4,10 @@
 #include <typeinfo>
 #include "Types.h"
 #include "IDGenerator.h"
+#include "ComponentData.h"
 
 namespace ecs
 {
-    typedef unsigned short component_id;
-
     class ComponentsDatabase
     {
     public:
@@ -16,14 +15,35 @@ namespace ecs
         static component_id GetComponentID()
         {
             const type_hash_t componentHash = GetTypeHash(ComponentType);
-            return GetComponentID(componentHash);
+            auto optionalComponentData = s_componentsClassMap.find(componentHash);
+            if (optionalComponentData == s_componentsClassMap.end())
+            {
+                return AddComponentData(componentHash, sizeof(ComponentType), 8);
+            }
+            else
+            {
+                return optionalComponentData->second.serial();
+            }
         }
 
-        static component_id GetComponentID(const type_hash_t componentHash);
+        static component_id GetComponentID(const type_hash_t componentHash)
+        {
+            auto optionalComponentData = s_componentsClassMap.find(componentHash);
+            if (optionalComponentData == s_componentsClassMap.end())
+            {
+                throw std::invalid_argument("Component not found in the database");
+            }
+            else
+            {
+                return optionalComponentData->second.serial();
+            }
+        }
 
     private:
+        static ecs::component_id AddComponentData(const type_hash_t componentHash, const size_t dataSize, const size_t initialCapacity = 8);
+
         static IDGenerator<component_id> s_componentIDGenerator;
 
-        static std::unordered_map<size_t, component_id> s_componentsClassMap;
+        static std::unordered_map<size_t, component_data> s_componentsClassMap;
     };
 }
