@@ -2,7 +2,9 @@
 #include <stdexcept>
 #include <algorithm>
 #include "Archetypes.h"
-#include "ComponentArray.h"
+#include "ArchetypesDatabase.h"
+#include "PackedComponentArray.h"
+#include "ComponentData.h"
 
 using ::testing::Test;
 

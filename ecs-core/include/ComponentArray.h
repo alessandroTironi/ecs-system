@@ -7,11 +7,10 @@
 #include <unordered_map>
 #include <vector>
 #include <bit>
+#include "ComponentData.h"
 
 namespace ecs
 {
-    struct IComponent {};
-
     struct component_array_base
     {
     public:

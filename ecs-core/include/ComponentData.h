@@ -6,6 +6,8 @@ namespace ecs
 {
     typedef unsigned short component_id;
 
+    struct IComponent {};
+
     struct component_data
     {
         component_data() = default;
