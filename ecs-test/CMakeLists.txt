@@ -39,6 +39,7 @@ add_executable(ecs_test
   "src/test_ecs.cpp" 
   "src/test_unique_ids.cpp"
   "src/test_archetypes.cpp"
+  "src/test_queries.cpp"
 )
 
 # Link to the sprite-eater-core library and gtest
