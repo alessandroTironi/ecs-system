@@ -220,7 +220,7 @@ namespace ecs
             archetype m_archetype;
             std::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;
             std::unordered_map<entity_id, size_t> m_entityToIndexMap;
-            std::unordered_map<size_t, entity_id> m_indexToEntityMap;
+            std::unordered_map<size_t, entity_id> m_indexToEntityMap; //@todo replace this with a plain array for cache locality
         };
 
         static std::unordered_map<size_t, archetype_set> s_archetypesMap;
