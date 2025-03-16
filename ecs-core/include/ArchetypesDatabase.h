@@ -24,6 +24,12 @@ namespace ecs
 
         static void RemoveEntity(entity_id entity);
 
+		template<typename ComponentType>
+		static void AddComponent(entity_id entity)
+		{
+			AddComponent(entity, GetTypeHash(ComponentType));
+		}
+
         static size_t GetNumArchetypes() { return s_archetypesMap.size(); }
         static void Reset();
 
@@ -54,5 +60,9 @@ namespace ecs
         static void AddEntity(entity_id entity, const archetype& archetype);
 
         static void* GetComponent(entity_id entity, const type_hash_t componentHash);
+
+		static void AddComponent(entity_id entity, const type_hash_t componentHash);
+
+		static void MoveEntity(entity_id entity, const type_hash_t targetArchetypeHash);
     };
 }

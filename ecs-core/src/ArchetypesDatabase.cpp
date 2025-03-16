@@ -119,6 +119,16 @@ void* ecs::ArchetypesDatabase::GetComponent(entity_id entity, const type_hash_t 
     return set.get_component_at_index(componentHash, entityIndex);
 }
 
+void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const type_hash_t componentHash)
+{
+    throw std::runtime_error("Not implemented");
+}
+
+void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const type_hash_t targetArchetype)
+{
+    
+}
+
 void ecs::ArchetypesDatabase::RemoveEntity(entity_id entity)
 {
     auto optionalArchetypeHash = s_entitiesArchetypeHashesMap.find(entity);
