@@ -191,6 +191,7 @@ size_t ecs::ArchetypesDatabase::archetype_set::add_entity(entity_id entity)
     }
 
     m_entityToIndexMap[entity] = entityIndex;
+    m_indexToEntityMap[entityIndex] = entity;
     return entityIndex;
 }
 
@@ -221,6 +222,27 @@ void* ecs::ArchetypesDatabase::archetype_set::get_component_at_index(const type_
     }
 
     throw std::runtime_error("Found a null packed_component_array");
+}
+
+void ecs::ArchetypesDatabase::archetype_set::remove_entity(ecs::entity_id entity)
+{
+    auto optionalIndex = m_entityToIndexMap.find(entity);
+    if (optionalIndex == m_entityToIndexMap.end())
+    {
+        return;
+    }
+
+    const size_t index = optionalIndex->second;
+    const size_t lastIndex = m_entityToIndexMap.size() - 1;
+    const entity_id lastEntity = m_indexToEntityMap[lastIndex];
+    for (auto packedArrayIt = m_componentArraysMap.begin(); packedArrayIt != m_componentArraysMap.end(); ++packedArrayIt)
+    {
+        packedArrayIt->second->delete_at(index);
+    }
+
+    m_entityToIndexMap[lastEntity] = index;
+    m_indexToEntityMap[index] = lastEntity;
+    m_indexToEntityMap.erase(lastIndex);
 }
 
 void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_list<ecs::component_data> componentsData)
@@ -256,6 +278,21 @@ void* ecs::ArchetypesDatabase::GetComponent(entity_id entity, const type_hash_t 
     archetype_set& set = s_archetypesMap.at(archetypeHash);
     size_t entityIndex = set.get_entity_index(entity);
     return set.get_component_at_index(componentHash, entityIndex);
+}
+
+void ecs::ArchetypesDatabase::RemoveEntity(entity_id entity)
+{
+    auto optionalArchetypeHash = s_entitiesArchetypeHashesMap.find(entity);
+    if (optionalArchetypeHash != s_entitiesArchetypeHashesMap.end())
+    {
+        auto optionalArchetypeSet = s_archetypesMap.find(optionalArchetypeHash->second);
+        if (optionalArchetypeSet != s_archetypesMap.end())
+        {
+            optionalArchetypeSet->second.remove_entity(entity);
+        }
+
+        s_entitiesArchetypeHashesMap.erase(entity);
+    }
 }
 
 void ecs::ArchetypesDatabase::Reset()

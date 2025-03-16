@@ -241,3 +241,13 @@ TEST_F(TestArchetypes, TestGetComponentFromArchetypesDatabase)
     ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(1), std::out_of_range)
         <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
 }
+
+TEST_F(TestArchetypes, TestRemoveEntityFromArchetypeDatabase)
+{
+    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
+    ASSERT_NO_THROW(ecs::ArchetypesDatabase::RemoveEntity(0));
+
+    ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0), std::out_of_range);
+
+    ASSERT_NO_THROW(ecs::ArchetypesDatabase::RemoveEntity(1));
+}

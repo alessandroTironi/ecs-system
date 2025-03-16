@@ -198,6 +198,8 @@ namespace ecs
             return *static_cast<ComponentType*>(GetComponent(entity, GetTypeHash(ComponentType)));
         }
 
+        static void RemoveEntity(entity_id entity);
+
         static size_t GetNumArchetypes() { return s_archetypesMap.size(); }
         static void Reset();
 
@@ -213,10 +215,12 @@ namespace ecs
             size_t get_entity_index(entity_id entity) const;
             bool try_get_entity_index(entity_id entity, size_t& index) const;
             void* get_component_at_index(const type_hash_t componentHash, const size_t index) const;
+            void remove_entity(entity_id entity);
         private:
             archetype m_archetype;
             std::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;
             std::unordered_map<entity_id, size_t> m_entityToIndexMap;
+            std::unordered_map<size_t, entity_id> m_indexToEntityMap;
         };
 
         static std::unordered_map<size_t, archetype_set> s_archetypesMap;
