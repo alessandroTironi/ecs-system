@@ -223,5 +223,21 @@ TEST_F(TestArchetypes, TestAddEntity)
 {
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0));
     EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 1);
-    
+
+    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity<>(1));
+}
+
+TEST_F(TestArchetypes, TestGetComponentFromArchetypesDatabase)
+{
+    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
+    FloatComponent& component = ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0);
+    component.m_value = 3.0f;
+    EXPECT_NEAR(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0).m_value, 3.0f, 0.0001f);
+
+    ASSERT_THROW(FloatComponent& unexistingComponent = ecs::ArchetypesDatabase::GetComponent<FloatComponent>(1), std::out_of_range)
+        <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
+
+    ecs::ArchetypesDatabase::AddEntity<IntComponent>(1);
+    ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(1), std::out_of_range)
+        <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
 }

@@ -162,6 +162,7 @@ size_t ecs::CalculateArchetypeHash(std::initializer_list<ecs::component_data> co
 //--------------------------------------------------------------
 
 std::unordered_map<size_t, ecs::ArchetypesDatabase::archetype_set> ecs::ArchetypesDatabase::s_archetypesMap;
+std::unordered_map<ecs::entity_id, size_t> ecs::ArchetypesDatabase::s_entitiesArchetypeHashesMap;
 
 ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype)
 {
@@ -193,6 +194,35 @@ size_t ecs::ArchetypesDatabase::archetype_set::add_entity(entity_id entity)
     return entityIndex;
 }
 
+size_t ecs::ArchetypesDatabase::archetype_set::get_entity_index(entity_id entity) const
+{
+    return m_entityToIndexMap.at(entity);
+}
+
+bool ecs::ArchetypesDatabase::archetype_set::try_get_entity_index(entity_id entity, size_t& index) const
+{
+    auto optionalIndex = m_entityToIndexMap.find(entity);
+    if (optionalIndex != m_entityToIndexMap.end())
+    {
+        index = optionalIndex->second;
+        return true;
+    }
+
+    return false;
+}
+
+void* ecs::ArchetypesDatabase::archetype_set::get_component_at_index(const type_hash_t componentHash, const size_t index) const
+{
+    const ecs::component_id componentID = ecs::ComponentsDatabase::GetComponentID(componentHash);
+    std::shared_ptr<packed_component_array_t> packedArray = m_componentArraysMap.at(componentID);
+    if (packedArray.get() != nullptr)
+    {
+        return packedArray->get_component(index);
+    }
+
+    throw std::runtime_error("Found a null packed_component_array");
+}
+
 void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_list<ecs::component_data> componentsData)
 {
     const size_t archetypeHash = CalculateArchetypeHash(componentsData);
@@ -215,6 +245,17 @@ void ecs::ArchetypesDatabase::AddEntity(entity_id entity, const ecs::archetype& 
         // just add the entity
         optionalArchetypeSet->second.add_entity(entity);
     }
+
+    // associate the entity to that archetype hash.
+    s_entitiesArchetypeHashesMap[entity] = archetypeHash;
+}
+
+void* ecs::ArchetypesDatabase::GetComponent(entity_id entity, const type_hash_t componentHash)
+{
+    const size_t archetypeHash = s_entitiesArchetypeHashesMap.at(entity);
+    archetype_set& set = s_archetypesMap.at(archetypeHash);
+    size_t entityIndex = set.get_entity_index(entity);
+    return set.get_component_at_index(componentHash, entityIndex);
 }
 
 void ecs::ArchetypesDatabase::Reset()
