@@ -50,6 +50,7 @@ namespace ecs
             /* Adds one element to each packed_component_array struct, returning the common index. */
             size_t add_entity(entity_id entity);
             size_t get_entity_index(entity_id entity) const;
+            size_t get_num_entities() const { return m_entityToIndexMap.size(); }
             bool try_get_entity_index(entity_id entity, size_t& index) const;
             void* get_component_at_index(const type_hash_t componentHash, const size_t index) const;
             void remove_entity(entity_id entity);
@@ -73,5 +74,7 @@ namespace ecs
         static void RemoveComponent(entity_id entity, const type_hash_t componentHash);
 
 		static void MoveEntity(entity_id entity, const archetype& targetArchetype);
+
+        static void RemoveArchetypeSet(const archetype& archetype);
     };
 }

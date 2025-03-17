@@ -79,9 +79,13 @@ void ecs::ArchetypesDatabase::archetype_set::remove_entity(ecs::entity_id entity
         packedArrayIt->second->delete_at(index);
     }
 
-    m_entityToIndexMap[lastEntity] = index;
-    m_indexToEntityMap[index] = lastEntity;
     m_indexToEntityMap.erase(lastIndex);
+    m_entityToIndexMap.erase(entity);
+    if (entity != lastEntity)
+    {
+        m_entityToIndexMap[lastEntity] = index;
+        m_indexToEntityMap[index] = lastEntity;
+    }
 }
 
 void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_list<ecs::component_data> componentsData)
@@ -198,6 +202,12 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targ
 
     // update entities to archetypes map
     s_entitiesArchetypeHashesMap[entity] = targetArchetypeHash;
+
+    // remove old set if empty
+    if (currentSet.get_num_entities() == 0)
+    {
+        RemoveArchetypeSet(currentSet.get_archetype());
+    }
 }
 
 void ecs::ArchetypesDatabase::RemoveEntity(entity_id entity)
@@ -218,4 +228,9 @@ void ecs::ArchetypesDatabase::RemoveEntity(entity_id entity)
 void ecs::ArchetypesDatabase::Reset()
 {
     s_archetypesMap.clear();
+}
+
+void ecs::ArchetypesDatabase::RemoveArchetypeSet(const ecs::archetype& archetype)
+{
+    s_archetypesMap.erase(CalculateArchetypeHash(archetype));
 }
