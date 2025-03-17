@@ -141,7 +141,16 @@ void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const type_hash_t c
 
 void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const type_hash_t componentHash)
 {
-    throw std::runtime_error("Not implemented");
+    const archetype& currentArchetype = GetArchetype(entity);
+    if (!currentArchetype.has_component(componentHash))
+    {
+        return;
+    }
+
+    archetype newArchetype = currentArchetype;
+    newArchetype.remove_component(componentHash);
+
+    MoveEntity(entity, newArchetype);
 }
 
 void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targetArchetype)
@@ -166,6 +175,11 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targ
     for (auto componentIt = currentSet.get_archetype().begin(); componentIt != currentSet.get_archetype().end(); ++componentIt)
     {
         const type_hash_t componentHash = *componentIt;
+        if (!targetSet.get_archetype().has_component(componentHash))
+        {
+            continue;
+        }
+        
         void* componentPtr = currentSet.get_component_at_index(componentHash, currentIndex);
         void* targetComponentPtr = targetSet.get_component_at_index(componentHash, targetIndex);
         component_data componentData;

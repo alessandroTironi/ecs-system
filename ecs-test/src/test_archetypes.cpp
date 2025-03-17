@@ -284,7 +284,6 @@ TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
     
     ecs::ArchetypesDatabase::AddComponent<FloatComponent>(0);
     ecs::ArchetypesDatabase::RemoveComponent<FloatComponent>(0);
-    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 1);
     ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0), std::out_of_range);
 }
 

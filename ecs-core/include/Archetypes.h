@@ -41,6 +41,7 @@ namespace ecs
         inline size_t get_num_components() const { return m_componentTypes.size(); }
 
         inline void add_component(const type_hash_t componentType) { m_componentTypes.insert(componentType); }
+        inline void remove_component(const type_hash_t componentType) { m_componentTypes.erase(componentType); }
 
         inline auto begin() const { return m_componentTypes.begin(); }
         inline auto end() const { return m_componentTypes.end(); }
