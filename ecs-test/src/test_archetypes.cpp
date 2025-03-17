@@ -287,3 +287,13 @@ TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
     ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0), std::out_of_range);
 }
 
+TEST_F(TestArchetypes, TestFlushEmptyArchetypeSets)
+{
+    ecs::ArchetypesDatabase::AddEntity<IntComponent>(0);
+    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(1);
+    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2);
+
+    ecs::ArchetypesDatabase::AddComponent<FloatComponent>(0);
+    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2)
+        << "Empty archetype sets should automatically be deleted.";
+}
