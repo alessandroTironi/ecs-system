@@ -9,6 +9,8 @@ Implementation of ArchetypeDatabase and packed arrays of components are good eno
 - double indexing of entities and components: to ensure contiguous packing of a component array, a map from entity to index and from index to entity because removed components need to be replaced by the component at the end of the array.
 - still unsure about how to represent an archetype. Hopefully things will get more clear during the implementation of the query system
 
+**Important**: using the returned value of typeinfo.hash() as a hash code for components can cause issues, since such hash code is not guaranteed to be unique. We need to switch to strings, unfortunately... but maybe we can add some constraint to have them stored inline (e.g., a limit on the amount of characters).
+
 
 ### Next steps
 
