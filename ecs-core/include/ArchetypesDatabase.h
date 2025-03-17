@@ -30,6 +30,7 @@ namespace ecs
 			AddComponent(entity, GetTypeHash(ComponentType));
 		}
 
+        static const archetype& GetArchetype(entity_id entity);
         static size_t GetNumArchetypes() { return s_archetypesMap.size(); }
         static void Reset();
 
@@ -46,6 +47,7 @@ namespace ecs
             bool try_get_entity_index(entity_id entity, size_t& index) const;
             void* get_component_at_index(const type_hash_t componentHash, const size_t index) const;
             void remove_entity(entity_id entity);
+            inline const archetype& get_archetype() const { return m_archetype; }
         private:
             archetype m_archetype;
             std::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;

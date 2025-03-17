@@ -254,6 +254,14 @@ TEST_F(TestArchetypes, TestRemoveEntityFromArchetypeDatabase)
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::RemoveEntity(1));
 }
 
+TEST_F(TestArchetypes, TestGetArchetype)
+{
+    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
+    const ecs::archetype& floatArchetype = ecs::archetype::make<FloatComponent>();
+    EXPECT_EQ(ecs::CalculateArchetypeHash(ecs::ArchetypesDatabase::GetArchetype(0)), 
+        ecs::CalculateArchetypeHash(floatArchetype));
+}
+
 TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
 {
     ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
@@ -264,3 +272,4 @@ TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0));
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::GetComponent<IntComponent>(0));
 }
+

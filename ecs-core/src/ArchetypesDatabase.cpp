@@ -119,6 +119,12 @@ void* ecs::ArchetypesDatabase::GetComponent(entity_id entity, const type_hash_t 
     return set.get_component_at_index(componentHash, entityIndex);
 }
 
+const ecs::archetype& ecs::ArchetypesDatabase::GetArchetype(entity_id entity)
+{
+    const size_t archetypeHash = s_entitiesArchetypeHashesMap.at(entity);
+    return s_archetypesMap.at(archetypeHash).get_archetype();
+}
+
 void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const type_hash_t componentHash)
 {
     throw std::runtime_error("Not implemented");
