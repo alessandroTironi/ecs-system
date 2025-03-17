@@ -128,20 +128,33 @@ const ecs::archetype& ecs::ArchetypesDatabase::GetArchetype(entity_id entity)
 void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const type_hash_t componentHash)
 {
     const archetype& currentArchetype = GetArchetype(entity);
-    // @todo we need a function to merge archetypes, or to make a new archetype by adding a new 
-    // compoenent to an already existing archetype.
+    if (currentArchetype.has_component(componentHash))
+    {
+        return;
+    }
 
-    throw std::runtime_error("Not implemented");
+    archetype newArchetype = currentArchetype; // @todo possibly unnecessary copy constructor here
+    newArchetype.add_component(componentHash);
+
+    MoveEntity(entity, newArchetype);
 }
 
-void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const type_hash_t targetArchetype)
+void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targetArchetype)
 {
     const size_t currentArchetypeHash = s_entitiesArchetypeHashesMap.at(entity);
     archetype_set& currentSet = s_archetypesMap.at(currentArchetypeHash);
     const size_t currentIndex = currentSet.get_entity_index(entity);
     
+    const size_t targetArchetypeHash = CalculateArchetypeHash(targetArchetype);
+    auto optionalTargetSet = s_archetypesMap.find(targetArchetypeHash);
+    if (optionalTargetSet == s_archetypesMap.end())
+    {
+        // The target archetype still doesn't exist, create it
+        s_archetypesMap.emplace(targetArchetypeHash, archetype_set(targetArchetype));
+    }
+
     // allocate memory for storing components of the entity in the new archetype.
-    archetype_set& targetSet = s_archetypesMap.at(targetArchetype);
+    archetype_set& targetSet = s_archetypesMap.at(targetArchetypeHash);
     targetSet.add_entity(entity);
     const size_t targetIndex = targetSet.get_entity_index(entity);
 
@@ -165,7 +178,7 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const type_hash_t tar
     currentSet.remove_entity(entity);
 
     // update entities to archetypes map
-    s_entitiesArchetypeHashesMap[entity] = targetArchetype;
+    s_entitiesArchetypeHashesMap[entity] = targetArchetypeHash;
 }
 
 void ecs::ArchetypesDatabase::RemoveEntity(entity_id entity)

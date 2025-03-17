@@ -271,5 +271,8 @@ TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
 
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0));
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::GetComponent<IntComponent>(0));
+
+    ASSERT_TRUE(ecs::ArchetypesDatabase::GetArchetype(0).has_component(GetTypeHash(FloatComponent)));
+    ASSERT_TRUE(ecs::ArchetypesDatabase::GetArchetype(0).has_component(GetTypeHash(IntComponent)));
 }
 

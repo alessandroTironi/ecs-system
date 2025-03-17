@@ -65,6 +65,6 @@ namespace ecs
 
 		static void AddComponent(entity_id entity, const type_hash_t componentHash);
 
-		static void MoveEntity(entity_id entity, const type_hash_t targetArchetypeHash);
+		static void MoveEntity(entity_id entity, const archetype& targetArchetype);
     };
 }

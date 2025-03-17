@@ -37,7 +37,10 @@ namespace ecs
 
         inline bool is_null() const { return m_componentTypes.empty(); }
 
+        inline bool has_component(const type_hash_t componentType) const { return m_componentTypes.contains(componentType); }
         inline size_t get_num_components() const { return m_componentTypes.size(); }
+
+        inline void add_component(const type_hash_t componentType) { m_componentTypes.insert(componentType); }
 
         inline auto begin() const { return m_componentTypes.begin(); }
         inline auto end() const { return m_componentTypes.end(); }
