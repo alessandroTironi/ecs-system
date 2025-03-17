@@ -139,6 +139,11 @@ void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const type_hash_t c
     MoveEntity(entity, newArchetype);
 }
 
+void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const type_hash_t componentHash)
+{
+    throw std::runtime_error("Not implemented");
+}
+
 void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targetArchetype)
 {
     const size_t currentArchetypeHash = s_entitiesArchetypeHashesMap.at(entity);

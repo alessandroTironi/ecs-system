@@ -276,3 +276,15 @@ TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
     ASSERT_TRUE(ecs::ArchetypesDatabase::GetArchetype(0).has_component(GetTypeHash(IntComponent)));
 }
 
+TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
+{
+    ecs::ArchetypesDatabase::AddEntity<IntComponent>(0);
+    ASSERT_NO_THROW(ecs::ArchetypesDatabase::RemoveComponent<FloatComponent>(0))
+        << "Removing a non-existing component should not throw any exception, but just do nothing";
+    
+    ecs::ArchetypesDatabase::AddComponent<FloatComponent>(0);
+    ecs::ArchetypesDatabase::RemoveComponent<FloatComponent>(0);
+    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 1);
+    ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0), std::out_of_range);
+}
+
