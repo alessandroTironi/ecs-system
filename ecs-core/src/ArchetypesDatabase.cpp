@@ -1,8 +1,5 @@
 #include "ArchetypesDatabase.h"
 
-std::unordered_map<size_t, ecs::ArchetypesDatabase::archetype_set> ecs::ArchetypesDatabase::s_archetypesMap;
-std::unordered_map<ecs::entity_id, size_t> ecs::ArchetypesDatabase::s_entitiesArchetypeHashesMap;
-
 ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype)
 {
     m_archetype = std::move(archetype);
@@ -97,13 +94,13 @@ void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_
 void ecs::ArchetypesDatabase::AddEntity(entity_id entity, const ecs::archetype& archetype)
 {
     const size_t archetypeHash = CalculateArchetypeHash(archetype);
-    auto optionalArchetypeSet = s_archetypesMap.find(archetypeHash);
-    if (optionalArchetypeSet == s_archetypesMap.end())
+    auto optionalArchetypeSet = m_archetypesMap.find(archetypeHash);
+    if (optionalArchetypeSet == m_archetypesMap.end())
     {
         // create and add new archetype set 
-        s_archetypesMap.emplace(archetypeHash, archetype_set(archetype));
+        m_archetypesMap.emplace(archetypeHash, archetype_set(archetype));
         // @todo can we avoid a second lookup here?
-        s_archetypesMap[archetypeHash].add_entity(entity);
+        m_archetypesMap[archetypeHash].add_entity(entity);
     }
     else
     {
@@ -112,21 +109,21 @@ void ecs::ArchetypesDatabase::AddEntity(entity_id entity, const ecs::archetype& 
     }
 
     // associate the entity to that archetype hash.
-    s_entitiesArchetypeHashesMap[entity] = archetypeHash;
+    m_entitiesArchetypeHashesMap[entity] = archetypeHash;
 }
 
 void* ecs::ArchetypesDatabase::GetComponent(entity_id entity, const type_hash_t componentHash)
 {
-    const size_t archetypeHash = s_entitiesArchetypeHashesMap.at(entity);
-    archetype_set& set = s_archetypesMap.at(archetypeHash);
+    const size_t archetypeHash = m_entitiesArchetypeHashesMap.at(entity);
+    archetype_set& set = m_archetypesMap.at(archetypeHash);
     size_t entityIndex = set.get_entity_index(entity);
     return set.get_component_at_index(componentHash, entityIndex);
 }
 
 const ecs::archetype& ecs::ArchetypesDatabase::GetArchetype(entity_id entity)
 {
-    const size_t archetypeHash = s_entitiesArchetypeHashesMap.at(entity);
-    return s_archetypesMap.at(archetypeHash).get_archetype();
+    const size_t archetypeHash = m_entitiesArchetypeHashesMap.at(entity);
+    return m_archetypesMap.at(archetypeHash).get_archetype();
 }
 
 void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const type_hash_t componentHash)
@@ -159,20 +156,20 @@ void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const type_hash_
 
 void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targetArchetype)
 {
-    const size_t currentArchetypeHash = s_entitiesArchetypeHashesMap.at(entity);
-    archetype_set& currentSet = s_archetypesMap.at(currentArchetypeHash);
+    const size_t currentArchetypeHash = m_entitiesArchetypeHashesMap.at(entity);
+    archetype_set& currentSet = m_archetypesMap.at(currentArchetypeHash);
     const size_t currentIndex = currentSet.get_entity_index(entity);
     
     const size_t targetArchetypeHash = CalculateArchetypeHash(targetArchetype);
-    auto optionalTargetSet = s_archetypesMap.find(targetArchetypeHash);
-    if (optionalTargetSet == s_archetypesMap.end())
+    auto optionalTargetSet = m_archetypesMap.find(targetArchetypeHash);
+    if (optionalTargetSet == m_archetypesMap.end())
     {
         // The target archetype still doesn't exist, create it
-        s_archetypesMap.emplace(targetArchetypeHash, archetype_set(targetArchetype));
+        m_archetypesMap.emplace(targetArchetypeHash, archetype_set(targetArchetype));
     }
 
     // allocate memory for storing components of the entity in the new archetype.
-    archetype_set& targetSet = s_archetypesMap.at(targetArchetypeHash);
+    archetype_set& targetSet = m_archetypesMap.at(targetArchetypeHash);
     targetSet.add_entity(entity);
     const size_t targetIndex = targetSet.get_entity_index(entity);
 
@@ -201,7 +198,7 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targ
     currentSet.remove_entity(entity);
 
     // update entities to archetypes map
-    s_entitiesArchetypeHashesMap[entity] = targetArchetypeHash;
+    m_entitiesArchetypeHashesMap[entity] = targetArchetypeHash;
 
     // remove old set if empty
     if (currentSet.get_num_entities() == 0)
@@ -212,25 +209,26 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targ
 
 void ecs::ArchetypesDatabase::RemoveEntity(entity_id entity)
 {
-    auto optionalArchetypeHash = s_entitiesArchetypeHashesMap.find(entity);
-    if (optionalArchetypeHash != s_entitiesArchetypeHashesMap.end())
+    auto optionalArchetypeHash = m_entitiesArchetypeHashesMap.find(entity);
+    if (optionalArchetypeHash != m_entitiesArchetypeHashesMap.end())
     {
-        auto optionalArchetypeSet = s_archetypesMap.find(optionalArchetypeHash->second);
-        if (optionalArchetypeSet != s_archetypesMap.end())
+        auto optionalArchetypeSet = m_archetypesMap.find(optionalArchetypeHash->second);
+        if (optionalArchetypeSet != m_archetypesMap.end())
         {
             optionalArchetypeSet->second.remove_entity(entity);
         }
 
-        s_entitiesArchetypeHashesMap.erase(entity);
+        m_entitiesArchetypeHashesMap.erase(entity);
     }
 }
 
 void ecs::ArchetypesDatabase::Reset()
 {
-    s_archetypesMap.clear();
+    m_archetypesMap.clear();
+    m_entitiesArchetypeHashesMap.clear();
 }
 
 void ecs::ArchetypesDatabase::RemoveArchetypeSet(const ecs::archetype& archetype)
 {
-    s_archetypesMap.erase(CalculateArchetypeHash(archetype));
+    m_archetypesMap.erase(CalculateArchetypeHash(archetype));
 }

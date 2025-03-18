@@ -49,13 +49,14 @@ protected:
 
     void TearDown() override
     {
-        ecs::ArchetypesDatabase::Reset();
+        m_archetypesDatabase.Reset();
     }
 
     ecs::archetype m_emptyArchetype;
     ecs::archetype m_archetype1;
     ecs::archetype m_archetype2;
     ecs::archetype m_archetype3;
+    ecs::ArchetypesDatabase m_archetypesDatabase;
 };
 
 TEST_F(TestArchetypes, TestNullArchetype)
@@ -223,81 +224,81 @@ TEST_F(TestArchetypes, TestEmplaceComponentInPackedArray)
 
 TEST_F(TestArchetypes, TestAddEntity)
 {
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0));
-    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 1);
+    ASSERT_NO_THROW(m_archetypesDatabase.AddEntity<FloatComponent>(0));
+    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 1);
 
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddEntity<>(1));
+    ASSERT_NO_THROW(m_archetypesDatabase.AddEntity<>(1));
 }
 
 TEST_F(TestArchetypes, TestGetComponentFromArchetypesDatabase)
 {
-    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
-    FloatComponent& component = ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0);
+    m_archetypesDatabase.AddEntity<FloatComponent>(0);
+    FloatComponent& component = m_archetypesDatabase.GetComponent<FloatComponent>(0);
     component.m_value = 3.0f;
-    EXPECT_NEAR(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0).m_value, 3.0f, 0.0001f);
+    EXPECT_NEAR(m_archetypesDatabase.GetComponent<FloatComponent>(0).m_value, 3.0f, 0.0001f);
 
-    ASSERT_THROW(FloatComponent& unexistingComponent = ecs::ArchetypesDatabase::GetComponent<FloatComponent>(1), std::out_of_range)
+    ASSERT_THROW(FloatComponent& unexistingComponent = m_archetypesDatabase.GetComponent<FloatComponent>(1), std::out_of_range)
         <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
 
-    ecs::ArchetypesDatabase::AddEntity<IntComponent>(1);
-    ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(1), std::out_of_range)
+    m_archetypesDatabase.AddEntity<IntComponent>(1);
+    ASSERT_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(1), std::out_of_range)
         <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
 }
 
 TEST_F(TestArchetypes, TestRemoveEntityFromArchetypeDatabase)
 {
-    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::RemoveEntity(0));
+    m_archetypesDatabase.AddEntity<FloatComponent>(0);
+    ASSERT_NO_THROW(m_archetypesDatabase.RemoveEntity(0));
 
-    ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0), std::out_of_range);
+    ASSERT_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(0), std::out_of_range);
 
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::RemoveEntity(1));
+    ASSERT_NO_THROW(m_archetypesDatabase.RemoveEntity(1));
 }
 
 TEST_F(TestArchetypes, TestGetArchetype)
 {
-    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
+    m_archetypesDatabase.AddEntity<FloatComponent>(0);
     const ecs::archetype& floatArchetype = ecs::archetype::make<FloatComponent>();
-    EXPECT_EQ(ecs::CalculateArchetypeHash(ecs::ArchetypesDatabase::GetArchetype(0)), 
+    EXPECT_EQ(ecs::CalculateArchetypeHash(m_archetypesDatabase.GetArchetype(0)), 
         ecs::CalculateArchetypeHash(floatArchetype));
 }
 
 TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
 {
-    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddComponent<IntComponent>(0));
+    m_archetypesDatabase.AddEntity<FloatComponent>(0);
+    ASSERT_NO_THROW(m_archetypesDatabase.AddComponent<IntComponent>(0));
 
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0));
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::GetComponent<IntComponent>(0));
+    ASSERT_NO_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(0));
+    ASSERT_NO_THROW(m_archetypesDatabase.GetComponent<IntComponent>(0));
 
-    ASSERT_TRUE(ecs::ArchetypesDatabase::GetArchetype(0).has_component(GetTypeHash(FloatComponent)));
-    ASSERT_TRUE(ecs::ArchetypesDatabase::GetArchetype(0).has_component(GetTypeHash(IntComponent)));
+    ASSERT_TRUE(m_archetypesDatabase.GetArchetype(0).has_component(GetTypeHash(FloatComponent)));
+    ASSERT_TRUE(m_archetypesDatabase.GetArchetype(0).has_component(GetTypeHash(IntComponent)));
 }
 
 TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
 {
-    ecs::ArchetypesDatabase::AddEntity<IntComponent>(0);
-    ASSERT_NO_THROW(ecs::ArchetypesDatabase::RemoveComponent<FloatComponent>(0))
+    m_archetypesDatabase.AddEntity<IntComponent>(0);
+    ASSERT_NO_THROW(m_archetypesDatabase.RemoveComponent<FloatComponent>(0))
         << "Removing a non-existing component should not throw any exception, but just do nothing";
     
-    ecs::ArchetypesDatabase::AddComponent<FloatComponent>(0);
-    ecs::ArchetypesDatabase::RemoveComponent<FloatComponent>(0);
-    ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0), std::out_of_range);
+    m_archetypesDatabase.AddComponent<FloatComponent>(0);
+    m_archetypesDatabase.RemoveComponent<FloatComponent>(0);
+    ASSERT_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(0), std::out_of_range);
 }
 
 TEST_F(TestArchetypes, TestFlushEmptyArchetypeSets)
 {
-    ecs::ArchetypesDatabase::AddEntity<IntComponent>(0);
-    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(1);
-    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2);
+    m_archetypesDatabase.AddEntity<IntComponent>(0);
+    m_archetypesDatabase.AddEntity<FloatComponent>(1);
+    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 2);
 
-    ecs::ArchetypesDatabase::AddComponent<FloatComponent>(0);
-    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2)
+    m_archetypesDatabase.AddComponent<FloatComponent>(0);
+    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 2)
         << "Empty archetype sets should automatically be deleted.";
 
-    ecs::ArchetypesDatabase::AddEntity<FloatComponent, IntComponent, DoubleComponent>(2);
-    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 3);
+    m_archetypesDatabase.AddEntity<FloatComponent, IntComponent, DoubleComponent>(2);
+    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 3);
 
-    ecs::ArchetypesDatabase::RemoveComponent<DoubleComponent>(2);
-    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2);
+    m_archetypesDatabase.RemoveComponent<DoubleComponent>(2);
+    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 2);
 }

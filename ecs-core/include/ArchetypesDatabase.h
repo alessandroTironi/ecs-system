@@ -9,36 +9,39 @@ namespace ecs
     class ArchetypesDatabase
     {
     public:
+        ArchetypesDatabase() = default;
+        ~ArchetypesDatabase() = default;
+
         template<typename... Components>
-        static void AddEntity(entity_id entity)
+        void AddEntity(entity_id entity)
         {
             AddEntity(entity, { component_data(GetTypeHash(Components), sizeof(Components), 
                 ComponentsDatabase::GetComponentID<Components>(), 8)...});
         }
 
         template<typename ComponentType>
-        static ComponentType& GetComponent(entity_id entity)
+        ComponentType& GetComponent(entity_id entity)
         {
             return *static_cast<ComponentType*>(GetComponent(entity, GetTypeHash(ComponentType)));
         }
 
-        static void RemoveEntity(entity_id entity);
-
-		template<typename ComponentType>
-		static void AddComponent(entity_id entity)
-		{
-			AddComponent(entity, GetTypeHash(ComponentType));
-		}
+        void RemoveEntity(entity_id entity);
 
         template<typename ComponentType>
-        static void RemoveComponent(entity_id entity)
+        void AddComponent(entity_id entity)
+        {
+            AddComponent(entity, GetTypeHash(ComponentType));
+        }
+
+        template<typename ComponentType>
+        void RemoveComponent(entity_id entity)
         {
             RemoveComponent(entity, GetTypeHash(ComponentType));
         }
 
-        static const archetype& GetArchetype(entity_id entity);
-        static size_t GetNumArchetypes() { return s_archetypesMap.size(); }
-        static void Reset();
+        const archetype& GetArchetype(entity_id entity);
+        size_t GetNumArchetypes() const { return m_archetypesMap.size(); }
+        void Reset();
 
     private:
         struct archetype_set
@@ -62,19 +65,19 @@ namespace ecs
             std::unordered_map<size_t, entity_id> m_indexToEntityMap; //@todo replace this with a plain array for cache locality
         };
 
-        static std::unordered_map<size_t, archetype_set> s_archetypesMap;
-        static std::unordered_map<entity_id, size_t> s_entitiesArchetypeHashesMap;
+        std::unordered_map<size_t, archetype_set> m_archetypesMap;
+        std::unordered_map<entity_id, size_t> m_entitiesArchetypeHashesMap;
 
-        static void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
-        static void AddEntity(entity_id entity, const archetype& archetype);
+        void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
+        void AddEntity(entity_id entity, const archetype& archetype);
 
-        static void* GetComponent(entity_id entity, const type_hash_t componentHash);
+        void* GetComponent(entity_id entity, const type_hash_t componentHash);
 
-		static void AddComponent(entity_id entity, const type_hash_t componentHash);
-        static void RemoveComponent(entity_id entity, const type_hash_t componentHash);
+        void AddComponent(entity_id entity, const type_hash_t componentHash);
+        void RemoveComponent(entity_id entity, const type_hash_t componentHash);
 
-		static void MoveEntity(entity_id entity, const archetype& targetArchetype);
+        void MoveEntity(entity_id entity, const archetype& targetArchetype);
 
-        static void RemoveArchetypeSet(const archetype& archetype);
+        void RemoveArchetypeSet(const archetype& archetype);
     };
 }
