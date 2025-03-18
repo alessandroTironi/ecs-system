@@ -267,9 +267,37 @@ TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
     ecs::ArchetypesDatabase::AddEntity<FloatComponent>(0);
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::AddComponent<IntComponent>(0));
 
-    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2); // Float and Float+Int
-
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0));
     ASSERT_NO_THROW(ecs::ArchetypesDatabase::GetComponent<IntComponent>(0));
+
+    ASSERT_TRUE(ecs::ArchetypesDatabase::GetArchetype(0).has_component(GetTypeHash(FloatComponent)));
+    ASSERT_TRUE(ecs::ArchetypesDatabase::GetArchetype(0).has_component(GetTypeHash(IntComponent)));
 }
 
+TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
+{
+    ecs::ArchetypesDatabase::AddEntity<IntComponent>(0);
+    ASSERT_NO_THROW(ecs::ArchetypesDatabase::RemoveComponent<FloatComponent>(0))
+        << "Removing a non-existing component should not throw any exception, but just do nothing";
+    
+    ecs::ArchetypesDatabase::AddComponent<FloatComponent>(0);
+    ecs::ArchetypesDatabase::RemoveComponent<FloatComponent>(0);
+    ASSERT_THROW(ecs::ArchetypesDatabase::GetComponent<FloatComponent>(0), std::out_of_range);
+}
+
+TEST_F(TestArchetypes, TestFlushEmptyArchetypeSets)
+{
+    ecs::ArchetypesDatabase::AddEntity<IntComponent>(0);
+    ecs::ArchetypesDatabase::AddEntity<FloatComponent>(1);
+    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2);
+
+    ecs::ArchetypesDatabase::AddComponent<FloatComponent>(0);
+    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2)
+        << "Empty archetype sets should automatically be deleted.";
+
+    ecs::ArchetypesDatabase::AddEntity<FloatComponent, IntComponent, DoubleComponent>(2);
+    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 3);
+
+    ecs::ArchetypesDatabase::RemoveComponent<DoubleComponent>(2);
+    EXPECT_EQ(ecs::ArchetypesDatabase::GetNumArchetypes(), 2);
+}
