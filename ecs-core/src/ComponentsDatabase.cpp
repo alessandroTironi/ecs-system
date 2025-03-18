@@ -1,16 +1,22 @@
 #include "ComponentsDatabase.h"
 
 ecs::IDGenerator<ecs::component_id> ecs::ComponentsDatabase::s_componentIDGenerator;
-std::unordered_map<size_t, ecs::component_data> ecs::ComponentsDatabase::s_componentsClassMap;
+std::unordered_map<std::string, ecs::component_data> ecs::ComponentsDatabase::s_componentsClassMap;
+std::vector<std::string> ecs::ComponentsDatabase::s_componentNames;
 
-ecs::component_id ecs::ComponentsDatabase::AddComponentData(const type_hash_t componentHash, 
+ecs::component_id ecs::ComponentsDatabase::AddComponentData(const std::string& componentName, 
 	const size_t dataSize, const size_t initialCapacity)
 {
-	auto optionalComponentData = s_componentsClassMap.find(componentHash);
+	auto optionalComponentData = s_componentsClassMap.find(componentName);
 	if (optionalComponentData == s_componentsClassMap.end())
 	{
 		const component_id newID = s_componentIDGenerator.GenerateNewUniqueID();
-		s_componentsClassMap.emplace(componentHash, component_data(componentHash, dataSize, newID, initialCapacity));
+		s_componentsClassMap.emplace(componentName, component_data(dataSize, newID, initialCapacity));
+		if (newID >= s_componentNames.size())
+		{
+			s_componentNames.resize(newID + 8);
+		}
+		s_componentNames[newID] = componentName;
 		return newID;
 	}
 	else
@@ -19,9 +25,9 @@ ecs::component_id ecs::ComponentsDatabase::AddComponentData(const type_hash_t co
 	}
 }
 
-bool ecs::ComponentsDatabase::TryGetComponentData(const type_hash_t componentHash, component_data& outComponentData)
+bool ecs::ComponentsDatabase::TryGetComponentData(const std::string& componentName, component_data& outComponentData)
 {
-	auto optionalComponentData = s_componentsClassMap.find(componentHash);
+	auto optionalComponentData = s_componentsClassMap.find(componentName);
 	if (optionalComponentData == s_componentsClassMap.end())
 	{
 		return false;
@@ -31,4 +37,16 @@ bool ecs::ComponentsDatabase::TryGetComponentData(const type_hash_t componentHas
 		outComponentData = optionalComponentData->second;
 		return true;
 	}
+}
+
+bool ecs::ComponentsDatabase::TryGetComponentData(const component_id componentID, inline_string& outComponentName, component_data& outComponentData)
+{
+	if (componentID >= s_componentNames.size())
+	{
+		return false;
+	}
+
+	outComponentName = s_componentNames[componentID];
+	outComponentData = s_componentsClassMap[outComponentName];
+	return true;
 }

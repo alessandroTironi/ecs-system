@@ -50,6 +50,7 @@ protected:
     void TearDown() override
     {
         m_archetypesDatabase.Reset();
+        ecs::ComponentsDatabase::Reset();
     }
 
     ecs::archetype m_emptyArchetype;
@@ -73,7 +74,7 @@ TEST_F(TestArchetypes, TestEmptyArchetype)
 
 TEST_F(TestArchetypes, TestVectorMoveConstructor)
 {
-    std::set<ecs::type_hash_t> components = {};
+    std::set<ecs::component_id> components = {};
     ASSERT_THROW(ecs::archetype(std::move(components)), std::invalid_argument) <<   "It should not be possible to create an empty archetype: "
                                                                                     "An invalid_argument exception should be thrown";
     std::set<ecs::component_id> components2 = { 0 };
@@ -109,9 +110,9 @@ TEST_F(TestArchetypes, TestComponentsOrder)
 {
     std::vector<ecs::type_hash_t> componentIDs =
     {
-        GetTypeHash(FloatComponent),
-        GetTypeHash(DoubleComponent),
-        GetTypeHash(IntComponent),
+        ecs::ComponentsDatabase::GetComponentID<FloatComponent>(),
+        ecs::ComponentsDatabase::GetComponentID<DoubleComponent>(),
+        ecs::ComponentsDatabase::GetComponentID<IntComponent>(),
     };
 
     std::sort(componentIDs.begin(), componentIDs.end());
@@ -150,18 +151,20 @@ TEST_F(TestArchetypes, TestHashing)
 TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
 {
     ecs::packed_component_array_t packedArray1;
-    ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array_t(GetTypeHash(FloatComponent), sizeof(FloatComponent),
-        ecs::ComponentsDatabase::GetComponentID<FloatComponent>(), 10));
+    ecs::component_data floatComponentData;
+    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array_t(floatComponentData));
     ASSERT_EQ(packedArray1.component_size(), sizeof(FloatComponent));
     ASSERT_EQ(packedArray1.size(), 0);
-    ASSERT_EQ(packedArray1.hash(), GetTypeHash(FloatComponent));
     ASSERT_EQ(packedArray1.component_serial(), ecs::ComponentsDatabase::GetComponentID<FloatComponent>());
-    ASSERT_EQ(packedArray1.capacity(), 10);
+    ASSERT_EQ(packedArray1.capacity(), 8);
 }
 
 TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 {
-    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 10);
+    ecs::component_data floatComponentData;
+    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent = packedArray.add_component();
     EXPECT_EQ(packedArray.size(), 1);
     ASSERT_NE(newComponent, nullptr) << "Adding a component to a packed array should always return a valid pointer";
@@ -169,21 +172,33 @@ TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 
 TEST_F(TestArchetypes, TestAddComponentRealloc)
 {
-    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    ecs::component_data floatComponentData;
+    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent1 = packedArray.add_component();
     void* newComponent2 = packedArray.add_component();
     void* newComponent3 = packedArray.add_component();
+    void* newComponent4 = packedArray.add_component();
+    void* newComponent5 = packedArray.add_component();
+    void* newComponent6 = packedArray.add_component();
+    void* newComponent7 = packedArray.add_component();
+    void* newComponent8 = packedArray.add_component();
+    void* newComponent9 = packedArray.add_component();
+
     ASSERT_NE(newComponent3, nullptr) 
         << "Adding a component to a packed array that reached the maximum capacity should reallocate memory and return a valid pointer";
     EXPECT_TRUE(packedArray.size() <= packedArray.capacity()) 
         << "The size of the packed array should always be less than or equal to its capacity";
-    ASSERT_EQ(packedArray.capacity(), 4) 
+    ASSERT_EQ(packedArray.capacity(), 16) 
         << "The capacity of the packed array should be doubled when it reaches its limit";
 }
 
 TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 {
-    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 2);
+    ecs::ComponentsDatabase::RegisterComponent<FloatComponent>(2);
+    ecs::component_data floatComponentData;
+    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent1 = packedArray.add_component();
     void* newComponent2 = packedArray.add_component();
 
@@ -194,8 +209,9 @@ TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 
 TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
 {
-    ecs::packed_component_array_t packedArray(GetTypeHash(FloatComponent), sizeof(FloatComponent), 
-        ecs::ComponentsDatabase::GetComponentID<FloatComponent>(), 2);
+    ecs::component_data floatComponentData;
+    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ecs::packed_component_array_t packedArray(floatComponentData);
     void* c1 = packedArray.add_component();
     void* c2 = packedArray.add_component();
 
@@ -204,7 +220,7 @@ TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
 
     packedArray.delete_at(1);
     EXPECT_EQ(packedArray.size(), 1);
-    EXPECT_EQ(packedArray.capacity(), 2);
+    EXPECT_EQ(packedArray.capacity(), 8);
 }
 
 TEST_F(TestArchetypes, TestTemplatePackedComponentArray)
@@ -271,8 +287,8 @@ TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
     ASSERT_NO_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(0));
     ASSERT_NO_THROW(m_archetypesDatabase.GetComponent<IntComponent>(0));
 
-    ASSERT_TRUE(m_archetypesDatabase.GetArchetype(0).has_component(GetTypeHash(FloatComponent)));
-    ASSERT_TRUE(m_archetypesDatabase.GetArchetype(0).has_component(GetTypeHash(IntComponent)));
+    ASSERT_TRUE(m_archetypesDatabase.GetArchetype(0).has_component(ecs::ComponentsDatabase::GetComponentID<FloatComponent>()));
+    ASSERT_TRUE(m_archetypesDatabase.GetArchetype(0).has_component(ecs::ComponentsDatabase::GetComponentID<IntComponent>()));
 }
 
 TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)

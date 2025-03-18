@@ -17,37 +17,70 @@ namespace ecs
     {
     public:
         archetype();
-        archetype(std::initializer_list<type_hash_t> signature);
+        archetype(std::initializer_list<component_id> signature);
         archetype(std::initializer_list<component_data> componentsData);
-        archetype(const std::set<type_hash_t>&& signature);
-
-        static archetype make(std::initializer_list<type_hash_t> components);
+        archetype(const std::set<component_id>&& signature);
+        static archetype make(std::initializer_list<component_id> components);
 
         template<typename FirstComponent, typename... OtherComponents>
         static archetype make()
         {
-            std::initializer_list<type_hash_t> signature = 
+            std::initializer_list<component_id> signature = 
             { 
-                GetTypeHash(FirstComponent), 
-                GetTypeHash(OtherComponents)... 
+                ComponentsDatabase::GetComponentID<FirstComponent>(), 
+                ComponentsDatabase::GetComponentID<OtherComponents>()... 
             };
 
             return make(signature);
         }
 
-        inline bool is_null() const { return m_componentTypes.empty(); }
+        inline bool is_null() const { return m_componentIDs.empty(); }
 
-        inline bool has_component(const type_hash_t componentType) const { return m_componentTypes.contains(componentType); }
-        inline size_t get_num_components() const { return m_componentTypes.size(); }
+        inline bool has_component(const inline_string& componentName) const
+        {
+            return m_componentIDs.contains(ComponentsDatabase::GetComponentID(componentName));
+        }
 
-        inline void add_component(const type_hash_t componentType) { m_componentTypes.insert(componentType); }
-        inline void remove_component(const type_hash_t componentType) { m_componentTypes.erase(componentType); }
+        inline bool has_component(const component_id componentID) const
+        {
+            return m_componentIDs.contains(componentID);
+        }   
 
-        inline auto begin() const { return m_componentTypes.begin(); }
-        inline auto end() const { return m_componentTypes.end(); }
+        template<typename ComponentType>
+        inline bool has_component() const 
+        {
+            return m_componentIDs.contains(ComponentsDatabase::GetComponentID<ComponentType>());
+        }
+
+        inline size_t get_num_components() const { return m_componentIDs.size(); }
+
+        inline void add_component(const inline_string& componentName) 
+        { 
+            m_componentIDs.insert(ComponentsDatabase::GetComponentID(componentName)); 
+        }
+
+        template<typename ComponentType>
+        inline void add_component()
+        {
+            m_componentIDs.insert(ComponentsDatabase::GetComponentID<ComponentType>());
+        }
+
+        inline void remove_component(const inline_string& componentName) 
+        { 
+            m_componentIDs.erase(ComponentsDatabase::GetComponentID(componentName));  
+        }
+
+        template<typename ComponentType>
+        inline void remove_component()
+        {
+            m_componentIDs.erase(ComponentsDatabase::GetComponentID<ComponentType>());
+        }
+
+        inline auto begin() const { return m_componentIDs.begin(); }
+        inline auto end() const { return m_componentIDs.end(); }
 
     private:
-        std::set<type_hash_t> m_componentTypes;
+        std::set<component_id> m_componentIDs;
     };
 }
 
@@ -86,7 +119,7 @@ namespace ecs
         size_t seed = archetype.get_num_components();
         for (auto componentIt = archetype.begin(); componentIt != archetype.end(); ++componentIt)
         {
-            seed ^= std::hash<ecs::component_id>{}(ComponentsDatabase::GetComponentID(*componentIt)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
 
         return seed;
@@ -97,7 +130,7 @@ namespace ecs
         size_t seed = componentsData.size();
         for (auto componentIt = componentsData.begin(); componentIt != componentsData.end(); ++componentIt)
         {
-            seed ^= std::hash<ecs::component_id>{}(ComponentsDatabase::GetComponentID((*componentIt).hash())) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<ecs::component_id>{}(componentIt->serial()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
 
         return seed;

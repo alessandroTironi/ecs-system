@@ -11,18 +11,15 @@ namespace ecs
     {
     public:
         packed_component_array_t();
-        packed_component_array_t(const type_hash_t& hash, const size_t& sizeOfInstance,
-            const component_id serial, const size_t initialSize = 4);
+        packed_component_array_t(const component_data& componentData);
         packed_component_array_t(const packed_component_array_t& other);
         packed_component_array_t(packed_component_array_t&& other) noexcept;
         ~packed_component_array_t();
 
         packed_component_array_t& operator=(packed_component_array_t&& other)
         {
-            std::cout << "Calling move operator assignment" << std::endl;
             std::swap(m_data, other.m_data);
             std::swap(m_size, other.m_size);
-            std::swap(m_hash, other.m_hash);
             std::swap(m_serial, other.m_serial);
             std::swap(m_instanceSize, other.m_instanceSize);
             std::swap(m_capacity, other.m_capacity);
@@ -31,8 +28,6 @@ namespace ecs
 
         packed_component_array_t& operator=(const packed_component_array_t& other)
         {
-            std::cout << "Calling copy operator assignment" << std::endl;
-            m_hash = other.hash();
             m_serial = other.component_serial();
             m_size = other.size();
             m_instanceSize = other.component_size();
@@ -42,7 +37,6 @@ namespace ecs
         }
 
         inline size_t size() const { return m_size; }
-        inline type_hash_t hash() const { return m_hash; }
         inline component_id component_serial() const { return m_serial; }
         inline size_t component_size() const { return m_instanceSize; }
         inline size_t capacity() const { return m_capacity; }
@@ -54,7 +48,6 @@ namespace ecs
     private:
         std::unique_ptr<void, void(*)(void*)> m_data;
         size_t m_size;
-        type_hash_t m_hash;
         component_id m_serial;
         size_t m_instanceSize;
         size_t m_capacity;
@@ -65,7 +58,7 @@ namespace ecs
     {
     public:
         packed_component_array() 
-            : packed_component_array_t(GetTypeHash(ComponentType), sizeof(ComponentType), ComponentsDatabase::GetComponentID<ComponentType>())
+            : packed_component_array_t(ecs::ComponentsDatabase::GetOrAddComponentData<ComponentType>())
         {}
 
         ComponentType& add_component()

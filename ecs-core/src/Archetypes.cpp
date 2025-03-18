@@ -6,35 +6,35 @@ ecs::archetype::archetype()
     
 }
 
-ecs::archetype::archetype(std::initializer_list<ecs::type_hash_t> components)
+ecs::archetype::archetype(std::initializer_list<ecs::component_id> components)
 {
     if (components.size() == 0)
     {
         throw std::invalid_argument("Attempted to create an archetype with no components");
     }
 
-    m_componentTypes = std::move(components);
+    m_componentIDs = std::move(components);
 }
 
 ecs::archetype::archetype(std::initializer_list<ecs::component_data> componentsData)
 {
     for (auto componentDataIt = componentsData.begin(); componentDataIt != componentsData.end(); ++componentDataIt)
     {
-        m_componentTypes.insert((*componentDataIt).hash());
+        m_componentIDs.insert((*componentDataIt).serial());
     }
 }
 
-ecs::archetype::archetype(const std::set<ecs::type_hash_t>&& components)
+ecs::archetype::archetype(const std::set<ecs::component_id>&& components)
 {
     if (components.size() == 0)
     {
         throw std::invalid_argument("Attempted to create an archetype with no components");
     }
 
-    m_componentTypes = std::move(components);
+    m_componentIDs = std::move(components);
 }
 
-ecs::archetype ecs::archetype::make(std::initializer_list<type_hash_t> components)
+ecs::archetype ecs::archetype::make(std::initializer_list<component_id> components)
 {
     return ecs::archetype(std::move(components));
 }

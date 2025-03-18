@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <typeinfo>
+#include <vector>
 #include "Types.h"
 #include "IDGenerator.h"
 #include "ComponentData.h"
@@ -14,11 +15,11 @@ namespace ecs
         template<typename ComponentType>
         static component_id GetComponentID()
         {
-            const type_hash_t componentHash = GetTypeHash(ComponentType);
-            auto optionalComponentData = s_componentsClassMap.find(componentHash);
+            const std::string componentName = typeid(ComponentType).name();
+            auto optionalComponentData = s_componentsClassMap.find(componentName);
             if (optionalComponentData == s_componentsClassMap.end())
             {
-                return AddComponentData(componentHash, sizeof(ComponentType), 8);
+                return AddComponentData(componentName, sizeof(ComponentType), 8);
             }
             else
             {
@@ -26,9 +27,9 @@ namespace ecs
             }
         }
 
-        static component_id GetComponentID(const type_hash_t componentHash)
+        static component_id GetComponentID(const std::string& componentName)
         {
-            auto optionalComponentData = s_componentsClassMap.find(componentHash);
+            auto optionalComponentData = s_componentsClassMap.find(componentName);
             if (optionalComponentData == s_componentsClassMap.end())
             {
                 throw std::invalid_argument("Component not found in the database. Call RegisterComponent() first.");
@@ -39,19 +40,38 @@ namespace ecs
             }
         }
 
-        static bool TryGetComponentData(const type_hash_t componentHash, component_data& outComponentData);
+        static bool TryGetComponentData(const std::string& componentName, component_data& outComponentData);
+        static bool TryGetComponentData(const component_id componentID, inline_string& outComponentName, component_data& outComponentData);
+
+        template<typename ComponentType>
+        static component_data GetOrAddComponentData()
+        {
+            const component_id componentID = GetComponentID<ComponentType>(); 
+            component_data componentData;
+            inline_string componentName;
+            TryGetComponentData(componentID, componentName, componentData);
+            return componentData;   
+        }
 
         template<typename ComponentType>
         static void RegisterComponent(const size_t initialCapacity = 8)
         {
-            AddComponentData(GetTypeHash(ComponentType), sizeof(ComponentType), initialCapacity);
+            AddComponentData(typeid(ComponentType).name(), sizeof(ComponentType), initialCapacity);
+        }
+
+        static void Reset()
+        {
+            s_componentIDGenerator.Reset();
+            s_componentsClassMap.clear();
+            s_componentNames.clear();
         }
 
     private:
-        static ecs::component_id AddComponentData(const type_hash_t componentHash, const size_t dataSize, const size_t initialCapacity = 8);
+        static ecs::component_id AddComponentData(const std::string& componentName, const size_t dataSize, const size_t initialCapacity = 8);
 
         static IDGenerator<component_id> s_componentIDGenerator;
 
-        static std::unordered_map<size_t, component_data> s_componentsClassMap;
+        static std::unordered_map<inline_string, component_data> s_componentsClassMap;
+        static std::vector<inline_string> s_componentNames;
     };
 }

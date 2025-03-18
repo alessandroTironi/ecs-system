@@ -1,19 +1,17 @@
 #include "PackedComponentArray.h"
 
 ecs::packed_component_array_t::packed_component_array_t() : m_data(nullptr, [](void*){}),
-    m_size{0}, m_hash{0}, m_serial{0}, m_instanceSize{0}, m_capacity{0}
+    m_size{0}, m_serial{0}, m_instanceSize{0}, m_capacity{0}
 {
 
 }
 
-ecs::packed_component_array_t::packed_component_array_t(const type_hash_t& hash, const size_t& sizeOfInstance,
-    const component_id serial, const size_t initialSize) : m_data(nullptr, [](void*){})
+ecs::packed_component_array_t::packed_component_array_t(const component_data& componentData) : m_data(nullptr, [](void*){})
 {
-    m_hash = hash;
-    m_serial = serial;
+    m_serial = componentData.serial();
     m_size = 0;
-    m_instanceSize = sizeOfInstance;
-    m_capacity = initialSize;
+    m_instanceSize = componentData.data_size();
+    m_capacity = componentData.initial_capacity();
 
     // allocate data
     void* memory = ::operator new[](m_instanceSize * m_capacity);
@@ -30,9 +28,6 @@ ecs::packed_component_array_t::packed_component_array_t(const type_hash_t& hash,
 ecs::packed_component_array_t::packed_component_array_t(const ecs::packed_component_array_t& other)
     : m_data(nullptr, [](void*){})
 {
-    std::cout << "Calling copy constructor" << std::endl;
-
-    m_hash = other.hash();
     m_serial = other.component_serial();
     m_size = other.size();
     m_instanceSize = other.component_size();
@@ -43,11 +38,8 @@ ecs::packed_component_array_t::packed_component_array_t(const ecs::packed_compon
 ecs::packed_component_array_t::packed_component_array_t(ecs::packed_component_array_t&& other) noexcept
 : m_data(nullptr, [](void*){})
 {
-    std::cout << "Calling move constructor" << std::endl;
-
     std::swap(m_data, other.m_data);
     std::swap(m_size, other.m_size);
-    std::swap(m_hash, other.m_hash);
     std::swap(m_serial, other.m_serial);
     std::swap(m_instanceSize, other.m_instanceSize);
     std::swap(m_capacity, other.m_capacity);

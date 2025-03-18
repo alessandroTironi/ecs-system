@@ -8,20 +8,17 @@ entity_t::entity_t()
     m_componentsSignature.reset();
 }
 
-void entity_t::add_component(const type_hash_t componentHash)
+void entity_t::add_component(const component_id componentID)
 {
-    const component_id serial = ComponentsDatabase::GetComponentID(componentHash);
-    m_componentsSignature.set(serial, true);
+    m_componentsSignature.set(componentID, true);
 }
 
-void entity_t::remove_component(const type_hash_t componentHash)
+void entity_t::remove_component(const component_id componentID)
 {
-    const component_id serial = ComponentsDatabase::GetComponentID(componentHash);
-    m_componentsSignature.set(serial, false);
+    m_componentsSignature.set(componentID, false);
 }
 
-bool entity_t::has_component(const type_hash_t componentHash) const
+bool entity_t::has_component(const component_id componentID) const
 {
-    const component_id serial = ComponentsDatabase::GetComponentID(componentHash);
-    return m_componentsSignature.test(serial);
+    return m_componentsSignature.test(componentID);
 }

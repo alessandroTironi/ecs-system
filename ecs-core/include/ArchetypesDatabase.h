@@ -15,14 +15,14 @@ namespace ecs
         template<typename... Components>
         void AddEntity(entity_id entity)
         {
-            AddEntity(entity, { component_data(GetTypeHash(Components), sizeof(Components), 
+            AddEntity(entity, { component_data(sizeof(Components), 
                 ComponentsDatabase::GetComponentID<Components>(), 8)...});
         }
 
         template<typename ComponentType>
         ComponentType& GetComponent(entity_id entity)
         {
-            return *static_cast<ComponentType*>(GetComponent(entity, GetTypeHash(ComponentType)));
+            return *static_cast<ComponentType*>(GetComponent(entity, ComponentsDatabase::GetComponentID<ComponentType>()));
         }
 
         void RemoveEntity(entity_id entity);
@@ -30,13 +30,13 @@ namespace ecs
         template<typename ComponentType>
         void AddComponent(entity_id entity)
         {
-            AddComponent(entity, GetTypeHash(ComponentType));
+            AddComponent(entity, ComponentsDatabase::GetComponentID<ComponentType>());
         }
 
         template<typename ComponentType>
         void RemoveComponent(entity_id entity)
         {
-            RemoveComponent(entity, GetTypeHash(ComponentType));
+            RemoveComponent(entity, ComponentsDatabase::GetComponentID<ComponentType>());
         }
 
         const archetype& GetArchetype(entity_id entity);
@@ -55,7 +55,7 @@ namespace ecs
             size_t get_entity_index(entity_id entity) const;
             size_t get_num_entities() const { return m_entityToIndexMap.size(); }
             bool try_get_entity_index(entity_id entity, size_t& index) const;
-            void* get_component_at_index(const type_hash_t componentHash, const size_t index) const;
+            void* get_component_at_index(const component_id componentID, const size_t index) const;
             void remove_entity(entity_id entity);
             inline const archetype& get_archetype() const { return m_archetype; }
         private:
@@ -71,10 +71,12 @@ namespace ecs
         void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
         void AddEntity(entity_id entity, const archetype& archetype);
 
-        void* GetComponent(entity_id entity, const type_hash_t componentHash);
+        void* GetComponent(entity_id entity, const component_id componentID);
 
-        void AddComponent(entity_id entity, const type_hash_t componentHash);
-        void RemoveComponent(entity_id entity, const type_hash_t componentHash);
+        void AddComponent(entity_id entity, const inline_string& componentName);
+        void AddComponent(entity_id entity, const component_id componentID);
+        void RemoveComponent(entity_id entity, const inline_string& componentName);
+        void RemoveComponent(entity_id entity, const component_id componentID);
 
         void MoveEntity(entity_id entity, const archetype& targetArchetype);
 
