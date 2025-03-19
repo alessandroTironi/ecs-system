@@ -1,7 +1,5 @@
 #include "ComponentsRegistry.h"
 
-
-
 ecs::component_id ecs::ComponentsRegistry::AddComponentData(const ecs::name& componentName, 
 	const size_t dataSize, const size_t initialCapacity)
 {

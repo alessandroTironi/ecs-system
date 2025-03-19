@@ -5,9 +5,12 @@
 #include "Archetypes.h"
 #include "PackedComponentArray.h"
 #include "ComponentsRegistry.h"
+#include "IDGenerator.h"
 
 namespace ecs
 {
+    typedef unsigned int archetype_id;
+ 
     class ArchetypesDatabase
     {
     public:
@@ -46,14 +49,14 @@ namespace ecs
         }
 
         const archetype& GetArchetype(entity_id entity);
-        size_t GetNumArchetypes() const { return m_archetypesMap.size(); }
+        size_t GetNumArchetypes() const { return m_archetypeSets.size(); }
         void Reset();
 
     private:
         struct archetype_set
         {
         public:
-            archetype_set() = default;
+            archetype_set();
             archetype_set(const archetype& archetype, ComponentsRegistry* componentsRegistry);
 
             /* Adds one element to each packed_component_array struct, returning the common index. */
@@ -83,10 +86,18 @@ namespace ecs
 
         void MoveEntity(entity_id entity, const archetype& targetArchetype);
 
-        void RemoveArchetypeSet(const archetype& archetype);
+        archetype_id GetOrCreateArchetypeID(const archetype& archetype);
+        archetype_set& GetOrCreateArchetypeSet(const archetype& archetype);
 
-        std::unordered_map<size_t, archetype_set> m_archetypesMap;
-        std::unordered_map<entity_id, size_t> m_entitiesArchetypeHashesMap;
+        std::unordered_map<archetype, archetype_id> m_archetypesIDMap;
+        std::unordered_map<entity_id, archetype_id> m_entitiesArchetypeHashesMap; 
+
+        /* Generator for unique archetype IDs.*/
+        IDGenerator<archetype_id> m_archetypeIDGenerator;
+
+        /* A vector of all the registered archetype sets which actually acts as a hash table where the key is the archetype's ID. 
+           Since archetype IDs are generated sequentially, this hash table is guaranteed to be collision-free and compact. */
+        std::vector<archetype_set> m_archetypeSets;
 
         /* A reference to the world's components registry. */
         std::shared_ptr<ComponentsRegistry> m_componentsRegistry;

@@ -74,6 +74,8 @@ namespace ecs
         inline auto begin() const { return m_componentIDs.begin(); }
         inline auto end() const { return m_componentIDs.end(); }
 
+        inline bool operator==(const archetype& other) const { return m_componentIDs == other.m_componentIDs; }
+
     private:
         std::set<component_id> m_componentIDs;
     };
