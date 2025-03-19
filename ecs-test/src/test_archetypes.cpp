@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include "Archetypes.h"
-#include "ArchetypesDatabase.h"
+#include "ArchetypesRegistry.h"
 #include "PackedComponentArray.h"
 #include "ComponentData.h"
 
@@ -42,7 +42,7 @@ protected:
     void SetUp() override
     {
         m_componentsRegistry = std::make_shared<ecs::ComponentsRegistry>();
-        m_archetypesDatabase = std::make_shared<ecs::ArchetypesDatabase>(m_componentsRegistry);
+        m_archetypesRegistry = std::make_shared<ecs::ArchetypesRegistry>(m_componentsRegistry);
         m_emptyArchetype = ecs::archetype();
         m_archetype1 = ecs::archetype::make<FloatComponent>(m_componentsRegistry.get());
         m_archetype2 = ecs::archetype::make<FloatComponent, IntComponent>(m_componentsRegistry.get());
@@ -51,7 +51,7 @@ protected:
 
     void TearDown() override
     {
-        m_archetypesDatabase.reset();
+        m_archetypesRegistry.reset();
         m_componentsRegistry.reset();
     }
 
@@ -59,7 +59,7 @@ protected:
     ecs::archetype m_archetype1;
     ecs::archetype m_archetype2;
     ecs::archetype m_archetype3;
-    std::shared_ptr<ecs::ArchetypesDatabase> m_archetypesDatabase;
+    std::shared_ptr<ecs::ArchetypesRegistry> m_archetypesRegistry;
     std::shared_ptr<ecs::ComponentsRegistry> m_componentsRegistry;
 };
 
@@ -243,64 +243,64 @@ TEST_F(TestArchetypes, TestEmplaceComponentInPackedArray)
 
 TEST_F(TestArchetypes, TestAddEntity)
 {
-    ASSERT_NO_THROW(m_archetypesDatabase->AddEntity<FloatComponent>(0));
-    EXPECT_EQ(m_archetypesDatabase->GetNumArchetypes(), 1);
+    ASSERT_NO_THROW(m_archetypesRegistry->AddEntity<FloatComponent>(0));
+    EXPECT_EQ(m_archetypesRegistry->GetNumArchetypes(), 1);
 
-    ASSERT_NO_THROW(m_archetypesDatabase->AddEntity<>(1));
+    ASSERT_NO_THROW(m_archetypesRegistry->AddEntity<>(1));
 }
 
 TEST_F(TestArchetypes, TestGetComponentFromArchetypesDatabase)
 {
-    m_archetypesDatabase->AddEntity<FloatComponent>(0);
-    FloatComponent& component = m_archetypesDatabase->GetComponent<FloatComponent>(0);
+    m_archetypesRegistry->AddEntity<FloatComponent>(0);
+    FloatComponent& component = m_archetypesRegistry->GetComponent<FloatComponent>(0);
     component.m_value = 3.0f;
-    EXPECT_NEAR(m_archetypesDatabase->GetComponent<FloatComponent>(0).m_value, 3.0f, 0.0001f);
+    EXPECT_NEAR(m_archetypesRegistry->GetComponent<FloatComponent>(0).m_value, 3.0f, 0.0001f);
 
-    ASSERT_THROW(FloatComponent& unexistingComponent = m_archetypesDatabase->GetComponent<FloatComponent>(1), std::out_of_range)
+    ASSERT_THROW(FloatComponent& unexistingComponent = m_archetypesRegistry->GetComponent<FloatComponent>(1), std::out_of_range)
         <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
 
-    m_archetypesDatabase->AddEntity<IntComponent>(1);
-    ASSERT_THROW(m_archetypesDatabase->GetComponent<FloatComponent>(1), std::out_of_range)
+    m_archetypesRegistry->AddEntity<IntComponent>(1);
+    ASSERT_THROW(m_archetypesRegistry->GetComponent<FloatComponent>(1), std::out_of_range)
         <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
 }
 
 TEST_F(TestArchetypes, TestRemoveEntityFromArchetypeDatabase)
 {
-    m_archetypesDatabase->AddEntity<FloatComponent>(0);
-    ASSERT_NO_THROW(m_archetypesDatabase->RemoveEntity(0));
+    m_archetypesRegistry->AddEntity<FloatComponent>(0);
+    ASSERT_NO_THROW(m_archetypesRegistry->RemoveEntity(0));
 
-    ASSERT_THROW(m_archetypesDatabase->GetComponent<FloatComponent>(0), std::out_of_range);
+    ASSERT_THROW(m_archetypesRegistry->GetComponent<FloatComponent>(0), std::out_of_range);
 
-    ASSERT_NO_THROW(m_archetypesDatabase->RemoveEntity(1));
+    ASSERT_NO_THROW(m_archetypesRegistry->RemoveEntity(1));
 }
 
 TEST_F(TestArchetypes, TestGetArchetype)
 {
-    m_archetypesDatabase->AddEntity<FloatComponent>(0);
+    m_archetypesRegistry->AddEntity<FloatComponent>(0);
     const ecs::archetype& floatArchetype = ecs::archetype::make<FloatComponent>(m_componentsRegistry.get());
-    EXPECT_EQ(ecs::CalculateArchetypeHash(m_archetypesDatabase->GetArchetype(0)), 
+    EXPECT_EQ(ecs::CalculateArchetypeHash(m_archetypesRegistry->GetArchetype(0)), 
         ecs::CalculateArchetypeHash(floatArchetype));
 }
 
 TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
 {
-    m_archetypesDatabase->AddEntity<FloatComponent>(0);
-    ASSERT_NO_THROW(m_archetypesDatabase->AddComponent<IntComponent>(0));
+    m_archetypesRegistry->AddEntity<FloatComponent>(0);
+    ASSERT_NO_THROW(m_archetypesRegistry->AddComponent<IntComponent>(0));
 
-    ASSERT_NO_THROW(m_archetypesDatabase->GetComponent<FloatComponent>(0));
-    ASSERT_NO_THROW(m_archetypesDatabase->GetComponent<IntComponent>(0));
+    ASSERT_NO_THROW(m_archetypesRegistry->GetComponent<FloatComponent>(0));
+    ASSERT_NO_THROW(m_archetypesRegistry->GetComponent<IntComponent>(0));
 
-    ASSERT_TRUE(m_archetypesDatabase->GetArchetype(0).has_component(m_componentsRegistry->GetComponentID<FloatComponent>()));
-    ASSERT_TRUE(m_archetypesDatabase->GetArchetype(0).has_component(m_componentsRegistry->GetComponentID<IntComponent>()));
+    ASSERT_TRUE(m_archetypesRegistry->GetArchetype(0).has_component(m_componentsRegistry->GetComponentID<FloatComponent>()));
+    ASSERT_TRUE(m_archetypesRegistry->GetArchetype(0).has_component(m_componentsRegistry->GetComponentID<IntComponent>()));
 }
 
 TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
 {
-    m_archetypesDatabase->AddEntity<IntComponent>(0);
-    ASSERT_NO_THROW(m_archetypesDatabase->RemoveComponent<FloatComponent>(0))
+    m_archetypesRegistry->AddEntity<IntComponent>(0);
+    ASSERT_NO_THROW(m_archetypesRegistry->RemoveComponent<FloatComponent>(0))
         << "Removing a non-existing component should not throw any exception, but just do nothing";
     
-    m_archetypesDatabase->AddComponent<FloatComponent>(0);
-    m_archetypesDatabase->RemoveComponent<FloatComponent>(0);
-    ASSERT_THROW(m_archetypesDatabase->GetComponent<FloatComponent>(0), std::out_of_range);
+    m_archetypesRegistry->AddComponent<FloatComponent>(0);
+    m_archetypesRegistry->RemoveComponent<FloatComponent>(0);
+    ASSERT_THROW(m_archetypesRegistry->GetComponent<FloatComponent>(0), std::out_of_range);
 }

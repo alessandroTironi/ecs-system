@@ -11,15 +11,15 @@ namespace ecs
 {
     typedef unsigned int archetype_id;
  
-    class ArchetypesDatabase
+    class ArchetypesRegistry
     {
     public:
-        ArchetypesDatabase() = default;
-        ArchetypesDatabase(std::shared_ptr<ComponentsRegistry> componentsRegistry)
+        ArchetypesRegistry() = default;
+        ArchetypesRegistry(std::shared_ptr<ComponentsRegistry> componentsRegistry)
             : m_componentsRegistry(componentsRegistry)
         {}
 
-        ~ArchetypesDatabase() = default;
+        ~ArchetypesRegistry() = default;
 
         template<typename... Components>
         void AddEntity(entity_id entity)

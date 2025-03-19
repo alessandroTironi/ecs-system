@@ -2,7 +2,7 @@
 #include <memory>
 #include "Types.h"
 #include "Archetypes.h"
-#include "ArchetypesDatabase.h"
+#include "ArchetypesRegistry.h"
 #include "ComponentsRegistry.h"
 #include "ArchetypeQuery.h"
 
@@ -35,17 +35,17 @@ protected:
     void SetUp() override
     {
         m_componentsRegistry = std::make_shared<ecs::ComponentsRegistry>();
-        m_archetypesDatabase = ecs::ArchetypesDatabase(m_componentsRegistry);
-        m_archetypesDatabase.AddEntity<Position>(0);
-        m_archetypesDatabase.AddEntity<Position>(1);
-        m_archetypesDatabase.AddEntity<Position, Velocity>(2);
-        m_archetypesDatabase.AddEntity<Velocity>(3);
-        m_archetypesDatabase.AddEntity<Position, Velocity, Rotation>(4);
+        m_archetypesRegistry = ecs::ArchetypesRegistry(m_componentsRegistry);
+        m_archetypesRegistry.AddEntity<Position>(0);
+        m_archetypesRegistry.AddEntity<Position>(1);
+        m_archetypesRegistry.AddEntity<Position, Velocity>(2);
+        m_archetypesRegistry.AddEntity<Velocity>(3);
+        m_archetypesRegistry.AddEntity<Position, Velocity, Rotation>(4);
     }
 
     void TearDown() override
     {
-        m_archetypesDatabase.Reset();
+        m_archetypesRegistry.Reset();
         m_componentsRegistry.reset();
     }
 
@@ -54,7 +54,7 @@ protected:
     ecs::entity_id m_entity1PosVel;
     ecs::entity_id m_entity1Vel;
     ecs::entity_id m_entity1PosVelRot;
-    ecs::ArchetypesDatabase m_archetypesDatabase; 
+    ecs::ArchetypesRegistry m_archetypesRegistry; 
     std::shared_ptr<ecs::ComponentsRegistry> m_componentsRegistry;
 };
 

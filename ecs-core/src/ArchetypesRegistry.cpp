@@ -1,6 +1,6 @@
-#include "ArchetypesDatabase.h"
+#include "ArchetypesRegistry.h"
 
-ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype, 
+ecs::ArchetypesRegistry::archetype_set::archetype_set(const ecs::archetype& archetype, 
     ecs::ComponentsRegistry* componentsRegistry)
 {
     m_archetype = archetype;
@@ -18,7 +18,7 @@ ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& arch
     }
 }
 
-size_t ecs::ArchetypesDatabase::archetype_set::add_entity(entity_id entity)
+size_t ecs::ArchetypesRegistry::archetype_set::add_entity(entity_id entity)
 {
     size_t entityIndex = 0;
     for (auto packedArrayIt = m_componentArraysMap.begin(); packedArrayIt != m_componentArraysMap.end(); ++packedArrayIt)
@@ -32,12 +32,12 @@ size_t ecs::ArchetypesDatabase::archetype_set::add_entity(entity_id entity)
     return entityIndex;
 }
 
-size_t ecs::ArchetypesDatabase::archetype_set::get_entity_index(entity_id entity) const
+size_t ecs::ArchetypesRegistry::archetype_set::get_entity_index(entity_id entity) const
 {
     return m_entityToIndexMap.at(entity);
 }
 
-bool ecs::ArchetypesDatabase::archetype_set::try_get_entity_index(entity_id entity, size_t& index) const
+bool ecs::ArchetypesRegistry::archetype_set::try_get_entity_index(entity_id entity, size_t& index) const
 {
     auto optionalIndex = m_entityToIndexMap.find(entity);
     if (optionalIndex != m_entityToIndexMap.end())
@@ -49,7 +49,7 @@ bool ecs::ArchetypesDatabase::archetype_set::try_get_entity_index(entity_id enti
     return false;
 }
 
-void* ecs::ArchetypesDatabase::archetype_set::get_component_at_index(const component_id componentID, const size_t index) const
+void* ecs::ArchetypesRegistry::archetype_set::get_component_at_index(const component_id componentID, const size_t index) const
 {
     std::shared_ptr<packed_component_array_t> packedArray = m_componentArraysMap.at(componentID);
     if (packedArray.get() != nullptr)
@@ -60,7 +60,7 @@ void* ecs::ArchetypesDatabase::archetype_set::get_component_at_index(const compo
     throw std::runtime_error("Found a null packed_component_array");
 }
 
-void ecs::ArchetypesDatabase::archetype_set::remove_entity(ecs::entity_id entity)
+void ecs::ArchetypesRegistry::archetype_set::remove_entity(ecs::entity_id entity)
 {
     auto optionalIndex = m_entityToIndexMap.find(entity);
     if (optionalIndex == m_entityToIndexMap.end())
@@ -85,12 +85,12 @@ void ecs::ArchetypesDatabase::archetype_set::remove_entity(ecs::entity_id entity
     }
 }
 
-void ecs::ArchetypesDatabase::AddEntity(ecs::entity_id entity, std::initializer_list<ecs::component_data> componentsData)
+void ecs::ArchetypesRegistry::AddEntity(ecs::entity_id entity, std::initializer_list<ecs::component_data> componentsData)
 {
     AddEntity(entity, archetype(componentsData));
 }
 
-void ecs::ArchetypesDatabase::AddEntity(entity_id entity, const ecs::archetype& archetype)
+void ecs::ArchetypesRegistry::AddEntity(entity_id entity, const ecs::archetype& archetype)
 {
     // Find the archetype unique ID, or generate it if it doesn't exist yet.
     const archetype_id id = GetOrCreateArchetypeID(archetype);
@@ -103,7 +103,7 @@ void ecs::ArchetypesDatabase::AddEntity(entity_id entity, const ecs::archetype& 
     m_entitiesArchetypeHashesMap[entity] = id;
 }
 
-void* ecs::ArchetypesDatabase::GetComponent(entity_id entity, const component_id componentID)
+void* ecs::ArchetypesRegistry::GetComponent(entity_id entity, const component_id componentID)
 {
     const archetype_id archetypeID = m_entitiesArchetypeHashesMap.at(entity);
     const archetype_set& set = m_archetypeSets[archetypeID];
@@ -111,13 +111,13 @@ void* ecs::ArchetypesDatabase::GetComponent(entity_id entity, const component_id
     return set.get_component_at_index(componentID, entityIndex);
 }
 
-const ecs::archetype& ecs::ArchetypesDatabase::GetArchetype(entity_id entity)
+const ecs::archetype& ecs::ArchetypesRegistry::GetArchetype(entity_id entity)
 {
     const archetype_id archetypeID = m_entitiesArchetypeHashesMap.at(entity);
     return m_archetypeSets[archetypeID].get_archetype();
 }
 
-void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const name& componentName)
+void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const name& componentName)
 {
     const archetype& currentArchetype = GetArchetype(entity);
     const component_id componentID = m_componentsRegistry->GetComponentID(componentName);
@@ -132,7 +132,7 @@ void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const name& compone
     MoveEntity(entity, newArchetype);
 }
 
-void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const component_id componentID)
+void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const component_id componentID)
 {
     ecs::name componentName; 
     ecs::component_data componentData;
@@ -142,7 +142,7 @@ void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const component_id 
     }
 }
 
-void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const name& componentName)
+void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const name& componentName)
 {
     const archetype& currentArchetype = GetArchetype(entity);
     const component_id componentID = m_componentsRegistry->GetComponentID(componentName);
@@ -157,7 +157,7 @@ void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const name& comp
     MoveEntity(entity, newArchetype);
 }
 
-void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const component_id componentID)
+void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const component_id componentID)
 {
     ecs::name componentName;
     ecs::component_data componentData;
@@ -167,7 +167,7 @@ void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const component_
     }
 }
 
-void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targetArchetype)
+void ecs::ArchetypesRegistry::MoveEntity(entity_id entity, const archetype& targetArchetype)
 {
     const archetype_id targetArchetypeID = GetOrCreateArchetypeID(targetArchetype);
 
@@ -209,7 +209,7 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targ
     m_entitiesArchetypeHashesMap[entity] = targetArchetypeID;
 }
 
-void ecs::ArchetypesDatabase::RemoveEntity(entity_id entity)
+void ecs::ArchetypesRegistry::RemoveEntity(entity_id entity)
 {
     auto optionalArchetypeID = m_entitiesArchetypeHashesMap.find(entity);
     if (optionalArchetypeID != m_entitiesArchetypeHashesMap.end())
@@ -221,7 +221,7 @@ void ecs::ArchetypesDatabase::RemoveEntity(entity_id entity)
     }
 }
 
-ecs::archetype_id ecs::ArchetypesDatabase::GetOrCreateArchetypeID(const archetype& archetype)
+ecs::archetype_id ecs::ArchetypesRegistry::GetOrCreateArchetypeID(const archetype& archetype)
 {
     auto optionalArchetypeID = m_archetypesIDMap.find(archetype);
     if (optionalArchetypeID == m_archetypesIDMap.end())
@@ -237,13 +237,13 @@ ecs::archetype_id ecs::ArchetypesDatabase::GetOrCreateArchetypeID(const archetyp
     }
 }
 
-ecs::ArchetypesDatabase::archetype_set& ecs::ArchetypesDatabase::GetOrCreateArchetypeSet(const archetype& archetype)
+ecs::ArchetypesRegistry::archetype_set& ecs::ArchetypesRegistry::GetOrCreateArchetypeSet(const archetype& archetype)
 {
     const archetype_id id = GetOrCreateArchetypeID(archetype);
     return m_archetypeSets[id];
 }
 
-void ecs::ArchetypesDatabase::Reset()
+void ecs::ArchetypesRegistry::Reset()
 {
     m_archetypeSets.clear();
     m_archetypesIDMap.clear();
