@@ -9,8 +9,8 @@ public:
     void SetUp() override
     {
         m_emptyString = "";
-        m_shortString = "short";
-        m_longString = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        m_shortString = std::string("short");
+        m_longString = std::string("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     }
 
     void TearDown() override

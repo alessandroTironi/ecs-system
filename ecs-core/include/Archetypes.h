@@ -23,23 +23,18 @@ namespace ecs
         static archetype make(std::initializer_list<component_id> components);
 
         template<typename FirstComponent, typename... OtherComponents>
-        static archetype make()
+        static archetype make(ComponentsDatabase* componentsRegistry)
         {
             std::initializer_list<component_id> signature = 
             { 
-                ComponentsDatabase::GetComponentID<FirstComponent>(), 
-                ComponentsDatabase::GetComponentID<OtherComponents>()... 
+                componentsRegistry->GetComponentID<FirstComponent>(), 
+                componentsRegistry->GetComponentID<OtherComponents>()... 
             };
 
             return make(signature);
         }
 
         inline bool is_null() const { return m_componentIDs.empty(); }
-
-        inline bool has_component(const name& componentName) const
-        {
-            return m_componentIDs.contains(ComponentsDatabase::GetComponentID(componentName));
-        }
 
         inline bool has_component(const component_id componentID) const
         {
@@ -54,9 +49,9 @@ namespace ecs
 
         inline size_t get_num_components() const { return m_componentIDs.size(); }
 
-        inline void add_component(const name& componentName) 
-        { 
-            m_componentIDs.insert(ComponentsDatabase::GetComponentID(componentName)); 
+        inline void add_component(const component_id componentID)
+        {
+            m_componentIDs.insert(componentID);
         }
 
         template<typename ComponentType>
@@ -65,9 +60,9 @@ namespace ecs
             m_componentIDs.insert(ComponentsDatabase::GetComponentID<ComponentType>());
         }
 
-        inline void remove_component(const name& componentName) 
-        { 
-            m_componentIDs.erase(ComponentsDatabase::GetComponentID(componentName));  
+        inline void remove_component(const component_id componentID)
+        {
+            m_componentIDs.erase(componentID);
         }
 
         template<typename ComponentType>

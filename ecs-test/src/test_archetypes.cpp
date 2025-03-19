@@ -41,23 +41,26 @@ public:
 protected:
     void SetUp() override
     {
+        m_componentsRegistry = std::make_shared<ecs::ComponentsDatabase>();
+        m_archetypesDatabase = std::make_shared<ecs::ArchetypesDatabase>(m_componentsRegistry);
         m_emptyArchetype = ecs::archetype();
-        m_archetype1 = ecs::archetype::make<FloatComponent>();
-        m_archetype2 = ecs::archetype::make<FloatComponent, IntComponent>();
-        m_archetype3 = ecs::archetype::make<FloatComponent, IntComponent, DoubleComponent>();
+        m_archetype1 = ecs::archetype::make<FloatComponent>(m_componentsRegistry.get());
+        m_archetype2 = ecs::archetype::make<FloatComponent, IntComponent>(m_componentsRegistry.get());
+        m_archetype3 = ecs::archetype::make<FloatComponent, IntComponent, DoubleComponent>(m_componentsRegistry.get());
     }
 
     void TearDown() override
     {
-        m_archetypesDatabase.Reset();
-        ecs::ComponentsDatabase::Reset();
+        m_archetypesDatabase.reset();
+        m_componentsRegistry.reset();
     }
 
     ecs::archetype m_emptyArchetype;
     ecs::archetype m_archetype1;
     ecs::archetype m_archetype2;
     ecs::archetype m_archetype3;
-    ecs::ArchetypesDatabase m_archetypesDatabase;
+    std::shared_ptr<ecs::ArchetypesDatabase> m_archetypesDatabase;
+    std::shared_ptr<ecs::ComponentsDatabase> m_componentsRegistry;
 };
 
 TEST_F(TestArchetypes, TestNullArchetype)
@@ -83,8 +86,8 @@ TEST_F(TestArchetypes, TestVectorMoveConstructor)
 
 TEST_F(TestArchetypes, TestTemplateMakeFunction)
 {
-    ASSERT_NO_THROW(ecs::archetype::make<FloatComponent>());
-    static constexpr auto createTwoComponents = []() { ecs::archetype::make<FloatComponent, IntComponent>(); };
+    ASSERT_NO_THROW(ecs::archetype::make<FloatComponent>(m_componentsRegistry.get()));
+    auto createTwoComponents = [&]() { ecs::archetype::make<FloatComponent, IntComponent>(m_componentsRegistry.get()); };
     ASSERT_NO_THROW(createTwoComponents());
 }
 
@@ -110,9 +113,9 @@ TEST_F(TestArchetypes, TestComponentsOrder)
 {
     std::vector<ecs::type_hash_t> componentIDs =
     {
-        ecs::ComponentsDatabase::GetComponentID<FloatComponent>(),
-        ecs::ComponentsDatabase::GetComponentID<DoubleComponent>(),
-        ecs::ComponentsDatabase::GetComponentID<IntComponent>(),
+        m_componentsRegistry->GetComponentID<FloatComponent>(),
+        m_componentsRegistry->GetComponentID<DoubleComponent>(),
+        m_componentsRegistry->GetComponentID<IntComponent>(),
     };
 
     std::sort(componentIDs.begin(), componentIDs.end());
@@ -130,9 +133,9 @@ TEST_F(TestArchetypes, TestComponentsOrder)
 
 TEST_F(TestArchetypes, TestHashing)
 {
-    ecs::ComponentsDatabase::RegisterComponent<FloatComponent>();
-    ecs::ComponentsDatabase::RegisterComponent<IntComponent>(); 
-    ecs::ComponentsDatabase::RegisterComponent<DoubleComponent>();
+    m_componentsRegistry->RegisterComponent<FloatComponent>();
+    m_componentsRegistry->RegisterComponent<IntComponent>(); 
+    m_componentsRegistry->RegisterComponent<DoubleComponent>();
 
     const auto hash1 = std::hash<ecs::archetype>{}(m_archetype1);
     const auto hash2 = std::hash<ecs::archetype>{}(m_archetype2);
@@ -142,9 +145,9 @@ TEST_F(TestArchetypes, TestHashing)
     EXPECT_NE(hash2, hash3) << "Different archetypes should have different hashes";
     EXPECT_NE(hash1, hash3) << "Different archetypes should have different hashes";
 
-    EXPECT_EQ(hash1, std::hash<ecs::archetype>{}(ecs::archetype::make<FloatComponent>()))
+    EXPECT_EQ(hash1, std::hash<ecs::archetype>{}(ecs::archetype::make<FloatComponent>(m_componentsRegistry.get())))
         << "Archetypes with the same components should have the same hash";
-    EXPECT_EQ(hash2, std::hash<ecs::archetype>{}(ecs::archetype::make<IntComponent, FloatComponent>()))
+    EXPECT_EQ(hash2, std::hash<ecs::archetype>{}(ecs::archetype::make<IntComponent, FloatComponent>(m_componentsRegistry.get())))
         << "Archetypes with the same components declared in different order should have the same hash";
 }
 
@@ -152,18 +155,18 @@ TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
 {
     ecs::packed_component_array_t packedArray1;
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
     ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array_t(floatComponentData));
     ASSERT_EQ(packedArray1.component_size(), sizeof(FloatComponent));
     ASSERT_EQ(packedArray1.size(), 0);
-    ASSERT_EQ(packedArray1.component_serial(), ecs::ComponentsDatabase::GetComponentID<FloatComponent>());
+    ASSERT_EQ(packedArray1.component_serial(), m_componentsRegistry->GetComponentID<FloatComponent>());
     ASSERT_EQ(packedArray1.capacity(), 8);
 }
 
 TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 {
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
     ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent = packedArray.add_component();
     EXPECT_EQ(packedArray.size(), 1);
@@ -173,7 +176,7 @@ TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 TEST_F(TestArchetypes, TestAddComponentRealloc)
 {
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
     ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent1 = packedArray.add_component();
     void* newComponent2 = packedArray.add_component();
@@ -195,9 +198,9 @@ TEST_F(TestArchetypes, TestAddComponentRealloc)
 
 TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 {
-    ecs::ComponentsDatabase::RegisterComponent<FloatComponent>(2);
+    m_componentsRegistry->RegisterComponent<FloatComponent>(2);
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
     ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent1 = packedArray.add_component();
     void* newComponent2 = packedArray.add_component();
@@ -210,7 +213,7 @@ TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
 {
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(ecs::ComponentsDatabase::TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
     ecs::packed_component_array_t packedArray(floatComponentData);
     void* c1 = packedArray.add_component();
     void* c2 = packedArray.add_component();
@@ -225,7 +228,7 @@ TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
 
 TEST_F(TestArchetypes, TestTemplatePackedComponentArray)
 {
-    ecs::packed_component_array<FloatComponent> packedArray;
+    ecs::packed_component_array<FloatComponent> packedArray(m_componentsRegistry.get());
     FloatComponent& component = packedArray.add_component();
     component.m_value = 3.14f;
     ASSERT_NEAR(packedArray.get_component(0).m_value, 3.14f, 0.0001f);
@@ -233,88 +236,88 @@ TEST_F(TestArchetypes, TestTemplatePackedComponentArray)
 
 TEST_F(TestArchetypes, TestEmplaceComponentInPackedArray)
 {
-    ecs::packed_component_array<FloatComponent> packedArray;
+    ecs::packed_component_array<FloatComponent> packedArray(m_componentsRegistry.get());
     FloatComponent& component = packedArray.emplace_component(3.14f);
     ASSERT_NEAR(packedArray.get_component(0).m_value, 3.14f, 0.0001f);
 }
 
 TEST_F(TestArchetypes, TestAddEntity)
 {
-    ASSERT_NO_THROW(m_archetypesDatabase.AddEntity<FloatComponent>(0));
-    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 1);
+    ASSERT_NO_THROW(m_archetypesDatabase->AddEntity<FloatComponent>(0));
+    EXPECT_EQ(m_archetypesDatabase->GetNumArchetypes(), 1);
 
-    ASSERT_NO_THROW(m_archetypesDatabase.AddEntity<>(1));
+    ASSERT_NO_THROW(m_archetypesDatabase->AddEntity<>(1));
 }
 
 TEST_F(TestArchetypes, TestGetComponentFromArchetypesDatabase)
 {
-    m_archetypesDatabase.AddEntity<FloatComponent>(0);
-    FloatComponent& component = m_archetypesDatabase.GetComponent<FloatComponent>(0);
+    m_archetypesDatabase->AddEntity<FloatComponent>(0);
+    FloatComponent& component = m_archetypesDatabase->GetComponent<FloatComponent>(0);
     component.m_value = 3.0f;
-    EXPECT_NEAR(m_archetypesDatabase.GetComponent<FloatComponent>(0).m_value, 3.0f, 0.0001f);
+    EXPECT_NEAR(m_archetypesDatabase->GetComponent<FloatComponent>(0).m_value, 3.0f, 0.0001f);
 
-    ASSERT_THROW(FloatComponent& unexistingComponent = m_archetypesDatabase.GetComponent<FloatComponent>(1), std::out_of_range)
+    ASSERT_THROW(FloatComponent& unexistingComponent = m_archetypesDatabase->GetComponent<FloatComponent>(1), std::out_of_range)
         <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
 
-    m_archetypesDatabase.AddEntity<IntComponent>(1);
-    ASSERT_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(1), std::out_of_range)
+    m_archetypesDatabase->AddEntity<IntComponent>(1);
+    ASSERT_THROW(m_archetypesDatabase->GetComponent<FloatComponent>(1), std::out_of_range)
         <<  "Getting an lvalue reference to a non-existing component should throw an exception.";
 }
 
 TEST_F(TestArchetypes, TestRemoveEntityFromArchetypeDatabase)
 {
-    m_archetypesDatabase.AddEntity<FloatComponent>(0);
-    ASSERT_NO_THROW(m_archetypesDatabase.RemoveEntity(0));
+    m_archetypesDatabase->AddEntity<FloatComponent>(0);
+    ASSERT_NO_THROW(m_archetypesDatabase->RemoveEntity(0));
 
-    ASSERT_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(0), std::out_of_range);
+    ASSERT_THROW(m_archetypesDatabase->GetComponent<FloatComponent>(0), std::out_of_range);
 
-    ASSERT_NO_THROW(m_archetypesDatabase.RemoveEntity(1));
+    ASSERT_NO_THROW(m_archetypesDatabase->RemoveEntity(1));
 }
 
 TEST_F(TestArchetypes, TestGetArchetype)
 {
-    m_archetypesDatabase.AddEntity<FloatComponent>(0);
-    const ecs::archetype& floatArchetype = ecs::archetype::make<FloatComponent>();
-    EXPECT_EQ(ecs::CalculateArchetypeHash(m_archetypesDatabase.GetArchetype(0)), 
+    m_archetypesDatabase->AddEntity<FloatComponent>(0);
+    const ecs::archetype& floatArchetype = ecs::archetype::make<FloatComponent>(m_componentsRegistry.get());
+    EXPECT_EQ(ecs::CalculateArchetypeHash(m_archetypesDatabase->GetArchetype(0)), 
         ecs::CalculateArchetypeHash(floatArchetype));
 }
 
 TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
 {
-    m_archetypesDatabase.AddEntity<FloatComponent>(0);
-    ASSERT_NO_THROW(m_archetypesDatabase.AddComponent<IntComponent>(0));
+    m_archetypesDatabase->AddEntity<FloatComponent>(0);
+    ASSERT_NO_THROW(m_archetypesDatabase->AddComponent<IntComponent>(0));
 
-    ASSERT_NO_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(0));
-    ASSERT_NO_THROW(m_archetypesDatabase.GetComponent<IntComponent>(0));
+    ASSERT_NO_THROW(m_archetypesDatabase->GetComponent<FloatComponent>(0));
+    ASSERT_NO_THROW(m_archetypesDatabase->GetComponent<IntComponent>(0));
 
-    ASSERT_TRUE(m_archetypesDatabase.GetArchetype(0).has_component(ecs::ComponentsDatabase::GetComponentID<FloatComponent>()));
-    ASSERT_TRUE(m_archetypesDatabase.GetArchetype(0).has_component(ecs::ComponentsDatabase::GetComponentID<IntComponent>()));
+    ASSERT_TRUE(m_archetypesDatabase->GetArchetype(0).has_component(m_componentsRegistry->GetComponentID<FloatComponent>()));
+    ASSERT_TRUE(m_archetypesDatabase->GetArchetype(0).has_component(m_componentsRegistry->GetComponentID<IntComponent>()));
 }
 
 TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
 {
-    m_archetypesDatabase.AddEntity<IntComponent>(0);
-    ASSERT_NO_THROW(m_archetypesDatabase.RemoveComponent<FloatComponent>(0))
+    m_archetypesDatabase->AddEntity<IntComponent>(0);
+    ASSERT_NO_THROW(m_archetypesDatabase->RemoveComponent<FloatComponent>(0))
         << "Removing a non-existing component should not throw any exception, but just do nothing";
     
-    m_archetypesDatabase.AddComponent<FloatComponent>(0);
-    m_archetypesDatabase.RemoveComponent<FloatComponent>(0);
-    ASSERT_THROW(m_archetypesDatabase.GetComponent<FloatComponent>(0), std::out_of_range);
+    m_archetypesDatabase->AddComponent<FloatComponent>(0);
+    m_archetypesDatabase->RemoveComponent<FloatComponent>(0);
+    ASSERT_THROW(m_archetypesDatabase->GetComponent<FloatComponent>(0), std::out_of_range);
 }
 
 TEST_F(TestArchetypes, TestFlushEmptyArchetypeSets)
 {
-    m_archetypesDatabase.AddEntity<IntComponent>(0);
-    m_archetypesDatabase.AddEntity<FloatComponent>(1);
-    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 2);
+    m_archetypesDatabase->AddEntity<IntComponent>(0);
+    m_archetypesDatabase->AddEntity<FloatComponent>(1);
+    EXPECT_EQ(m_archetypesDatabase->GetNumArchetypes(), 2);
 
-    m_archetypesDatabase.AddComponent<FloatComponent>(0);
-    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 2)
+    m_archetypesDatabase->AddComponent<FloatComponent>(0);
+    EXPECT_EQ(m_archetypesDatabase->GetNumArchetypes(), 2)
         << "Empty archetype sets should automatically be deleted.";
 
-    m_archetypesDatabase.AddEntity<FloatComponent, IntComponent, DoubleComponent>(2);
-    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 3);
+    m_archetypesDatabase->AddEntity<FloatComponent, IntComponent, DoubleComponent>(2);
+    EXPECT_EQ(m_archetypesDatabase->GetNumArchetypes(), 3);
 
-    m_archetypesDatabase.RemoveComponent<DoubleComponent>(2);
-    EXPECT_EQ(m_archetypesDatabase.GetNumArchetypes(), 2);
+    m_archetypesDatabase->RemoveComponent<DoubleComponent>(2);
+    EXPECT_EQ(m_archetypesDatabase->GetNumArchetypes(), 2);
 }

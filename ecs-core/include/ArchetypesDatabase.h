@@ -1,8 +1,10 @@
 #pragma once
 
 #include <unordered_map>
+#include <memory>
 #include "Archetypes.h"
 #include "PackedComponentArray.h"
+#include "ComponentsDatabase.h"
 
 namespace ecs
 {
@@ -10,19 +12,23 @@ namespace ecs
     {
     public:
         ArchetypesDatabase() = default;
+        ArchetypesDatabase(std::shared_ptr<ComponentsDatabase> componentsRegistry)
+            : m_componentsRegistry(componentsRegistry)
+        {}
+
         ~ArchetypesDatabase() = default;
 
         template<typename... Components>
         void AddEntity(entity_id entity)
         {
             AddEntity(entity, { component_data(sizeof(Components), 
-                ComponentsDatabase::GetComponentID<Components>(), 8)...});
+                m_componentsRegistry->GetComponentID<Components>(), 8)...});
         }
 
         template<typename ComponentType>
         ComponentType& GetComponent(entity_id entity)
         {
-            return *static_cast<ComponentType*>(GetComponent(entity, ComponentsDatabase::GetComponentID<ComponentType>()));
+            return *static_cast<ComponentType*>(GetComponent(entity, m_componentsRegistry->GetComponentID<ComponentType>()));
         }
 
         void RemoveEntity(entity_id entity);
@@ -30,13 +36,13 @@ namespace ecs
         template<typename ComponentType>
         void AddComponent(entity_id entity)
         {
-            AddComponent(entity, ComponentsDatabase::GetComponentID<ComponentType>());
+            AddComponent(entity, m_componentsRegistry->GetComponentID<ComponentType>());
         }
 
         template<typename ComponentType>
         void RemoveComponent(entity_id entity)
         {
-            RemoveComponent(entity, ComponentsDatabase::GetComponentID<ComponentType>());
+            RemoveComponent(entity, m_componentsRegistry->GetComponentID<ComponentType>());
         }
 
         const archetype& GetArchetype(entity_id entity);
@@ -48,7 +54,7 @@ namespace ecs
         {
         public:
             archetype_set() = default;
-            archetype_set(const archetype& archetype);
+            archetype_set(const archetype& archetype, ComponentsDatabase* componentsRegistry);
 
             /* Adds one element to each packed_component_array struct, returning the common index. */
             size_t add_entity(entity_id entity);
@@ -65,9 +71,6 @@ namespace ecs
             std::unordered_map<size_t, entity_id> m_indexToEntityMap; //@todo replace this with a plain array for cache locality
         };
 
-        std::unordered_map<size_t, archetype_set> m_archetypesMap;
-        std::unordered_map<entity_id, size_t> m_entitiesArchetypeHashesMap;
-
         void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
         void AddEntity(entity_id entity, const archetype& archetype);
 
@@ -81,5 +84,11 @@ namespace ecs
         void MoveEntity(entity_id entity, const archetype& targetArchetype);
 
         void RemoveArchetypeSet(const archetype& archetype);
+
+        std::unordered_map<size_t, archetype_set> m_archetypesMap;
+        std::unordered_map<entity_id, size_t> m_entitiesArchetypeHashesMap;
+
+        /* A reference to the world's components registry. */
+        std::shared_ptr<ComponentsDatabase> m_componentsRegistry;
     };
 }

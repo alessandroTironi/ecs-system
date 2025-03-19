@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <memory>
 #include "Types.h"
 #include "Archetypes.h"
 #include "ArchetypesDatabase.h"
@@ -33,6 +34,8 @@ public:
 protected:
     void SetUp() override
     {
+        m_componentsRegistry = std::make_shared<ecs::ComponentsDatabase>();
+        m_archetypesDatabase = ecs::ArchetypesDatabase(m_componentsRegistry);
         m_archetypesDatabase.AddEntity<Position>(0);
         m_archetypesDatabase.AddEntity<Position>(1);
         m_archetypesDatabase.AddEntity<Position, Velocity>(2);
@@ -43,6 +46,7 @@ protected:
     void TearDown() override
     {
         m_archetypesDatabase.Reset();
+        m_componentsRegistry.reset();
     }
 
     ecs::entity_id m_entity1Pos;
@@ -51,6 +55,7 @@ protected:
     ecs::entity_id m_entity1Vel;
     ecs::entity_id m_entity1PosVelRot;
     ecs::ArchetypesDatabase m_archetypesDatabase; 
+    std::shared_ptr<ecs::ComponentsDatabase> m_componentsRegistry;
 };
 
 TEST_F(TestArchetypeQueries, TestQueryOneComponent)

@@ -12,12 +12,15 @@ namespace ecs
     class ComponentsDatabase
     {
     public:
+        ComponentsDatabase() = default;
+        ~ComponentsDatabase() = default;
+
         template<typename ComponentType>
-        static component_id GetComponentID()
+        component_id GetComponentID()
         {
             const std::string componentName = typeid(ComponentType).name();
-            auto optionalComponentData = s_componentsClassMap.find(componentName);
-            if (optionalComponentData == s_componentsClassMap.end())
+            auto optionalComponentData = m_componentsClassMap.find(componentName);
+            if (optionalComponentData == m_componentsClassMap.end())
             {
                 return AddComponentData(componentName, sizeof(ComponentType), 8);
             }
@@ -27,10 +30,10 @@ namespace ecs
             }
         }
 
-        static component_id GetComponentID(const name& componentName)
+        component_id GetComponentID(const name& componentName)
         {
-            auto optionalComponentData = s_componentsClassMap.find(componentName);
-            if (optionalComponentData == s_componentsClassMap.end())
+            auto optionalComponentData = m_componentsClassMap.find(componentName);
+            if (optionalComponentData == m_componentsClassMap.end())
             {
                 throw std::invalid_argument("Component not found in the database. Call RegisterComponent() first.");
             }
@@ -40,11 +43,11 @@ namespace ecs
             }
         }
 
-        static bool TryGetComponentData(const name& componentName, component_data& outComponentData);
-        static bool TryGetComponentData(const component_id componentID, name& outComponentName, component_data& outComponentData);
+        bool TryGetComponentData(const name& componentName, component_data& outComponentData);
+        bool TryGetComponentData(const component_id componentID, name& outComponentName, component_data& outComponentData);
 
         template<typename ComponentType>
-        static component_data GetOrAddComponentData()
+        component_data GetOrAddComponentData()
         {
             const component_id componentID = GetComponentID<ComponentType>(); 
             component_data componentData;
@@ -54,24 +57,23 @@ namespace ecs
         }
 
         template<typename ComponentType>
-        static void RegisterComponent(const size_t initialCapacity = 8)
+        void RegisterComponent(const size_t initialCapacity = 8)
         {
             AddComponentData(typeid(ComponentType).name(), sizeof(ComponentType), initialCapacity);
         }
 
-        static void Reset()
+        void Reset()
         {
-            s_componentIDGenerator.Reset();
-            s_componentsClassMap.clear();
-            s_componentNames.clear();
+            m_componentIDGenerator.Reset();
+            m_componentsClassMap.clear();
+            m_componentNames.clear();
         }
 
     private:
-        static ecs::component_id AddComponentData(const name& componentName, const size_t dataSize, const size_t initialCapacity = 8);
+        component_id AddComponentData(const name& componentName, const size_t dataSize, const size_t initialCapacity = 8);
 
-        static IDGenerator<component_id> s_componentIDGenerator;
-
-        static std::unordered_map<name, component_data> s_componentsClassMap;
-        static std::vector<name> s_componentNames;
+        IDGenerator<component_id> m_componentIDGenerator;
+        std::unordered_map<name, component_data> m_componentsClassMap;
+        std::vector<name> m_componentNames;
     };
 }

@@ -57,8 +57,8 @@ namespace ecs
     struct packed_component_array : public packed_component_array_t
     {
     public:
-        packed_component_array() 
-            : packed_component_array_t(ecs::ComponentsDatabase::GetOrAddComponentData<ComponentType>())
+        packed_component_array(ComponentsDatabase* componentsRegistry) 
+            : packed_component_array_t(componentsRegistry->GetOrAddComponentData<ComponentType>())
         {}
 
         ComponentType& add_component()

@@ -1,6 +1,7 @@
 #include "ArchetypesDatabase.h"
 
-ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype)
+ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype, 
+    ecs::ComponentsDatabase* componentsRegistry)
 {
     m_archetype = std::move(archetype);
 
@@ -8,7 +9,7 @@ ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& arch
     {
         ecs::component_data componentData;
         ecs::name componentName;
-        if (!ecs::ComponentsDatabase::TryGetComponentData(*componentIt, componentName, componentData))
+        if (!componentsRegistry->TryGetComponentData(*componentIt, componentName, componentData))
         {
             throw std::invalid_argument("Component not found in the database. Call RegisterComponent() first.");
         }
@@ -97,7 +98,7 @@ void ecs::ArchetypesDatabase::AddEntity(entity_id entity, const ecs::archetype& 
     if (optionalArchetypeSet == m_archetypesMap.end())
     {
         // create and add new archetype set 
-        m_archetypesMap.emplace(archetypeHash, archetype_set(archetype));
+        m_archetypesMap.emplace(archetypeHash, archetype_set(archetype, m_componentsRegistry.get()));
         // @todo can we avoid a second lookup here?
         m_archetypesMap[archetypeHash].add_entity(entity);
     }
@@ -128,13 +129,14 @@ const ecs::archetype& ecs::ArchetypesDatabase::GetArchetype(entity_id entity)
 void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const name& componentName)
 {
     const archetype& currentArchetype = GetArchetype(entity);
-    if (currentArchetype.has_component(componentName))
+    const component_id componentID = m_componentsRegistry->GetComponentID(componentName);
+    if (currentArchetype.has_component(componentID))
     {
         return;
     }
 
     archetype newArchetype = currentArchetype; // @todo possibly unnecessary copy constructor here
-    newArchetype.add_component(componentName);
+    newArchetype.add_component(componentID);
 
     MoveEntity(entity, newArchetype);
 }
@@ -143,7 +145,7 @@ void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const component_id 
 {
     ecs::name componentName; 
     ecs::component_data componentData;
-    if (ecs::ComponentsDatabase::TryGetComponentData(componentID, componentName, componentData))
+    if (m_componentsRegistry->TryGetComponentData(componentID, componentName, componentData))
     {
         AddComponent(entity, componentName);
     }
@@ -152,13 +154,14 @@ void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const component_id 
 void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const name& componentName)
 {
     const archetype& currentArchetype = GetArchetype(entity);
-    if (!currentArchetype.has_component(componentName))
+    const component_id componentID = m_componentsRegistry->GetComponentID(componentName);
+    if (!currentArchetype.has_component(componentID))
     {
         return;
     }
 
     archetype newArchetype = currentArchetype;
-    newArchetype.remove_component(componentName);
+    newArchetype.remove_component(componentID);
 
     MoveEntity(entity, newArchetype);
 }
@@ -167,7 +170,7 @@ void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const component_
 {
     ecs::name componentName;
     ecs::component_data componentData;
-    if (ecs::ComponentsDatabase::TryGetComponentData(componentID, componentName, componentData))
+    if (m_componentsRegistry->TryGetComponentData(componentID, componentName, componentData))
     {
         RemoveComponent(entity, componentName);
     }
@@ -184,7 +187,7 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targ
     if (optionalTargetSet == m_archetypesMap.end())
     {
         // The target archetype still doesn't exist, create it
-        m_archetypesMap.emplace(targetArchetypeHash, archetype_set(targetArchetype));
+        m_archetypesMap.emplace(targetArchetypeHash, archetype_set(targetArchetype, m_componentsRegistry.get()));
     }
 
     // allocate memory for storing components of the entity in the new archetype.
@@ -204,7 +207,7 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targ
         void* targetComponentPtr = targetSet.get_component_at_index(componentID, targetIndex);
         component_data componentData;
         name componentName;
-        if (!ComponentsDatabase::TryGetComponentData(componentID, componentName, componentData))
+        if (!m_componentsRegistry->TryGetComponentData(componentID, componentName, componentData))
         {
             throw std::runtime_error("Trying to copy a component that was not registered. Call RegisterComponent() first.");
         }
