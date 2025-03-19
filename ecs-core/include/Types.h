@@ -13,5 +13,5 @@ namespace ecs
 
     #define GetTypeHash(obj) typeid(obj).hash_code()
 
-    typedef compact_string<32> name;
+    typedef compact_string<40> name;
 }

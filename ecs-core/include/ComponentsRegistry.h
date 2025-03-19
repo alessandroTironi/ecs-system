@@ -18,7 +18,7 @@ namespace ecs
         template<typename ComponentType>
         component_id GetComponentID()
         {
-            const std::string componentName = typeid(ComponentType).name();
+            const name componentName = typeid(ComponentType).name();
             auto optionalComponentData = m_componentsClassMap.find(componentName);
             if (optionalComponentData == m_componentsClassMap.end())
             {
