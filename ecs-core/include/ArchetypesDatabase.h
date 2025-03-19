@@ -4,7 +4,7 @@
 #include <memory>
 #include "Archetypes.h"
 #include "PackedComponentArray.h"
-#include "ComponentsDatabase.h"
+#include "ComponentsRegistry.h"
 
 namespace ecs
 {
@@ -12,7 +12,7 @@ namespace ecs
     {
     public:
         ArchetypesDatabase() = default;
-        ArchetypesDatabase(std::shared_ptr<ComponentsDatabase> componentsRegistry)
+        ArchetypesDatabase(std::shared_ptr<ComponentsRegistry> componentsRegistry)
             : m_componentsRegistry(componentsRegistry)
         {}
 
@@ -54,7 +54,7 @@ namespace ecs
         {
         public:
             archetype_set() = default;
-            archetype_set(const archetype& archetype, ComponentsDatabase* componentsRegistry);
+            archetype_set(const archetype& archetype, ComponentsRegistry* componentsRegistry);
 
             /* Adds one element to each packed_component_array struct, returning the common index. */
             size_t add_entity(entity_id entity);
@@ -89,6 +89,6 @@ namespace ecs
         std::unordered_map<entity_id, size_t> m_entitiesArchetypeHashesMap;
 
         /* A reference to the world's components registry. */
-        std::shared_ptr<ComponentsDatabase> m_componentsRegistry;
+        std::shared_ptr<ComponentsRegistry> m_componentsRegistry;
     };
 }

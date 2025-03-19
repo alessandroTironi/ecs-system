@@ -9,11 +9,11 @@
 
 namespace ecs
 {
-    class ComponentsDatabase
+    class ComponentsRegistry
     {
     public:
-        ComponentsDatabase() = default;
-        ~ComponentsDatabase() = default;
+        ComponentsRegistry() = default;
+        ~ComponentsRegistry() = default;
 
         template<typename ComponentType>
         component_id GetComponentID()

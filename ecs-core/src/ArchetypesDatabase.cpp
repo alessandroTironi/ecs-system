@@ -1,7 +1,7 @@
 #include "ArchetypesDatabase.h"
 
 ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& archetype, 
-    ecs::ComponentsDatabase* componentsRegistry)
+    ecs::ComponentsRegistry* componentsRegistry)
 {
     m_archetype = std::move(archetype);
 

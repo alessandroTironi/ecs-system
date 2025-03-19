@@ -6,7 +6,7 @@
 #include <memory>
 #include <iostream>
 #include "Types.h"
-#include "ComponentsDatabase.h"
+#include "ComponentsRegistry.h"
 #include "ComponentData.h"
 #include "PackedComponentArray.h"
 #include "Entity.h"
@@ -23,7 +23,7 @@ namespace ecs
         static archetype make(std::initializer_list<component_id> components);
 
         template<typename FirstComponent, typename... OtherComponents>
-        static archetype make(ComponentsDatabase* componentsRegistry)
+        static archetype make(ComponentsRegistry* componentsRegistry)
         {
             std::initializer_list<component_id> signature = 
             { 
@@ -44,7 +44,7 @@ namespace ecs
         template<typename ComponentType>
         inline bool has_component() const 
         {
-            return m_componentIDs.contains(ComponentsDatabase::GetComponentID<ComponentType>());
+            return m_componentIDs.contains(ComponentsRegistry::GetComponentID<ComponentType>());
         }
 
         inline size_t get_num_components() const { return m_componentIDs.size(); }
@@ -57,7 +57,7 @@ namespace ecs
         template<typename ComponentType>
         inline void add_component()
         {
-            m_componentIDs.insert(ComponentsDatabase::GetComponentID<ComponentType>());
+            m_componentIDs.insert(ComponentsRegistry::GetComponentID<ComponentType>());
         }
 
         inline void remove_component(const component_id componentID)
@@ -68,7 +68,7 @@ namespace ecs
         template<typename ComponentType>
         inline void remove_component()
         {
-            m_componentIDs.erase(ComponentsDatabase::GetComponentID<ComponentType>());
+            m_componentIDs.erase(ComponentsRegistry::GetComponentID<ComponentType>());
         }
 
         inline auto begin() const { return m_componentIDs.begin(); }

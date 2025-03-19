@@ -1,5 +1,5 @@
 #include "Entity.h"
-#include "ComponentsDatabase.h"
+#include "ComponentsRegistry.h"
 
 using namespace ecs;
 

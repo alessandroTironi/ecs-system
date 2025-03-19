@@ -41,7 +41,7 @@ public:
 protected:
     void SetUp() override
     {
-        m_componentsRegistry = std::make_shared<ecs::ComponentsDatabase>();
+        m_componentsRegistry = std::make_shared<ecs::ComponentsRegistry>();
         m_archetypesDatabase = std::make_shared<ecs::ArchetypesDatabase>(m_componentsRegistry);
         m_emptyArchetype = ecs::archetype();
         m_archetype1 = ecs::archetype::make<FloatComponent>(m_componentsRegistry.get());
@@ -60,7 +60,7 @@ protected:
     ecs::archetype m_archetype2;
     ecs::archetype m_archetype3;
     std::shared_ptr<ecs::ArchetypesDatabase> m_archetypesDatabase;
-    std::shared_ptr<ecs::ComponentsDatabase> m_componentsRegistry;
+    std::shared_ptr<ecs::ComponentsRegistry> m_componentsRegistry;
 };
 
 TEST_F(TestArchetypes, TestNullArchetype)

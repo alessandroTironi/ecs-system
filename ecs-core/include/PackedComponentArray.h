@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 #include "ComponentData.h"
-#include "ComponentsDatabase.h"
+#include "ComponentsRegistry.h"
 
 namespace ecs
 {
@@ -57,7 +57,7 @@ namespace ecs
     struct packed_component_array : public packed_component_array_t
     {
     public:
-        packed_component_array(ComponentsDatabase* componentsRegistry) 
+        packed_component_array(ComponentsRegistry* componentsRegistry) 
             : packed_component_array_t(componentsRegistry->GetOrAddComponentData<ComponentType>())
         {}
 

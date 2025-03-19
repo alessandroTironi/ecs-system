@@ -3,7 +3,7 @@
 #include "Types.h"
 #include "Archetypes.h"
 #include "ArchetypesDatabase.h"
-#include "ComponentsDatabase.h"
+#include "ComponentsRegistry.h"
 #include "ArchetypeQuery.h"
 
 using ::testing::Test;
@@ -34,7 +34,7 @@ public:
 protected:
     void SetUp() override
     {
-        m_componentsRegistry = std::make_shared<ecs::ComponentsDatabase>();
+        m_componentsRegistry = std::make_shared<ecs::ComponentsRegistry>();
         m_archetypesDatabase = ecs::ArchetypesDatabase(m_componentsRegistry);
         m_archetypesDatabase.AddEntity<Position>(0);
         m_archetypesDatabase.AddEntity<Position>(1);
@@ -55,7 +55,7 @@ protected:
     ecs::entity_id m_entity1Vel;
     ecs::entity_id m_entity1PosVelRot;
     ecs::ArchetypesDatabase m_archetypesDatabase; 
-    std::shared_ptr<ecs::ComponentsDatabase> m_componentsRegistry;
+    std::shared_ptr<ecs::ComponentsRegistry> m_componentsRegistry;
 };
 
 TEST_F(TestArchetypeQueries, TestQueryOneComponent)

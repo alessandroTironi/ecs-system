@@ -1,8 +1,8 @@
-#include "ComponentsDatabase.h"
+#include "ComponentsRegistry.h"
 
 
 
-ecs::component_id ecs::ComponentsDatabase::AddComponentData(const ecs::name& componentName, 
+ecs::component_id ecs::ComponentsRegistry::AddComponentData(const ecs::name& componentName, 
 	const size_t dataSize, const size_t initialCapacity)
 {
 	auto optionalComponentData = m_componentsClassMap.find(componentName);
@@ -23,7 +23,7 @@ ecs::component_id ecs::ComponentsDatabase::AddComponentData(const ecs::name& com
 	}
 }
 
-bool ecs::ComponentsDatabase::TryGetComponentData(const ecs::name& componentName, component_data& outComponentData)
+bool ecs::ComponentsRegistry::TryGetComponentData(const ecs::name& componentName, component_data& outComponentData)
 {
 	auto optionalComponentData = m_componentsClassMap.find(componentName);
 	if (optionalComponentData == m_componentsClassMap.end())
@@ -37,7 +37,7 @@ bool ecs::ComponentsDatabase::TryGetComponentData(const ecs::name& componentName
 	}
 }
 
-bool ecs::ComponentsDatabase::TryGetComponentData(const component_id componentID, name& outComponentName, component_data& outComponentData)
+bool ecs::ComponentsRegistry::TryGetComponentData(const component_id componentID, name& outComponentName, component_data& outComponentData)
 {
 	if (componentID >= m_componentNames.size())
 	{
