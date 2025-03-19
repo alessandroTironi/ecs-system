@@ -27,7 +27,7 @@ namespace ecs
             }
         }
 
-        static component_id GetComponentID(const std::string& componentName)
+        static component_id GetComponentID(const name& componentName)
         {
             auto optionalComponentData = s_componentsClassMap.find(componentName);
             if (optionalComponentData == s_componentsClassMap.end())
@@ -40,15 +40,15 @@ namespace ecs
             }
         }
 
-        static bool TryGetComponentData(const std::string& componentName, component_data& outComponentData);
-        static bool TryGetComponentData(const component_id componentID, inline_string& outComponentName, component_data& outComponentData);
+        static bool TryGetComponentData(const name& componentName, component_data& outComponentData);
+        static bool TryGetComponentData(const component_id componentID, name& outComponentName, component_data& outComponentData);
 
         template<typename ComponentType>
         static component_data GetOrAddComponentData()
         {
             const component_id componentID = GetComponentID<ComponentType>(); 
             component_data componentData;
-            inline_string componentName;
+            name componentName;
             TryGetComponentData(componentID, componentName, componentData);
             return componentData;   
         }
@@ -67,11 +67,11 @@ namespace ecs
         }
 
     private:
-        static ecs::component_id AddComponentData(const std::string& componentName, const size_t dataSize, const size_t initialCapacity = 8);
+        static ecs::component_id AddComponentData(const name& componentName, const size_t dataSize, const size_t initialCapacity = 8);
 
         static IDGenerator<component_id> s_componentIDGenerator;
 
-        static std::unordered_map<inline_string, component_data> s_componentsClassMap;
-        static std::vector<inline_string> s_componentNames;
+        static std::unordered_map<name, component_data> s_componentsClassMap;
+        static std::vector<name> s_componentNames;
     };
 }

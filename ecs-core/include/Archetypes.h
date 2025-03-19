@@ -36,7 +36,7 @@ namespace ecs
 
         inline bool is_null() const { return m_componentIDs.empty(); }
 
-        inline bool has_component(const inline_string& componentName) const
+        inline bool has_component(const name& componentName) const
         {
             return m_componentIDs.contains(ComponentsDatabase::GetComponentID(componentName));
         }
@@ -54,7 +54,7 @@ namespace ecs
 
         inline size_t get_num_components() const { return m_componentIDs.size(); }
 
-        inline void add_component(const inline_string& componentName) 
+        inline void add_component(const name& componentName) 
         { 
             m_componentIDs.insert(ComponentsDatabase::GetComponentID(componentName)); 
         }
@@ -65,7 +65,7 @@ namespace ecs
             m_componentIDs.insert(ComponentsDatabase::GetComponentID<ComponentType>());
         }
 
-        inline void remove_component(const inline_string& componentName) 
+        inline void remove_component(const name& componentName) 
         { 
             m_componentIDs.erase(ComponentsDatabase::GetComponentID(componentName));  
         }

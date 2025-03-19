@@ -3,7 +3,7 @@
 #include <array>
 #include <unordered_map>
 #include <vector>
-#include <string> // @todo replace with compact_string 
+#include "CompactString.h"
 
 namespace ecs
 {
@@ -13,5 +13,5 @@ namespace ecs
 
     #define GetTypeHash(obj) typeid(obj).hash_code()
 
-    typedef std::string inline_string;
+    typedef compact_string<32> name;
 }

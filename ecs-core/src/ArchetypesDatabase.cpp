@@ -7,7 +7,7 @@ ecs::ArchetypesDatabase::archetype_set::archetype_set(const ecs::archetype& arch
     for (auto componentIt = m_archetype.begin(); componentIt != m_archetype.end(); ++componentIt)
     {
         ecs::component_data componentData;
-        ecs::inline_string componentName;
+        ecs::name componentName;
         if (!ecs::ComponentsDatabase::TryGetComponentData(*componentIt, componentName, componentData))
         {
             throw std::invalid_argument("Component not found in the database. Call RegisterComponent() first.");
@@ -125,7 +125,7 @@ const ecs::archetype& ecs::ArchetypesDatabase::GetArchetype(entity_id entity)
     return m_archetypesMap.at(archetypeHash).get_archetype();
 }
 
-void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const inline_string& componentName)
+void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const name& componentName)
 {
     const archetype& currentArchetype = GetArchetype(entity);
     if (currentArchetype.has_component(componentName))
@@ -141,7 +141,7 @@ void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const inline_string
 
 void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const component_id componentID)
 {
-    ecs::inline_string componentName; 
+    ecs::name componentName; 
     ecs::component_data componentData;
     if (ecs::ComponentsDatabase::TryGetComponentData(componentID, componentName, componentData))
     {
@@ -149,7 +149,7 @@ void ecs::ArchetypesDatabase::AddComponent(entity_id entity, const component_id 
     }
 }
 
-void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const inline_string& componentName)
+void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const name& componentName)
 {
     const archetype& currentArchetype = GetArchetype(entity);
     if (!currentArchetype.has_component(componentName))
@@ -165,7 +165,7 @@ void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const inline_str
 
 void ecs::ArchetypesDatabase::RemoveComponent(entity_id entity, const component_id componentID)
 {
-    ecs::inline_string componentName;
+    ecs::name componentName;
     ecs::component_data componentData;
     if (ecs::ComponentsDatabase::TryGetComponentData(componentID, componentName, componentData))
     {
@@ -203,7 +203,7 @@ void ecs::ArchetypesDatabase::MoveEntity(entity_id entity, const archetype& targ
         void* componentPtr = currentSet.get_component_at_index(componentID, currentIndex);
         void* targetComponentPtr = targetSet.get_component_at_index(componentID, targetIndex);
         component_data componentData;
-        inline_string componentName;
+        name componentName;
         if (!ComponentsDatabase::TryGetComponentData(componentID, componentName, componentData))
         {
             throw std::runtime_error("Trying to copy a component that was not registered. Call RegisterComponent() first.");
