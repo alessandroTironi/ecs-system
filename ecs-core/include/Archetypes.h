@@ -81,59 +81,6 @@ namespace ecs
     };
 }
 
-namespace ecs
-{
-    template<typename FirstComponent, typename... OtherComponents>
-    static size_t CalculateArchetypeHash()
-    {
-        return std::hash<ecs::archetype>{}(archetype::make<FirstComponent, OtherComponents...>());
-    }
-
-    static size_t CalculateArchetypeHash(std::initializer_list<component_id> componentIDs)
-    {
-        size_t seed = componentIDs.size();
-        for (auto componentIt = componentIDs.begin(); componentIt != componentIDs.end(); ++componentIt)
-        {
-            seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-
-        return seed;
-    }
-
-    static size_t CalculateArchetypeHash(const std::set<component_id> componentIDs)
-    {
-        size_t seed = componentIDs.size();
-        for (auto componentIt = componentIDs.begin(); componentIt != componentIDs.end(); ++componentIt)
-        {
-            seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-
-        return seed;
-    }
-
-    static size_t CalculateArchetypeHash(const archetype& archetype)
-    {
-        size_t seed = archetype.get_num_components();
-        for (auto componentIt = archetype.begin(); componentIt != archetype.end(); ++componentIt)
-        {
-            seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-
-        return seed;
-    }
-
-    static size_t CalculateArchetypeHash(std::initializer_list<component_data> componentsData)
-    {
-        size_t seed = componentsData.size();
-        for (auto componentIt = componentsData.begin(); componentIt != componentsData.end(); ++componentIt)
-        {
-            seed ^= std::hash<ecs::component_id>{}(componentIt->serial()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-
-        return seed;
-    }
-}
-
 namespace std
 {
     template<>
@@ -141,7 +88,13 @@ namespace std
     {
         size_t operator()(const ecs::archetype& archetype) const
         {
-            return ecs::CalculateArchetypeHash(archetype);
+            size_t seed = archetype.get_num_components();
+            for (auto componentIt = archetype.begin(); componentIt != archetype.end(); ++componentIt)
+            {
+                seed ^= std::hash<ecs::component_id>{}(*componentIt) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            }
+
+            return seed;
         }
     };
 }

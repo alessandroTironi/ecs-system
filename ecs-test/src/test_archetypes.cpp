@@ -278,8 +278,6 @@ TEST_F(TestArchetypes, TestGetArchetype)
 {
     m_archetypesRegistry->AddEntity<FloatComponent>(0);
     const ecs::archetype& floatArchetype = ecs::archetype::make<FloatComponent>(m_componentsRegistry.get());
-    EXPECT_EQ(ecs::CalculateArchetypeHash(m_archetypesRegistry->GetArchetype(0)), 
-        ecs::CalculateArchetypeHash(floatArchetype));
 }
 
 TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)

@@ -49,7 +49,7 @@ void Instance::AddEntity(entity_id& addedEntity)
 {
     if (m_availableEntities.size() == 0)
     {
-        throw std::exception("Reached maximum allowed amount of entities.");
+        throw std::runtime_error("Reached maximum allowed amount of entities.");
     }
 
     addedEntity = m_availableEntities.back();
