@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "World.h"
+#include "ComponentData.h"
 
 using ::testing::Test; 
 
@@ -45,4 +46,58 @@ TEST_F(TestECSWorld, TestCreateWorld)
 	EXPECT_NE(m_world.get(), nullptr);
 }
 
+TEST_F(TestECSWorld, TestCreateEntity)
+{
+	ecs::entity_id entity = m_world->CreateEntity();
+	EXPECT_NE(entity, ecs::INVALID_ENTITY_ID);
+}
+
+TEST_F(TestECSWorld, TestGetEntity)
+{
+	ecs::entity_id entity = m_world->CreateEntity();
+	ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+	EXPECT_EQ(entityHandle.id(), entity);
+    EXPECT_EQ(entityHandle.world().lock().get(), m_world.get());
+}
+
+TEST_F(TestECSWorld, TestGetUnexistingComponent)
+{
+    ecs::entity_id entity = m_world->CreateEntity();
+    ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+    ASSERT_THROW(entityHandle.GetComponent<Position>(), std::out_of_range);
+}
+
+TEST_F(TestECSWorld, TestAddComponent)
+{
+    ecs::entity_id entity = m_world->CreateEntity();
+    ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+    ASSERT_NO_THROW(entityHandle.AddComponent<Position>());
+}
+
+TEST_F(TestECSWorld, TestGetComponent)
+{
+    ecs::entity_id entity = m_world->CreateEntity();
+    ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+    entityHandle.AddComponent<Position>();
+    ASSERT_NO_THROW(entityHandle.GetComponent<Position>());
+
+    Position& position = entityHandle.GetComponent<Position>();
+    position.x = 10.0f;
+    EXPECT_NEAR(entityHandle.GetComponent<Position>().x, 10.0f, 0.0001f);
+}
+
+TEST_F(TestECSWorld, TestRemoveComponent)
+{
+    ecs::entity_id entity = m_world->CreateEntity();
+    ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+    entityHandle.AddComponent<Position>();
+    ASSERT_NO_THROW(entityHandle.RemoveComponent<Position>());
+}
+
+TEST_F(TestECSWorld, TestRemoveUnexistingComponent)
+{
+    ecs::entity_id entity = m_world->CreateEntity();
+    ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+    ASSERT_NO_THROW(entityHandle.RemoveComponent<Position>());
+}
 

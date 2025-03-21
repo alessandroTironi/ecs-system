@@ -13,3 +13,14 @@ ecs::World::~World()
 	m_archetypesRegistry.reset();
 	m_componentsRegistry.reset();
 }
+
+
+ecs::entity_id ecs::World::CreateEntity()
+{
+	throw std::runtime_error("Not implemented");
+}
+
+ecs::EntityHandle ecs::World::GetEntity(entity_id id) const
+{
+	throw std::runtime_error("Not implemented");
+}

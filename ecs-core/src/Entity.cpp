@@ -3,22 +3,28 @@
 
 using namespace ecs;
 
-entity_t::entity_t()
+EntityHandle::EntityHandle()
 {
-    m_componentsSignature.reset();
+    
 }
 
-void entity_t::add_component(const component_id componentID)
+EntityHandle::EntityHandle(World* world, entity_id id, archetype_id archetypeID)
 {
-    m_componentsSignature.set(componentID, true);
+
 }
 
-void entity_t::remove_component(const component_id componentID)
+
+void EntityHandle::AddComponent(component_id componentID)
 {
-    m_componentsSignature.set(componentID, false);
+    throw std::runtime_error("Not implemented");
 }
 
-bool entity_t::has_component(const component_id componentID) const
+void* EntityHandle::GetComponent(component_id componentID)
 {
-    return m_componentsSignature.test(componentID);
+    throw std::runtime_error("Not implemented");
+}
+
+void EntityHandle::RemoveComponent(component_id componentID)
+{
+    throw std::runtime_error("Not implemented");
 }

@@ -35,13 +35,13 @@ void Instance::Update(real_t deltaTime)
 
 void Instance::AddSystem(std::shared_ptr<ISystem> system)
 {
-    const type_hash_t systemHash = GetTypeHash(system.get());
+    const size_t systemHash = GetTypeHash(system.get());
     m_registeredSystems.insert({systemHash, system});
 }
 
 void Instance::RemoveSystem(const std::shared_ptr<ISystem>& system)
 {
-    const type_hash_t systemHash = GetTypeHash(system.get());
+    const size_t systemHash = GetTypeHash(system.get());
     m_registeredSystems.erase(systemHash);
 }
 
@@ -54,7 +54,7 @@ void Instance::AddEntity(entity_id& addedEntity)
 
     addedEntity = m_availableEntities.back();
     m_availableEntities.pop_back();
-    m_activeEntities[addedEntity] = entity_t();
+    m_activeEntities[addedEntity] = EntityHandle();
 }
 
 void Instance::RemoveEntity(entity_id entityToRemove)
@@ -62,8 +62,6 @@ void Instance::RemoveEntity(entity_id entityToRemove)
     auto optionalEntity = m_activeEntities.find(entityToRemove);
     if (optionalEntity != m_activeEntities.end())
     {
-        //RemoveAllComponents(entityToRemove);
-
         m_availableEntities.push_back(optionalEntity->first);
         m_activeEntities.erase(optionalEntity);
     }

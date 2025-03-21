@@ -9,7 +9,6 @@
 #include "ComponentsRegistry.h"
 #include "ComponentData.h"
 #include "PackedComponentArray.h"
-#include "Entity.h"
 
 namespace ecs 
 {

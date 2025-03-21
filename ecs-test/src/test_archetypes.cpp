@@ -111,7 +111,7 @@ TEST_F(TestArchetypes, TestIterator)
 
 TEST_F(TestArchetypes, TestComponentsOrder)
 {
-    std::vector<ecs::type_hash_t> componentIDs =
+    std::vector<ecs::component_id> componentIDs =
     {
         m_componentsRegistry->GetComponentID<FloatComponent>(),
         m_componentsRegistry->GetComponentID<DoubleComponent>(),
@@ -124,8 +124,8 @@ TEST_F(TestArchetypes, TestComponentsOrder)
     size_t index = 0;
     for (auto componentsIt = m_archetype3.begin(); componentsIt != m_archetype3.end(); ++componentsIt)
     {
-        const ecs::type_hash_t thisHash = *componentsIt;
-        EXPECT_EQ(thisHash, componentIDs[index++]) 
+        const ecs::component_id thisID = *componentsIt;
+        EXPECT_EQ(thisID, componentIDs[index++]) 
             <<  "Components of an archetype should always be sorted by their serial ID, "
                 "to ensure consistency of hashes.";
     }   

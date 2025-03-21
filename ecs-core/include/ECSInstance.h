@@ -42,15 +42,15 @@ namespace ecs
         inline size_t GetSystemsCount() const { return m_registeredSystems.size(); }
 
         void AddEntity(entity_id& addedEntity);
-        const entity_t& GetEntity(entity_id id) const { return m_activeEntities.at(id); }
+        const EntityHandle& GetEntity(entity_id id) const { return m_activeEntities.at(id); }
         void RemoveEntity(entity_id entityToRemove);
         inline size_t GetNumActiveEntities() const { return m_activeEntities.size(); }
 
     protected:
         /* Stores all the Systems registered to this ECS instance. */
-        std::unordered_map<type_hash_t, std::shared_ptr<ISystem>> m_registeredSystems;
+        std::unordered_map<size_t, std::shared_ptr<ISystem>> m_registeredSystems;
 
-        std::unordered_map<entity_id, entity_t> m_activeEntities;
+        std::unordered_map<entity_id, EntityHandle> m_activeEntities;
 
         std::vector<entity_id> m_availableEntities;
 

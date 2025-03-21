@@ -2,15 +2,15 @@
 
 #include <unordered_map>
 #include <memory>
+#include "Types.h"
 #include "Archetypes.h"
 #include "PackedComponentArray.h"
 #include "ComponentsRegistry.h"
 #include "IDGenerator.h"
+#include "Entity.h"
 
 namespace ecs
 {
-    typedef unsigned int archetype_id;
- 
     class ArchetypesRegistry
     {
     public:

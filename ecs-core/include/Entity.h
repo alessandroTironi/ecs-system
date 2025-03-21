@@ -1,26 +1,52 @@
 #pragma once 
 
-#include <bitset>
+#include <memory>
+#include <limits>
 #include "Types.h"
 #include "ComponentData.h"
 
-#define MAX_COMPONENTS 1000
-
 namespace ecs
 {
-    class Instance;
+    class World;
 
     typedef size_t entity_id;
+    const static entity_id INVALID_ENTITY_ID = std::numeric_limits<entity_id>::max();
 
-    struct entity_t
+    class EntityHandle
     {
     public:
-        entity_t();
+        EntityHandle();
+        EntityHandle(World* world, entity_id id, archetype_id archetypeID);
 
-        void add_component(const component_id componentID);
-        void remove_component(const component_id componentID);
-        bool has_component(const component_id componentID) const;
+        template<typename ComponentType>
+        void AddComponent()
+        {
+            throw std::runtime_error("Not implemented");
+        }
+
+        template<typename ComponentType>
+        ComponentType& GetComponent()
+        {
+            throw std::runtime_error("Not implemented");
+        }
+
+        template<typename ComponentType>
+        void RemoveComponent()
+        {
+            throw std::runtime_error("Not implemented");
+        }
+
+        inline entity_id id() const { return m_id; }
+        inline archetype_id archetypeID() const { return m_archetypeID; }
+        inline std::weak_ptr<World> world() const { return m_world;}
+
     private:
-        std::bitset<MAX_COMPONENTS> m_componentsSignature;
+        void AddComponent(component_id componentID);
+        void* GetComponent(component_id componentID);
+        void RemoveComponent(component_id componentID);
+
+        entity_id m_id;
+        archetype_id m_archetypeID;
+        std::weak_ptr<World> m_world;
     };
 }
