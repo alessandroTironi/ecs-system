@@ -46,7 +46,10 @@ namespace ecs
         template<typename ComponentType>
         void RemoveComponent()
         {
-            throw std::runtime_error("Not implemented");
+            if (ArchetypesRegistry* archetypesRegistry = GetArchetypesRegistry())
+            {
+                archetypesRegistry->RemoveComponent<ComponentType>(m_id);
+            }
         }
 
         inline entity_id id() const { return m_id; }
