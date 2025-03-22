@@ -35,7 +35,12 @@ namespace ecs
         template<typename ComponentType>
         ComponentType* FindComponent() const
         {
-            throw std::runtime_error("Not implemented");
+            if (ArchetypesRegistry* archetypesRegistry = GetArchetypesRegistry())
+            {
+                return archetypesRegistry->FindComponent<ComponentType>(m_id);
+            }
+
+            return nullptr;
         }
 
         template<typename ComponentType>

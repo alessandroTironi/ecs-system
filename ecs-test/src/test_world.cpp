@@ -87,6 +87,22 @@ TEST_F(TestECSWorld, TestGetComponent)
     EXPECT_NEAR(entityHandle.GetComponent<Position>().x, 10.0f, 0.0001f);
 }
 
+TEST_F(TestECSWorld, TestFindComponent)
+{
+    ecs::entity_id entity = m_world->CreateEntity();
+    ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+    ASSERT_NO_THROW(entityHandle.FindComponent<Position>())
+        << "Calling FindComponent should be safe and never throw exceptions even if the component is not found.";
+    EXPECT_EQ(entityHandle.FindComponent<Position>(), nullptr);
+
+    entityHandle.AddComponent<Position>();
+    Position* pos = entityHandle.FindComponent<Position>();
+    EXPECT_NE(pos, nullptr);
+    pos->x = 3.14f;
+
+    EXPECT_NEAR(entityHandle.FindComponent<Position>()->x, 3.14f, 0.00001f);
+}
+
 TEST_F(TestECSWorld, TestRemoveComponent)
 {
     ecs::entity_id entity = m_world->CreateEntity();

@@ -60,6 +60,21 @@ void* ecs::ArchetypesRegistry::archetype_set::get_component_at_index(const compo
     throw std::runtime_error("Found a null packed_component_array");
 }
 
+void* ecs::ArchetypesRegistry::archetype_set::find_component_at_index(const component_id componentID, const size_t index) const
+{
+    auto optionalArray = m_componentArraysMap.find(componentID);
+    if (optionalArray != m_componentArraysMap.end())
+    {
+        std::shared_ptr<packed_component_array_t> packedArray = optionalArray->second;
+        if (packedArray.get() != nullptr)
+        {
+            return packedArray->get_component(index);
+        }
+    }
+
+    return nullptr;
+}
+
 void ecs::ArchetypesRegistry::archetype_set::remove_entity(ecs::entity_id entity)
 {
     auto optionalIndex = m_entityToIndexMap.find(entity);
@@ -109,6 +124,22 @@ void* ecs::ArchetypesRegistry::GetComponent(entity_id entity, const component_id
     const archetype_set& set = m_archetypeSets[archetypeID];
     const size_t entityIndex = set.get_entity_index(entity);
     return set.get_component_at_index(componentID, entityIndex);
+}
+
+void* ecs::ArchetypesRegistry::FindComponent(entity_id entity, const component_id componentID)
+{
+    auto optionalArchetypeID = m_entitiesArchetypeHashesMap.find(entity);
+    if (optionalArchetypeID != m_entitiesArchetypeHashesMap.end())
+    {
+        const archetype_set& set = m_archetypeSets[optionalArchetypeID->second];
+        size_t entityIndex = -1;
+        if (set.try_get_entity_index(entity, entityIndex))
+        {
+            return set.find_component_at_index(componentID, entityIndex);
+        }
+    }
+
+    return nullptr;
 }
 
 const ecs::archetype& ecs::ArchetypesRegistry::GetArchetype(entity_id entity) const

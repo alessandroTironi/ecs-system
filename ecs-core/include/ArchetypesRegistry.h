@@ -33,6 +33,12 @@ namespace ecs
             return *static_cast<ComponentType*>(GetComponent(entity, m_componentsRegistry->GetComponentID<ComponentType>()));
         }
 
+        template<typename ComponentType>
+        ComponentType* FindComponent(entity_id entity)
+        {
+            return static_cast<ComponentType*>(FindComponent(entity, m_componentsRegistry->GetComponentID<ComponentType>()));
+        }
+
         void RemoveEntity(entity_id entity);
 
         template<typename ComponentType>
@@ -66,6 +72,7 @@ namespace ecs
             size_t get_num_entities() const { return m_entityToIndexMap.size(); }
             bool try_get_entity_index(entity_id entity, size_t& index) const;
             void* get_component_at_index(const component_id componentID, const size_t index) const;
+            void* find_component_at_index(const component_id componentID, const size_t index) const;
             void remove_entity(entity_id entity);
             inline const archetype& get_archetype() const { return m_archetype; }
         private:
@@ -79,6 +86,7 @@ namespace ecs
         void AddEntity(entity_id entity, const archetype& archetype);
 
         void* GetComponent(entity_id entity, const component_id componentID);
+        void* FindComponent(entity_id entity, const component_id componentID);
 
         void AddComponent(entity_id entity, const name& componentName);
         void AddComponent(entity_id entity, const component_id componentID);
