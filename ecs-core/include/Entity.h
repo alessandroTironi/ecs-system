@@ -4,13 +4,12 @@
 #include <limits>
 #include "Types.h"
 #include "ComponentData.h"
+#include "World.h"
+#include "ArchetypesRegistry.h"
 
 namespace ecs
 {
-    class World;
-
-    typedef size_t entity_id;
-    const static entity_id INVALID_ENTITY_ID = std::numeric_limits<entity_id>::max();
+    class ComponentsRegistry;
 
     class EntityHandle
     {
@@ -21,7 +20,10 @@ namespace ecs
         template<typename ComponentType>
         void AddComponent()
         {
-            throw std::runtime_error("Not implemented");
+            if (ArchetypesRegistry* archetypesRegistry = GetArchetypesRegistry())
+            {
+                archetypesRegistry->AddComponent<ComponentType>(m_id);
+            }
         }
 
         template<typename ComponentType>
@@ -44,6 +46,16 @@ namespace ecs
         void AddComponent(component_id componentID);
         void* GetComponent(component_id componentID);
         void RemoveComponent(component_id componentID);
+
+        ArchetypesRegistry* GetArchetypesRegistry() const 
+        {
+            if (!m_world.expired())
+            {
+                return m_world.lock().get()->GetArchetypesRegistry();
+            }
+
+            return nullptr;
+        }
 
         entity_id m_id;
         archetype_id m_archetypeID;

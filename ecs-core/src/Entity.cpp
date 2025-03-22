@@ -1,5 +1,6 @@
 #include "Entity.h"
 #include "ComponentsRegistry.h"
+#include "World.h"
 
 using namespace ecs;
 
@@ -12,11 +13,6 @@ EntityHandle::EntityHandle(std::weak_ptr<World> world, entity_id id, archetype_i
     : m_world(world), m_id(id), m_archetypeID(archetypeID)
 {}
 
-
-void EntityHandle::AddComponent(component_id componentID)
-{
-    throw std::runtime_error("Not implemented");
-}
 
 void* EntityHandle::GetComponent(component_id componentID)
 {

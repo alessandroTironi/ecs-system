@@ -7,7 +7,6 @@
 #include "PackedComponentArray.h"
 #include "ComponentsRegistry.h"
 #include "IDGenerator.h"
-#include "Entity.h"
 
 namespace ecs
 {

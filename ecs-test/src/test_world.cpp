@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "World.h"
+#include "Entity.h"
 #include "ComponentData.h"
 
 using ::testing::Test; 

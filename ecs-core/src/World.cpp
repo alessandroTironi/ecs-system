@@ -1,6 +1,7 @@
 #include "World.h"
 #include "ArchetypesRegistry.h"
 #include "ComponentsRegistry.h"
+#include "Entity.h"
 
 using namespace ecs;
 
@@ -28,4 +29,14 @@ EntityHandle World::GetEntity(entity_id id)
 	std::weak_ptr<World> weakPtrToThis = shared_from_this();
 	const archetype_id archetypeID = m_archetypesRegistry->GetArchetypeID(id);
 	return EntityHandle(weakPtrToThis, id, archetypeID);
+}
+
+ComponentsRegistry* World::GetComponentsRegistry() const
+{
+	return m_componentsRegistry.get();
+}
+
+ArchetypesRegistry* World::GetArchetypesRegistry() const
+{
+	return m_archetypesRegistry.get();
 }

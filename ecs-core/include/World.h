@@ -2,16 +2,18 @@
 
 #include <memory>
 #include "Types.h"
-#include "Entity.h"
 #include "IDGenerator.h"
 
 namespace ecs 
-{
-	class ArchetypesRegistry; 
+{ 
 	class ComponentsRegistry;
+	class EntityHandle;
+	class ArchetypesRegistry;
 
 	class World : public std::enable_shared_from_this<World>
 	{
+		friend class EntityHandle;
+
 	public:
 		World();
 		~World();
@@ -19,6 +21,10 @@ namespace ecs
 		entity_id CreateEntity();
 
 		EntityHandle GetEntity(entity_id id);
+
+	protected:
+		ComponentsRegistry* GetComponentsRegistry() const;
+		ArchetypesRegistry* GetArchetypesRegistry() const;
 
 	private:
 		std::shared_ptr<ArchetypesRegistry> m_archetypesRegistry;
