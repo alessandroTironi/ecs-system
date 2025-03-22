@@ -48,7 +48,9 @@ namespace ecs
             RemoveComponent(entity, m_componentsRegistry->GetComponentID<ComponentType>());
         }
 
-        const archetype& GetArchetype(entity_id entity);
+        const archetype& GetArchetype(entity_id entity) const;
+        archetype_id GetArchetypeID(entity_id entity) const;
+        
         size_t GetNumArchetypes() const { return m_archetypeSets.size(); }
         void Reset();
 

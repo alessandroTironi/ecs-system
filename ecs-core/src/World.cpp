@@ -16,7 +16,6 @@ World::~World()
 	m_componentsRegistry.reset();
 }
 
-
 entity_id World::CreateEntity()
 {
 	const entity_id id = m_entityIDGenerator.GenerateNewUniqueID();
@@ -24,7 +23,9 @@ entity_id World::CreateEntity()
 	return id;
 }
 
-EntityHandle World::GetEntity(entity_id id) const
+EntityHandle World::GetEntity(entity_id id)
 {
-	throw std::runtime_error("Not implemented");
+	std::weak_ptr<World> weakPtrToThis = shared_from_this();
+	const archetype_id archetypeID = m_archetypesRegistry->GetArchetypeID(id);
+	return EntityHandle(weakPtrToThis, id, archetypeID);
 }

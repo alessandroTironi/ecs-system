@@ -76,6 +76,10 @@ namespace ecs
         inline bool operator==(const archetype& other) const { return m_componentIDs == other.m_componentIDs; }
 
     private:
+        /*  an ordered set containing the unique IDs of the components making this
+            archetype. This set is used to compute the archetype's hash.
+            @todo find a way to have this container inline for better cache locality and
+            avoiding memory allocations.  */
         std::set<component_id> m_componentIDs;
     };
 }

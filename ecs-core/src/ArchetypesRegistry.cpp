@@ -111,10 +111,15 @@ void* ecs::ArchetypesRegistry::GetComponent(entity_id entity, const component_id
     return set.get_component_at_index(componentID, entityIndex);
 }
 
-const ecs::archetype& ecs::ArchetypesRegistry::GetArchetype(entity_id entity)
+const ecs::archetype& ecs::ArchetypesRegistry::GetArchetype(entity_id entity) const
 {
     const archetype_id archetypeID = m_entitiesArchetypeHashesMap.at(entity);
     return m_archetypeSets[archetypeID].get_archetype();
+}
+
+ecs::archetype_id ecs::ArchetypesRegistry::GetArchetypeID(entity_id entity) const
+{
+    return m_entitiesArchetypeHashesMap.at(entity);
 }
 
 void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const name& componentName)
@@ -144,6 +149,7 @@ void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const component_id 
 
 void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const name& componentName)
 {
+    archetype_id archetypeID;
     const archetype& currentArchetype = GetArchetype(entity);
     const component_id componentID = m_componentsRegistry->GetComponentID(componentName);
     if (!currentArchetype.has_component(componentID))

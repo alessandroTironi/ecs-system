@@ -10,7 +10,7 @@ namespace ecs
 	class ArchetypesRegistry; 
 	class ComponentsRegistry;
 
-	class World
+	class World : public std::enable_shared_from_this<World>
 	{
 	public:
 		World();
@@ -18,7 +18,7 @@ namespace ecs
 
 		entity_id CreateEntity();
 
-		EntityHandle GetEntity(entity_id id) const;
+		EntityHandle GetEntity(entity_id id);
 
 	private:
 		std::shared_ptr<ArchetypesRegistry> m_archetypesRegistry;

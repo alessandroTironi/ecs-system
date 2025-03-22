@@ -16,7 +16,7 @@ namespace ecs
     {
     public:
         EntityHandle();
-        EntityHandle(World* world, entity_id id, archetype_id archetypeID);
+        EntityHandle(std::weak_ptr<World> world, entity_id id, archetype_id archetypeID);
 
         template<typename ComponentType>
         void AddComponent()

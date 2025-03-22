@@ -8,10 +8,9 @@ EntityHandle::EntityHandle()
     
 }
 
-EntityHandle::EntityHandle(World* world, entity_id id, archetype_id archetypeID)
-{
-
-}
+EntityHandle::EntityHandle(std::weak_ptr<World> world, entity_id id, archetype_id archetypeID)
+    : m_world(world), m_id(id), m_archetypeID(archetypeID)
+{}
 
 
 void EntityHandle::AddComponent(component_id componentID)

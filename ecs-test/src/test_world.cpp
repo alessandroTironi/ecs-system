@@ -30,7 +30,7 @@ public:
 protected:
     void SetUp() override
     {
-        m_world = std::make_unique<ecs::World>();
+        m_world = std::make_shared<ecs::World>();
 	}
 
     void TearDown() override
@@ -38,7 +38,7 @@ protected:
         m_world.reset();
     }
 
-    std::unique_ptr<ecs::World> m_world;
+    std::shared_ptr<ecs::World> m_world;
 };
 
 TEST_F(TestECSWorld, TestCreateWorld)
