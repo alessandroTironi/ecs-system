@@ -27,7 +27,13 @@ namespace ecs
         }
 
         template<typename ComponentType>
-        ComponentType& GetComponent()
+        ComponentType& GetComponent() const
+        {
+            return GetArchetypesRegistry()->GetComponent<ComponentType>(m_id);
+        }
+
+        template<typename ComponentType>
+        ComponentType* FindComponent() const
         {
             throw std::runtime_error("Not implemented");
         }
