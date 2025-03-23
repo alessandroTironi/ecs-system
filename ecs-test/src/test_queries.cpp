@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
 #include <memory>
+#include <set>
 #include "Types.h"
 #include "Archetypes.h"
-#include "ArchetypesRegistry.h"
-#include "ComponentsRegistry.h"
+#include "World.h"
 #include "ArchetypeQuery.h"
+#include "Entity.h"
 
 using ::testing::Test;
 
@@ -31,34 +32,137 @@ public:
         float angle = 0.0f;
     };
 
+    struct Scale : public ecs::IComponent 
+    {
+    public:
+        float scale = 1.0f;
+    };
+
 protected:
     void SetUp() override
     {
-        m_componentsRegistry = std::make_shared<ecs::ComponentsRegistry>();
-        m_archetypesRegistry = ecs::ArchetypesRegistry(m_componentsRegistry);
-        m_archetypesRegistry.AddEntity<Position>(0);
-        m_archetypesRegistry.AddEntity<Position>(1);
-        m_archetypesRegistry.AddEntity<Position, Velocity>(2);
-        m_archetypesRegistry.AddEntity<Velocity>(3);
-        m_archetypesRegistry.AddEntity<Position, Velocity, Rotation>(4);
+        m_world = std::make_shared<ecs::World>();
+        m_entity1Pos = m_world->GetEntity(m_world->CreateEntity<Position>());
+        m_entity2Pos = m_world->GetEntity(m_world->CreateEntity<Position>());
+        m_entity1PosVel = m_world->GetEntity(m_world->CreateEntity<Position, Velocity>());
+        m_entity1Vel = m_world->GetEntity(m_world->CreateEntity<Velocity>());
+        m_entity1PosVelRot = m_world->GetEntity(m_world->CreateEntity<Position, Velocity, Rotation>());
     }
 
     void TearDown() override
     {
-        m_archetypesRegistry.Reset();
-        m_componentsRegistry.reset();
+        m_world.reset();
     }
 
-    ecs::entity_id m_entity1Pos;
-    ecs::entity_id m_entity2Pos;
-    ecs::entity_id m_entity1PosVel;
-    ecs::entity_id m_entity1Vel;
-    ecs::entity_id m_entity1PosVelRot;
-    ecs::ArchetypesRegistry m_archetypesRegistry; 
-    std::shared_ptr<ecs::ComponentsRegistry> m_componentsRegistry;
+    template<typename... Components>
+    int CountEntities()
+    {
+        ecs::query<Components...> query(m_world);
+        int count = 0;
+        const auto updateCounter = [&count](ecs::EntityHandle entity, Components&... components)
+        {
+            ++count;
+        };
+        query.forEach(updateCounter);
+        return count;
+    }
+
+    ecs::EntityHandle m_entity1Pos;
+    ecs::EntityHandle m_entity2Pos;
+    ecs::EntityHandle m_entity1PosVel;
+    ecs::EntityHandle m_entity1Vel;
+    ecs::EntityHandle m_entity1PosVelRot;
+    std::shared_ptr<ecs::World> m_world;
 };
 
-TEST_F(TestArchetypeQueries, TestQueryOneComponent)
+TEST_F(TestArchetypeQueries, TestCreateQuery)
 {
-    ecs::query<Position> positionQuery;
+    ASSERT_NO_THROW(ecs::query<Position>());
+    ASSERT_NO_THROW(ecs::query<Position>(m_world));
+}
+
+TEST_F(TestArchetypeQueries, TestQueryWithNoWorld)
+{
+    ecs::query<Position> query;
+    ASSERT_THROW(query.forEach([](ecs::EntityHandle, Position&) {}), std::runtime_error);
+}
+
+TEST_F(TestArchetypeQueries, TestNormalQuery)
+{
+    int count = CountEntities<Position>();
+    EXPECT_EQ(count, 4);
+}
+
+TEST_F(TestArchetypeQueries, TestQueryWithMultipleComponents)
+{
+    int count = CountEntities<Position, Velocity>();
+    EXPECT_EQ(count, 2);
+}
+
+TEST_F(TestArchetypeQueries, TestEmptyQuery)
+{
+    EXPECT_EQ(CountEntities<Scale>(), 0);
+}
+
+TEST_F(TestArchetypeQueries, TestQueryAllEntities)
+{
+    EXPECT_EQ(CountEntities(), 5);
+}
+
+TEST_F(TestArchetypeQueries, TestQueryValidity)
+{
+    std::set<ecs::entity_id> positionEntities =
+    {
+        m_entity1Pos.id(), m_entity2Pos.id(), m_entity1PosVel.id(), m_entity1PosVelRot.id()
+    };
+
+    ecs::query<Position>(m_world).forEach([&positionEntities](ecs::EntityHandle entity, Position& position)
+    {
+        EXPECT_TRUE(positionEntities.find(entity.id()) != positionEntities.end());
+        positionEntities.erase(entity.id());
+    });
+    EXPECT_TRUE(positionEntities.empty());
+}
+
+TEST_F(TestArchetypeQueries, TestQueryThatModifiesComponents)
+{
+    ecs::query<Position>(m_world).forEach([](ecs::EntityHandle entity, Position& position)
+    {
+        position.x = 3.14f;
+        position.y = 42.0f;
+    });
+
+    EXPECT_EQ(m_entity1Pos.GetComponent<Position>().x, 3.14f);
+    EXPECT_EQ(m_entity1Pos.GetComponent<Position>().y, 42.0f);
+    EXPECT_EQ(m_entity2Pos.GetComponent<Position>().x, 3.14f);
+    EXPECT_EQ(m_entity2Pos.GetComponent<Position>().y, 42.0f);
+    EXPECT_EQ(m_entity1PosVel.GetComponent<Position>().x, 3.14f);
+    EXPECT_EQ(m_entity1PosVel.GetComponent<Position>().y, 42.0f);
+    EXPECT_EQ(m_entity1PosVelRot.GetComponent<Position>().x, 3.14f);
+    EXPECT_EQ(m_entity1PosVelRot.GetComponent<Position>().y, 42.0f);
+}
+
+TEST_F(TestArchetypeQueries, TestQueryThatModifiesEntities)
+{
+    int numPositionsBefore = CountEntities<Position>();
+    int numVelocitiesBefore = CountEntities<Velocity>();
+    ecs::query<Position>(m_world).forEach([](ecs::EntityHandle entity, Position& position)
+    {
+        if (entity.FindComponent<Velocity>() == nullptr)
+        {
+            entity.AddComponent<Velocity>();
+        }
+
+        position.x = 3.14f;
+    });
+
+    const int numPositions = CountEntities<Position>();
+    const int numVelocities = CountEntities<Velocity>();
+    EXPECT_EQ(numPositionsBefore, numPositions);
+
+    ecs::query<Position>(m_world).forEach([](ecs::EntityHandle entity, Position& position)
+    {
+        EXPECT_NE(entity.FindComponent<Velocity>(), nullptr);
+        EXPECT_NEAR(position.x, 3.14f, 0.0001f);
+    });
 }
