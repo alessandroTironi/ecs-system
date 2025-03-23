@@ -118,3 +118,10 @@ TEST_F(TestECSWorld, TestRemoveUnexistingComponent)
     ASSERT_NO_THROW(entityHandle.RemoveComponent<Position>());
 }
 
+TEST_F(TestECSWorld, TestCreateEntityWithComponents)
+{
+    ecs::entity_id entity = m_world->CreateEntity<Position, Velocity>();
+    ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+    EXPECT_NE(entityHandle.FindComponent<Position>(), nullptr);
+    EXPECT_NE(entityHandle.FindComponent<Velocity>(), nullptr);
+}
