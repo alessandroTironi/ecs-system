@@ -101,6 +101,8 @@ namespace ecs
         archetype_id GetOrCreateArchetypeID(const archetype& archetype);
         archetype_set& GetOrCreateArchetypeSet(const archetype& archetype);
 
+        void QueryArchetypes(std::initializer_list<component_id> components, std::set<archetype_id>& foundArchetypes);
+
         std::unordered_map<archetype, archetype_id> m_archetypesIDMap;
         std::unordered_map<entity_id, archetype_id> m_entitiesArchetypeHashesMap; 
 

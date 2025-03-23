@@ -300,6 +300,26 @@ ecs::ArchetypesRegistry::archetype_set& ecs::ArchetypesRegistry::GetOrCreateArch
 void ecs::ArchetypesRegistry::QueryEntities(std::initializer_list<component_id> components, std::vector<entity_id>& entities)
 {
     std::set<archetype_id> matchingArchetypes;
+    QueryArchetypes(components, matchingArchetypes);
+    
+    // get all the entities from the matching archetypes 
+    entities.clear();
+    for (const archetype_id archetypeID : matchingArchetypes)
+    {
+        const archetype_set& archetypeSet = m_archetypeSets[archetypeID];
+        entities.reserve(entities.capacity() + archetypeSet.get_num_entities());
+        
+        for (const std::pair<entity_id, size_t>& entityPair : archetypeSet.entity_map())
+        {
+            entities.push_back(entityPair.first);
+        }
+    }
+}
+
+void ecs::ArchetypesRegistry::QueryArchetypes(std::initializer_list<component_id> components, 
+    std::set<archetype_id>& matchingArchetypes)
+{
+    matchingArchetypes.clear();
 
     if (components.size() == 0)
     {
@@ -328,22 +348,6 @@ void ecs::ArchetypesRegistry::QueryEntities(std::initializer_list<component_id> 
             }
         }
     }
-
-    // get all the entities from the matching archetypes 
-    entities.clear();
-    for (const archetype_id archetypeID : matchingArchetypes)
-    {
-        const archetype_set& archetypeSet = m_archetypeSets[archetypeID];
-        for (const std::pair<entity_id, size_t>& entityPair : archetypeSet.entity_map())
-        {
-            entities.push_back(entityPair.first);
-        }
-    }
-
-    // @note This method has a lot of room for improvement. In particular, 
-    // computing the final array of entities in the end is not optimal, since a new O(n) 
-    // iteration will be performed by the caller.
-    // A better approch would be to directly apply the forEach lambda to the entities vector,
-    // so that everything happens in one single iteration, and without useless memory 
-    // allocations (due to the growth of the vector).
 }
+
+
