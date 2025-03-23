@@ -161,8 +161,21 @@ int main()
     ecs::real_t maxVelocity = 500.0f;
     ecs::real_t minVelocity = 100.0f;
     size_t numEntities = 2000;
+    srand(static_cast<unsigned> (time(0)));
+    const auto generateRandomVelocity = [minVelocity, maxVelocity]()
+    {
+        ecs::real_t size = minVelocity + static_cast<float>(rand()) 
+            / ( static_cast<float> (RAND_MAX/(maxVelocity - minVelocity)));
+        float random01 = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        if (random01 > 0.5f)
+        {
+            size *= -1.0f;
+        }
 
-    // Create 20 entities with random positions, velocities, and colors
+        return size;
+    };
+
+    // Create entities with random positions, velocities, and colors
     for (size_t i = 0; i < numEntities; ++i)
     {
         const ecs::entity_id entity = world->CreateEntity<comps::Velocity, comps::Rect, comps::Color>();
@@ -171,12 +184,9 @@ int main()
         rect.y = 360;
         handle.GetComponent<comps::Rect>().rect = rect;
         handle.GetComponent<comps::Color>().color = color;
-        handle.GetComponent<comps::Velocity>().x = -1.0f + (2.0f * static_cast<float>(rand()) / RAND_MAX);
-        handle.GetComponent<comps::Velocity>().y = -1.0f + (2.0f * static_cast<float>(rand()) / RAND_MAX);
-        handle.GetComponent<comps::Velocity>().x *= maxVelocity;
-        handle.GetComponent<comps::Velocity>().x = std::clamp(handle.GetComponent<comps::Velocity>().x, minVelocity, maxVelocity);
-        handle.GetComponent<comps::Velocity>().y *= maxVelocity;
-        handle.GetComponent<comps::Velocity>().y = std::clamp(handle.GetComponent<comps::Velocity>().y, minVelocity, maxVelocity);  
+        comps::Velocity& velocity = handle.GetComponent<comps::Velocity>();
+        velocity.x = generateRandomVelocity();
+        velocity.y = generateRandomVelocity();   
     }
 
     // Setup systems 
