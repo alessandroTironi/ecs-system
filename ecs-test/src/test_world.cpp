@@ -33,9 +33,14 @@ public:
     class PhysicsSystem : public ecs::ISystem 
     {
     public:
-        void Update(ecs::real_t deltaTime) override
+        void Update(std::weak_ptr<ecs::World> world, ecs::real_t deltaTime) override
         {
-        
+            ecs::query<Position, Velocity>::MakeQuery(world).forEach(
+                [deltaTime](ecs::EntityHandle entity, Position& position, Velocity& velocity)
+                {
+                    position.x += velocity.x * deltaTime;
+                    position.y += velocity.y * deltaTime;
+                });
         }
     };
 
@@ -198,3 +203,36 @@ TEST_F(TestECSWorld, TestMakeQueries)
     EXPECT_EQ(count, 2) << "Queries from World should work as expected.";
 }
 
+TEST_F(TestECSWorld, TestUpdate)
+{
+    ecs::entity_id e1 = m_world->CreateEntity<Position, Velocity>();
+    ecs::entity_id e2 = m_world->CreateEntity<Position, Velocity, Rotation>();
+
+    ecs::EntityHandle e1Handle = m_world->GetEntity(e1);
+    e1Handle.GetComponent<Position>().x = 0.0f;
+    e1Handle.GetComponent<Position>().y = 0.0f;
+    e1Handle.GetComponent<Velocity>().x = 1.0f;
+    e1Handle.GetComponent<Velocity>().y = -4.0f; 
+
+    ecs::EntityHandle e2Handle = m_world->GetEntity(e2);
+    e2Handle.GetComponent<Position>().x = 0.0f;
+    e2Handle.GetComponent<Position>().y = 0.0f;
+    e2Handle.GetComponent<Velocity>().x = 2.0f;
+    e2Handle.GetComponent<Velocity>().y = 0.0f; 
+
+    m_world->AddSystem<PhysicsSystem>();
+
+    m_world->Update(1.0f);
+
+    EXPECT_EQ(e1Handle.GetComponent<Position>().x, 1.0f);
+    EXPECT_EQ(e1Handle.GetComponent<Position>().y, -4.0f);
+    EXPECT_EQ(e2Handle.GetComponent<Position>().x, 2.0f);
+    EXPECT_EQ(e2Handle.GetComponent<Position>().y, 0.0f);
+
+    m_world->Update(1.0f);
+
+    EXPECT_EQ(e1Handle.GetComponent<Position>().x, 2.0f);
+    EXPECT_EQ(e1Handle.GetComponent<Position>().y, -8.0f);
+    EXPECT_EQ(e2Handle.GetComponent<Position>().x, 4.0f);
+    EXPECT_EQ(e2Handle.GetComponent<Position>().y, 0.0f);
+}

@@ -126,6 +126,12 @@ namespace ecs
 		 */
 		inline size_t GetSystemsCount() const noexcept { return m_registeredSystems.size();}
 
+		/**
+		 * @brief Updates the world, executing all the registered systems.
+		 * @param deltaTime The time since the last update.
+		 */
+		void Update(real_t deltaTime);
+
 	private:
 		std::shared_ptr<ArchetypesRegistry> m_archetypesRegistry;
 		std::shared_ptr<ComponentsRegistry> m_componentsRegistry;

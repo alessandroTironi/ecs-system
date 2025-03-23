@@ -54,7 +54,7 @@ namespace ecs
 		 * @param world The world to make the query for.
 		 * @return The query.
 		 */
-		static query<Components...> MakeQuery(std::shared_ptr<World> world) noexcept
+		static query<Components...> MakeQuery(std::weak_ptr<World> world) noexcept
 		{
 			return query<Components...>(world);
 		}
