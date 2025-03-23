@@ -1,8 +1,9 @@
 #include <iostream>
 #include <thread>
 #include <string>
-#include <chrono>
 #include <filesystem>
+#include <cmath>
+#include <algorithm>
 
 #include "World.h"
 #include "ArchetypeQuery.h"
@@ -139,7 +140,9 @@ int main()
     }
 
     // Create renderer
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 
+          SDL_RENDERER_PRESENTVSYNC 
+        | SDL_RENDERER_ACCELERATED);
     if(!renderer)
     {
         std::cerr << "Renderer could not be created!\n"
@@ -180,9 +183,8 @@ int main()
     world->AddSystem<systems::MovementSystem>();
     world->AddSystem<systems::RenderSystem>()->SetRenderer(renderer);
     
-    auto previousTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    const float targetFrameTime = 1.0f / 60.0f;  // Target 60 FPS
+    Uint64 previousTime = 0;
+    Uint64 currentTime = SDL_GetTicks64();
 
     TTF_Font* font = TTF_OpenFont("fonts/arial.ttf", 24);
     if (!font)
@@ -213,11 +215,13 @@ int main()
     SDL_Rect textLocation = { 800, 100, 0, 0 };
     SDL_QueryTexture(textTexture, NULL, NULL, &textLocation.w, &textLocation.h);
 
+    static constexpr Uint64 targetFrameTime = static_cast<Uint64>((1.0 / 60.0) * 1000);
+
     while (s_keepUpdating)
     {
-        currentTime = std::chrono::high_resolution_clock::now();
-        const auto elapsedTime = std::chrono::duration<float>(currentTime - previousTime);
-        const float deltaTime = elapsedTime.count();
+        currentTime = SDL_GetTicks64();
+        Uint64 elapsedTicks = currentTime - previousTime;
+        const float deltaTime = static_cast<float>(elapsedTicks) / 1000.0f;
         previousTime = currentTime;
 
         // Handle events
@@ -250,9 +254,10 @@ int main()
         SDL_RenderPresent(renderer);
 
         // Cap frame rate
-        if (deltaTime < targetFrameTime)
+        Uint64 frameTimeSoFar = SDL_GetTicks64() - currentTime;
+        if (frameTimeSoFar < targetFrameTime)
         {
-            std::this_thread::sleep_for(std::chrono::duration<float>(targetFrameTime - deltaTime));
+            SDL_Delay(targetFrameTime - frameTimeSoFar);
         }
     }
 
