@@ -1,9 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
+#include <typeinfo>
+#include <type_traits>
+#include <typeindex>
 #include "Types.h"
 #include "IDGenerator.h"
 #include "ArchetypesRegistry.h"
+#include "ISystem.h"
 
 namespace ecs 
 { 
@@ -50,10 +55,79 @@ namespace ecs
 		ComponentsRegistry* GetComponentsRegistry() const;
 		ArchetypesRegistry* GetArchetypesRegistry() const;
 
+		/**
+		 * @brief Registers a system for execution in this world.
+		 * @tparam SystemType The type of the system to add.
+		 * @return The system.
+		 */
+		template<typename SystemType>
+		std::shared_ptr<SystemType> AddSystem()
+		{
+			static_assert(std::is_base_of<ISystem, SystemType>::value, 
+				"SystemType must inherit from ISystem");
+			auto system = std::make_shared<SystemType>();
+			m_registeredSystems[std::type_index(typeid(SystemType))] = system;
+			return system;
+		}
+
+		/**
+		 * @brief Gets the system of the given type.
+		 * @tparam SystemType The type of the system to get.
+		 * @return The system if found, nullptr otherwise.
+		 * @throw std::out_of_range if the system is not found.
+		 */
+		template<typename SystemType>
+		std::shared_ptr<SystemType> GetSystem() const
+		{
+			static_assert(std::is_base_of<ISystem, SystemType>::value, 
+				"SystemType must inherit from ISystem");
+
+			std::type_index typeIndex = std::type_index(typeid(SystemType));
+			return std::static_pointer_cast<SystemType>(m_registeredSystems.at(typeIndex));
+		}
+
+		/**
+		 * Looks for a system of the given type. Slower than GetSystem(), but guaranteed to not throw any exceptions.
+		 * @tparam SystemType The type of the system to look for.
+		 * @return The system if found, nullptr otherwise.
+		 */
+		template<typename SystemType>
+		std::shared_ptr<SystemType> FindSystem() noexcept
+		{
+			static_assert(std::is_base_of<ISystem, SystemType>::value, 
+				"SystemType must inherit from ISystem");
+				
+			std::type_index typeIndex = std::type_index(typeid(SystemType));
+			auto optionalSystem = m_registeredSystems.find(typeIndex);
+			if (optionalSystem != m_registeredSystems.end())
+			{
+				return std::static_pointer_cast<SystemType>(optionalSystem->second);
+			}
+
+			return nullptr;
+		}
+
+		/**
+		 * @brief Removes a system from the world.
+		 * @tparam SystemType The type of the system to remove.
+		 */
+		template<typename SystemType>
+		void RemoveSystem()
+		{
+			static_assert(std::is_base_of<ISystem, SystemType>::value, 
+				"SystemType must inherit from ISystem");
+			std::type_index typeIndex = std::type_index(typeid(SystemType));
+			m_registeredSystems.erase(typeIndex);
+		}
+
+		size_t GetSystemsCount() const { return m_registeredSystems.size();}
+
 	private:
 		std::shared_ptr<ArchetypesRegistry> m_archetypesRegistry;
 		std::shared_ptr<ComponentsRegistry> m_componentsRegistry;
 
 		IDGenerator<entity_id> m_entityIDGenerator;
+
+		std::unordered_map<std::type_index, std::shared_ptr<ISystem>> m_registeredSystems;
 	};
 }

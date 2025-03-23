@@ -2,6 +2,7 @@
 #include "World.h"
 #include "Entity.h"
 #include "ComponentData.h"
+#include "ISystem.h"
 
 using ::testing::Test; 
 
@@ -11,21 +12,30 @@ public:
     struct Position : public ecs::IComponent 
     {
     public:
-        float x = 0.0f;
-        float y = 0.0f;
+        ecs::real_t x = 0.0f;
+        ecs::real_t y = 0.0f;
     };
 
     struct Velocity : public ecs::IComponent 
     {
     public:
-        float x = 0.0f;
-        float y = 0.0f;
+        ecs::real_t x = 0.0f;
+        ecs::real_t y = 0.0f;
     };
 
     struct Rotation : public ecs::IComponent 
     {
     public:
-        float angle = 0.0f;
+        ecs::real_t angle = 0.0f;
+    };
+
+    class PhysicsSystem : public ecs::ISystem 
+    {
+    public:
+        void Update(ecs::real_t deltaTime) override
+        {
+        
+        }
     };
 
 protected:
@@ -140,3 +150,37 @@ TEST_F(TestECSWorld, TestUpdateEntityArchetype)
     EXPECT_EQ(entityHandle.archetypeID(), entityHandle2.archetypeID())
         << "When updating an entity handle's archetype id, it should be consistent within the archetype registry.";
 }
+
+TEST_F(TestECSWorld, TestAddSystem)
+{
+    EXPECT_EQ(m_world->GetSystemsCount(), 0);
+    std::shared_ptr<PhysicsSystem> system = m_world->AddSystem<PhysicsSystem>();
+    EXPECT_NE(system.get(), nullptr);
+    EXPECT_EQ(m_world->GetSystemsCount(), 1);
+}
+
+TEST_F(TestECSWorld, TestGetSystem)
+{
+    ASSERT_THROW(m_world->GetSystem<PhysicsSystem>(), std::out_of_range);   
+    m_world->AddSystem<PhysicsSystem>();
+    EXPECT_NE(m_world->GetSystem<PhysicsSystem>(), nullptr);
+}
+
+TEST_F(TestECSWorld, TestFindSystem)
+{
+    EXPECT_EQ(m_world->FindSystem<PhysicsSystem>(), nullptr);
+    m_world->AddSystem<PhysicsSystem>();
+    EXPECT_NE(m_world->FindSystem<PhysicsSystem>(), nullptr);
+}
+
+TEST_F(TestECSWorld, TestRemoveSystem)
+{
+    std::shared_ptr<PhysicsSystem> system = m_world->AddSystem<PhysicsSystem>();
+    EXPECT_EQ(m_world->GetSystemsCount(), 1);
+    m_world->RemoveSystem<PhysicsSystem>();
+    EXPECT_EQ(m_world->GetSystemsCount(), 0);
+    EXPECT_EQ(m_world->FindSystem<PhysicsSystem>(), nullptr);
+}
+
+
+
