@@ -3,7 +3,7 @@
 #include <string>
 #include <chrono>
 
-#include "ECSInstance.h"
+#include "World.h"
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
@@ -24,8 +24,8 @@ int main()
     using namespace std::chrono_literals;
 
     std::cout << "Initializing ECS instance..." << std::endl;
-    ecs::Instance instance;
-    instance.Initialize();
+    //ecs::Instance instance;
+    //instance.Initialize();
 
     // Initialize SDL
     std::cout << "Initializing SDL instance..." << std::endl;
@@ -68,7 +68,7 @@ int main()
         currentTime = std::chrono::high_resolution_clock::now();
         const auto elapsedTime = std::chrono::duration<float>(currentTime - previousTime);
         const float deltaTime = elapsedTime.count();
-        instance.Update(deltaTime);
+        //instance.Update(deltaTime);
 
         previousTime = currentTime;
 
