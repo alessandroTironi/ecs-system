@@ -29,3 +29,21 @@ The entity_t class is going towards deprecation. At this point, entities could b
 ### Next steps 
 
 Implementing archetype queries remains the next big step, but first, we should make sure that hash values are not used as keys anymore. In particular, archetypes also need to have a unique serial ID.
+
+
+
+## March 23, 2025
+
+The EntityHandle class is implemented and we now have a public interface to the entire system with decent QoL methods. The class ECSInstance is going to be deprecated as soon as the Systems registration and execution part is moved to the World class, which is going to replace it. 
+
+It's finally time to build a query system. After that, we need to move the systems functionality to World and we should be finally ready to test the complete ECS system for the first time.
+
+### Known issues
+
+The entire handling of the archetypes could be better. I don't have a clear understanding of how to clean things up yet, but I have the feeling that the Archetypes Registry could perform less lookups and avoid some memory allocations. It would be nice to store the component IDs of an archetype in a plain array to avoid memory allocations, but that would require to impose a limit to the amount of components that can be attached to an entity, which is unlikely to happen.
+
+### Next steps
+
+Besides building the query system, a couple of interesting ideas for reducing memory allocations could be:
+- writing custom memory allocators for unordered maps
+- in archetypes, store the first 8/16 components inline and the others on the heap.
