@@ -49,6 +49,16 @@ namespace ecs
 			}
 		}
 
+		/**
+		 * @brief Construct a query struct for the given world.
+		 * @param world The world to make the query for.
+		 * @return The query.
+		 */
+		static query<Components...> MakeQuery(std::shared_ptr<World> world) noexcept
+		{
+			return query<Components...>(world);
+		}
+
 	private:
 		std::weak_ptr<World> m_world;
 	};

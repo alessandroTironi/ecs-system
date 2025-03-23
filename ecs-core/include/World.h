@@ -120,7 +120,11 @@ namespace ecs
 			m_registeredSystems.erase(typeIndex);
 		}
 
-		size_t GetSystemsCount() const { return m_registeredSystems.size();}
+		/**
+		 * @brief Gets the number of registered systems.
+		 * @return The number of registered systems.
+		 */
+		inline size_t GetSystemsCount() const noexcept { return m_registeredSystems.size();}
 
 	private:
 		std::shared_ptr<ArchetypesRegistry> m_archetypesRegistry;

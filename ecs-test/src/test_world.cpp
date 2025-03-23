@@ -3,6 +3,7 @@
 #include "Entity.h"
 #include "ComponentData.h"
 #include "ISystem.h"
+#include "ArchetypeQuery.h"
 
 using ::testing::Test; 
 
@@ -182,5 +183,18 @@ TEST_F(TestECSWorld, TestRemoveSystem)
     EXPECT_EQ(m_world->FindSystem<PhysicsSystem>(), nullptr);
 }
 
+TEST_F(TestECSWorld, TestMakeQueries)
+{
+    m_world->CreateEntity<Position, Velocity>();
+    m_world->CreateEntity<Position>();
 
+    size_t count = 0;
+    const auto countEntities = [&count](ecs::EntityHandle entity, Position&)
+    {
+        ++count;
+    };
+
+    ecs::query<Position>::MakeQuery(m_world).forEach(countEntities);
+    EXPECT_EQ(count, 2) << "Queries from World should work as expected.";
+}
 
