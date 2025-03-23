@@ -2,6 +2,7 @@
 #include <thread>
 #include <string>
 #include <chrono>
+#include <filesystem>
 
 #include "World.h"
 #include "ArchetypeQuery.h"
@@ -9,6 +10,7 @@
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
 #include "SDL_image.h"
+#include "SDL_ttf.h"
 
 bool s_keepUpdating = true;
 
@@ -47,11 +49,27 @@ namespace systems
                     if (rect.rect.x < 0 || rect.rect.x > 1024)
                     {
                         velocity.x *= -1.0f;
+                        if (rect.rect.x < 0)
+                        {
+                            rect.rect.x = 3;
+                        }
+                        else
+                        {
+                            rect.rect.x = 1021;
+                        }
                     }
 
                     if (rect.rect.y < 0 || rect.rect.y > 720)
                     {
                         velocity.y *= -1.0f;
+                        if (rect.rect.y < 0)
+                        {
+                            rect.rect.y = 3;
+                        }
+                        else
+                        {
+                            rect.rect.y = 717;
+                        }
                     }
                 });
         }
@@ -97,6 +115,15 @@ int main()
         return 0;
     }
 
+    // Initialize TTF
+    std::cout << "Initializing TTF instance..." << std::endl;
+    if(TTF_Init() < 0)
+    {
+        std::cerr << "TTF could not be initialized!\n"
+               "TTF_Error: " << TTF_GetError() << std::endl;
+        return 0;
+    }
+
     // Create window
     SDL_Window *window = SDL_CreateWindow("ECS Test Project",
                                           SDL_WINDOWPOS_UNDEFINED,
@@ -120,35 +147,72 @@ int main()
         return 0;
     }
 
+    // Set blend mode for proper alpha blending
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
     std::cout << "Running ECS instance..." << std::endl;
 
     // Setup entities 
     SDL_Rect rect(0, 0, 5, 5);
     SDL_Color color(0, 128, 135, 255);
-    ecs::real_t maxVelocity = 200.0f;
-    size_t numEntities = 20;
+    ecs::real_t maxVelocity = 500.0f;
+    ecs::real_t minVelocity = 100.0f;
+    size_t numEntities = 2000;
 
     // Create 20 entities with random positions, velocities, and colors
     for (size_t i = 0; i < numEntities; ++i)
     {
         const ecs::entity_id entity = world->CreateEntity<comps::Velocity, comps::Rect, comps::Color>();
         ecs::EntityHandle handle = world->GetEntity(entity);
-        rect.x = rand() % 1024; 
-        rect.y = rand() % 720;
+        rect.x = 512;
+        rect.y = 360;
         handle.GetComponent<comps::Rect>().rect = rect;
         handle.GetComponent<comps::Color>().color = color;
         handle.GetComponent<comps::Velocity>().x = -1.0f + (2.0f * static_cast<float>(rand()) / RAND_MAX);
         handle.GetComponent<comps::Velocity>().y = -1.0f + (2.0f * static_cast<float>(rand()) / RAND_MAX);
         handle.GetComponent<comps::Velocity>().x *= maxVelocity;
+        handle.GetComponent<comps::Velocity>().x = std::clamp(handle.GetComponent<comps::Velocity>().x, minVelocity, maxVelocity);
         handle.GetComponent<comps::Velocity>().y *= maxVelocity;
+        handle.GetComponent<comps::Velocity>().y = std::clamp(handle.GetComponent<comps::Velocity>().y, minVelocity, maxVelocity);  
     }
 
     // Setup systems 
     world->AddSystem<systems::MovementSystem>();
     world->AddSystem<systems::RenderSystem>()->SetRenderer(renderer);
-
+    
     auto previousTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
+    const float targetFrameTime = 1.0f / 60.0f;  // Target 60 FPS
+
+    TTF_Font* font = TTF_OpenFont("fonts/arial.ttf", 24);
+    if (!font)
+    {
+        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
+        std::cerr << "Current working directory: " << std::filesystem::current_path() << std::endl;
+        return 0;
+    }
+
+    // Create text texture
+    SDL_Color textColor = { 255, 255, 255, 255 };
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, "Frame rate", textColor);
+    if (!textSurface)
+    {
+        std::cerr << "Failed to render text: " << TTF_GetError() << std::endl;
+        return 0;
+    }
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    SDL_FreeSurface(textSurface);
+
+    if (!textTexture)
+    {
+        std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
+        return 0;
+    }
+
+    SDL_Rect textLocation = { 800, 100, 0, 0 };
+    SDL_QueryTexture(textTexture, NULL, NULL, &textLocation.w, &textLocation.h);
+
     while (s_keepUpdating)
     {
         currentTime = std::chrono::high_resolution_clock::now();
@@ -156,32 +220,46 @@ int main()
         const float deltaTime = elapsedTime.count();
         previousTime = currentTime;
 
+        // Handle events
         SDL_Event e;
-
-        // Wait indefinitely for the next available event
-        SDL_WaitEvent(&e);
-
-        // User requests quit
-        if(e.type == SDL_QUIT)
+        while (SDL_PollEvent(&e))
         {
-            s_keepUpdating = false;
+            if (e.type == SDL_QUIT)
+            {
+                s_keepUpdating = false;
+            }
         }
 
-        // Initialize renderer color white for the background
+        // Clear screen with blue background
         SDL_SetRenderDrawColor(renderer, 0x0A, 0x0A, 0xFF, 0xFF);
-
-        // Clear screen
         SDL_RenderClear(renderer);
 
-        // Set renderer color red to draw the square
-        SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
+        // Draw frame rate texture
+        std::string fpsText = "FPS: " + std::to_string(static_cast<int>(1.0f / deltaTime));
+        std::cout << fpsText << "  (" << deltaTime << ")" <<std::endl;
+        SDL_DestroyTexture(textTexture);
+        SDL_Surface* textSurface = TTF_RenderText_Solid(font, fpsText.c_str(), textColor);
+        textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+        SDL_FreeSurface(textSurface);
+        SDL_RenderCopy(renderer, textTexture, NULL, &textLocation);
 
+        // Update world
         world->Update(deltaTime);
 
-        // Update screen
+        // Present the rendered frame
         SDL_RenderPresent(renderer);
+
+        // Cap frame rate
+        if (deltaTime < targetFrameTime)
+        {
+            std::this_thread::sleep_for(std::chrono::duration<float>(targetFrameTime - deltaTime));
+        }
     }
 
+    // Cleanup
+    SDL_DestroyTexture(textTexture);
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
