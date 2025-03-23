@@ -23,6 +23,7 @@ namespace ecs
             if (ArchetypesRegistry* archetypesRegistry = GetArchetypesRegistry())
             {
                 archetypesRegistry->AddComponent<ComponentType>(m_id);
+                m_archetypeID = archetypesRegistry->GetArchetypeID(m_id);
             }
         }
 
@@ -49,6 +50,7 @@ namespace ecs
             if (ArchetypesRegistry* archetypesRegistry = GetArchetypesRegistry())
             {
                 archetypesRegistry->RemoveComponent<ComponentType>(m_id);
+                m_archetypeID = archetypesRegistry->GetArchetypeID(m_id);
             }
         }
 

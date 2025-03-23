@@ -125,3 +125,18 @@ TEST_F(TestECSWorld, TestCreateEntityWithComponents)
     EXPECT_NE(entityHandle.FindComponent<Position>(), nullptr);
     EXPECT_NE(entityHandle.FindComponent<Velocity>(), nullptr);
 }
+
+TEST_F(TestECSWorld, TestUpdateEntityArchetype)
+{
+    ecs::entity_id entity = m_world->CreateEntity<Position>();
+    ecs::entity_id entity2 = m_world->CreateEntity<Position, Velocity>();
+    ecs::EntityHandle entityHandle = m_world->GetEntity(entity);
+    ecs::EntityHandle entityHandle2 = m_world->GetEntity(entity2);
+    const ecs::archetype_id& originalArchetypeID = entityHandle.archetypeID();
+
+    entityHandle.AddComponent<Velocity>();
+    EXPECT_NE(entityHandle.archetypeID(), originalArchetypeID)
+        << "Adding a component to an entity should update the entity handle's archetype ID.";
+    EXPECT_EQ(entityHandle.archetypeID(), entityHandle2.archetypeID())
+        << "When updating an entity handle's archetype id, it should be consistent within the archetype registry.";
+}
