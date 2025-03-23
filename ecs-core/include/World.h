@@ -47,7 +47,6 @@ namespace ecs
 		 */
 		EntityHandle GetEntity(entity_id id);
 
-	protected:
 		ComponentsRegistry* GetComponentsRegistry() const;
 		ArchetypesRegistry* GetArchetypesRegistry() const;
 

@@ -1,4 +1,5 @@
 #include "ArchetypesRegistry.h"
+#include <algorithm>
 
 ecs::ArchetypesRegistry::archetype_set::archetype_set(const ecs::archetype& archetype, 
     ecs::ComponentsRegistry* componentsRegistry)
@@ -116,6 +117,15 @@ void ecs::ArchetypesRegistry::AddEntity(entity_id entity, const ecs::archetype& 
 
     // associate the entity to that archetype hash.
     m_entitiesArchetypeHashesMap[entity] = id;
+}
+
+void ecs::ArchetypesRegistry::Reset()
+{
+    m_archetypeSets.clear();
+    m_archetypesIDMap.clear();
+    m_entitiesArchetypeHashesMap.clear();
+    m_archetypeIDGenerator.Reset();
+    m_componentToArchetypeSetMap.clear();
 }
 
 void* ecs::ArchetypesRegistry::GetComponent(entity_id entity, const component_id componentID)
@@ -266,6 +276,13 @@ ecs::archetype_id ecs::ArchetypesRegistry::GetOrCreateArchetypeID(const archetyp
         const archetype_id id = m_archetypeIDGenerator.GenerateNewUniqueID();
         m_archetypesIDMap[archetype] = id; 
         m_archetypeSets.emplace_back(archetype, m_componentsRegistry.get());
+
+        // update the component to archetype map for consistent querying
+        for (const component_id componentID : archetype)
+        {
+            m_componentToArchetypeSetMap[componentID].insert(id);
+        }
+
         return id;
     }
     else
@@ -280,10 +297,53 @@ ecs::ArchetypesRegistry::archetype_set& ecs::ArchetypesRegistry::GetOrCreateArch
     return m_archetypeSets[id];
 }
 
-void ecs::ArchetypesRegistry::Reset()
+void ecs::ArchetypesRegistry::QueryEntities(std::initializer_list<component_id> components, std::vector<entity_id>& entities)
 {
-    m_archetypeSets.clear();
-    m_archetypesIDMap.clear();
-    m_entitiesArchetypeHashesMap.clear();
-    m_archetypeIDGenerator.Reset();
+    std::set<archetype_id> matchingArchetypes;
+
+    if (components.size() == 0)
+    {
+        for (size_t i = 0; i < m_archetypeSets.size(); ++i)
+        {
+            matchingArchetypes.insert(i);
+        }
+    }
+    else
+    {
+        auto componentIt = components.begin();
+        matchingArchetypes = m_componentToArchetypeSetMap[*componentIt];
+
+        // reduce the starting set by intersecting with all the other component's sets 
+        {
+            std::set<archetype_id> temp;
+
+            for (++componentIt; componentIt != components.end(); ++componentIt)
+            {
+                temp.clear();
+                const std::set<archetype_id>& currentSet = m_componentToArchetypeSetMap[*componentIt];
+                std::set_intersection(matchingArchetypes.begin(), matchingArchetypes.end(),
+                                    currentSet.begin(), currentSet.end(),
+                                    std::inserter(temp, temp.begin()));
+                matchingArchetypes = std::move(temp);
+            }
+        }
+    }
+
+    // get all the entities from the matching archetypes 
+    entities.clear();
+    for (const archetype_id archetypeID : matchingArchetypes)
+    {
+        const archetype_set& archetypeSet = m_archetypeSets[archetypeID];
+        for (const std::pair<entity_id, size_t>& entityPair : archetypeSet.entity_map())
+        {
+            entities.push_back(entityPair.first);
+        }
+    }
+
+    // @note This method has a lot of room for improvement. In particular, 
+    // computing the final array of entities in the end is not optimal, since a new O(n) 
+    // iteration will be performed by the caller.
+    // A better approch would be to directly apply the forEach lambda to the entities vector,
+    // so that everything happens in one single iteration, and without useless memory 
+    // allocations (due to the growth of the vector).
 }

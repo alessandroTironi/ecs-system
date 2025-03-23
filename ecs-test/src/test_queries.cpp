@@ -148,12 +148,12 @@ TEST_F(TestArchetypeQueries, TestQueryThatModifiesEntities)
     int numVelocitiesBefore = CountEntities<Velocity>();
     ecs::query<Position>(m_world).forEach([](ecs::EntityHandle entity, Position& position)
     {
+        position.x = 3.14f;
+        
         if (entity.FindComponent<Velocity>() == nullptr)
         {
             entity.AddComponent<Velocity>();
         }
-
-        position.x = 3.14f;
     });
 
     const int numPositions = CountEntities<Position>();

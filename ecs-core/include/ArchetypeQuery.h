@@ -3,6 +3,7 @@
 #include <functional>
 #include "Archetypes.h"
 #include "ArchetypesRegistry.h"
+#include "ComponentsRegistry.h"
 #include "Types.h"
 #include "World.h"
 #include "Entity.h"
@@ -26,7 +27,26 @@ namespace ecs
 		 */
 		void forEach(iteration_function&& func)
 		{
-			
+			if (m_world.expired())
+			{
+				throw std::runtime_error("Attempt to make a query with an invalid world.");
+			}
+
+			if (ArchetypesRegistry* archetypesRegistry = m_world.lock()->GetArchetypesRegistry())
+			{
+				if (ComponentsRegistry* componentsRegistry = m_world.lock()->GetComponentsRegistry())
+				{
+					std::vector<entity_id> entities;
+					archetypesRegistry->QueryEntities({ componentsRegistry->GetComponentID<Components>()... }, 
+													entities);
+
+					for (entity_id entity : entities)
+					{
+						EntityHandle handle = m_world.lock()->GetEntity(entity);
+						func(handle, handle.GetComponent<Components>()...);
+					}
+				}
+			}
 		}
 
 	private:

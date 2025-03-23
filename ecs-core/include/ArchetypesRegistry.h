@@ -59,6 +59,8 @@ namespace ecs
         size_t GetNumArchetypes() const { return m_archetypeSets.size(); }
         void Reset();
 
+        void QueryEntities(std::initializer_list<component_id> components, std::vector<entity_id>& entities);
+
     private:
         struct archetype_set
         {
@@ -75,6 +77,7 @@ namespace ecs
             void* find_component_at_index(const component_id componentID, const size_t index) const;
             void remove_entity(entity_id entity);
             inline const archetype& get_archetype() const { return m_archetype; }
+            inline const std::unordered_map<entity_id, size_t>& entity_map() const { return m_entityToIndexMap; }
         private:
             archetype m_archetype;
             std::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;
@@ -107,6 +110,12 @@ namespace ecs
         /* A vector of all the registered archetype sets which actually acts as a hash table where the key is the archetype's ID. 
            Since archetype IDs are generated sequentially, this hash table is guaranteed to be collision-free and compact. */
         std::vector<archetype_set> m_archetypeSets;
+
+        /** 
+         * Maps each component ID to a vector made of the IDs of any archetype that contains that component.
+         * This is used by the query system to find all the archetypes that contain the given component.
+         */
+        std::unordered_map<component_id, std::set<archetype_id>> m_componentToArchetypeSetMap;
 
         /* A reference to the world's components registry. */
         std::shared_ptr<ComponentsRegistry> m_componentsRegistry;
