@@ -12,6 +12,7 @@ namespace ecs
 {
     class ArchetypesRegistry
     {
+        friend class EntityHandle;
     public:
         ArchetypesRegistry() = default;
         ArchetypesRegistry(std::shared_ptr<ComponentsRegistry> componentsRegistry)
