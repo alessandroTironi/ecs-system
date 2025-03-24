@@ -20,8 +20,13 @@ namespace ecs
 		friend class EntityHandle;
 
 	public:
-		World();
+		World() = default;
 		~World();
+
+		/**
+		 * @brief Initialize the world. This must be called before using any other method.
+		 */
+		void Initialize();
 
 		/**
 		 * @brief Create an entity with no components.
@@ -52,8 +57,8 @@ namespace ecs
 		 */
 		EntityHandle GetEntity(entity_id id);
 
-		ComponentsRegistry* GetComponentsRegistry() const;
-		ArchetypesRegistry* GetArchetypesRegistry() const;
+		std::shared_ptr<ComponentsRegistry> GetComponentsRegistry() const;
+		std::shared_ptr<ArchetypesRegistry> GetArchetypesRegistry() const;
 
 		/**
 		 * @brief Registers a system for execution in this world.

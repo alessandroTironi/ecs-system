@@ -42,6 +42,7 @@ protected:
     void SetUp() override
     {
         m_world = std::make_shared<ecs::World>();
+        m_world->Initialize();
         m_entity1Pos = m_world->GetEntity(m_world->CreateEntity<Position>());
         m_entity2Pos = m_world->GetEntity(m_world->CreateEntity<Position>());
         m_entity1PosVel = m_world->GetEntity(m_world->CreateEntity<Position, Velocity>());

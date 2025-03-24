@@ -19,6 +19,7 @@ void EntityHandle::AddComponent(component_id componentID)
     if (ArchetypesRegistry* archetypesRegistry = GetArchetypesRegistry())
     {
         archetypesRegistry->AddComponent(m_id, componentID);
+        m_archetypeID = archetypesRegistry->GetArchetypeID(m_id);
     }
 }
 
@@ -54,7 +55,7 @@ ArchetypesRegistry* EntityHandle::GetArchetypesRegistry() const
 {
     if (!m_world.expired())
     {
-        return m_world.lock()->GetArchetypesRegistry();
+        return m_world.lock()->GetArchetypesRegistry().get();
     }
 
     return nullptr;
@@ -64,7 +65,7 @@ ComponentsRegistry* EntityHandle::GetComponentsRegistry() const
 {
     if (!m_world.expired())
     {
-        return m_world.lock()->GetComponentsRegistry();
+        return m_world.lock()->GetComponentsRegistry().get();
     }
 
     return nullptr;

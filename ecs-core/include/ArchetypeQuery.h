@@ -32,19 +32,11 @@ namespace ecs
 				throw std::runtime_error("Attempt to make a query with an invalid world.");
 			}
 
-			if (ArchetypesRegistry* archetypesRegistry = m_world.lock()->GetArchetypesRegistry())
+			if (ArchetypesRegistry* archetypesRegistry = m_world.lock()->GetArchetypesRegistry().get())
 			{
-				if (ComponentsRegistry* componentsRegistry = m_world.lock()->GetComponentsRegistry())
+				if (ComponentsRegistry* componentsRegistry = m_world.lock()->GetComponentsRegistry().get())
 				{
-					std::vector<entity_id> entities;
-					archetypesRegistry->QueryEntities({ componentsRegistry->GetComponentID<Components>()... }, 
-													entities);
-
-					for (entity_id entity : entities)
-					{
-						EntityHandle handle = m_world.lock()->GetEntity(entity);
-						func(handle, handle.GetComponent<Components>()...);
-					}
+					archetypesRegistry->ForEachEntity(func);
 				}
 			}
 		}

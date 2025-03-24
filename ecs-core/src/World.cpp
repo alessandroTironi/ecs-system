@@ -3,17 +3,16 @@
 #include "ComponentsRegistry.h"
 #include "Entity.h"
 
-
-ecs::World::World()
-{
-	m_componentsRegistry = std::make_shared<ComponentsRegistry>();
-	m_archetypesRegistry = std::make_shared<ArchetypesRegistry>(m_componentsRegistry);
-}
-
 ecs::World::~World()
 {
 	m_archetypesRegistry.reset();
 	m_componentsRegistry.reset();
+}
+
+void ecs::World::Initialize()
+{
+	m_archetypesRegistry = std::make_shared<ArchetypesRegistry>(shared_from_this());
+	m_componentsRegistry = std::make_shared<ComponentsRegistry>();
 }
 
 ecs::entity_id ecs::World::CreateEntity()
@@ -30,14 +29,14 @@ ecs::EntityHandle ecs::World::GetEntity(entity_id id)
 	return EntityHandle(weakPtrToThis, id, archetypeID);
 }
 
-ecs::ComponentsRegistry* ecs::World::GetComponentsRegistry() const
+std::shared_ptr<ecs::ComponentsRegistry> ecs::World::GetComponentsRegistry() const
 {
-	return m_componentsRegistry.get();
+	return m_componentsRegistry;
 }
 
-ecs::ArchetypesRegistry* ecs::World::GetArchetypesRegistry() const
+std::shared_ptr<ecs::ArchetypesRegistry> ecs::World::GetArchetypesRegistry() const
 {
-	return m_archetypesRegistry.get();
+	return m_archetypesRegistry;
 }
 
 void ecs::World::Update(ecs::real_t deltaTime)

@@ -106,6 +106,7 @@ int main()
 
     std::cout << "Initializing ECS instance..." << std::endl;
     std::shared_ptr<ecs::World> world = std::make_shared<ecs::World>();
+    world->Initialize();
 
     // Initialize SDL
     std::cout << "Initializing SDL instance..." << std::endl;
@@ -160,7 +161,7 @@ int main()
     SDL_Color color(0, 128, 135, 255);
     ecs::real_t maxVelocity = 500.0f;
     ecs::real_t minVelocity = 100.0f;
-    size_t numEntities = 2000;
+    size_t numEntities = 20000;
     srand(static_cast<unsigned> (time(0)));
     const auto generateRandomVelocity = [minVelocity, maxVelocity]()
     {

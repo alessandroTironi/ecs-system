@@ -1,5 +1,7 @@
 #include "ArchetypesRegistry.h"
+#include "World.h"
 #include <algorithm>
+
 
 ecs::ArchetypesRegistry::archetype_set::archetype_set(const ecs::archetype& archetype, 
     ecs::ComponentsRegistry* componentsRegistry)
@@ -166,7 +168,7 @@ ecs::archetype_id ecs::ArchetypesRegistry::GetArchetypeID(entity_id entity) cons
 void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const name& componentName)
 {
     const archetype& currentArchetype = GetArchetype(entity);
-    const component_id componentID = m_componentsRegistry->GetComponentID(componentName);
+    const component_id componentID = m_world->GetComponentsRegistry()->GetComponentID(componentName);
     if (currentArchetype.has_component(componentID))
     {
         return;
@@ -182,7 +184,7 @@ void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const component_id 
 {
     ecs::name componentName; 
     ecs::component_data componentData;
-    if (m_componentsRegistry->TryGetComponentData(componentID, componentName, componentData))
+    if (GetComponentsRegistry()->TryGetComponentData(componentID, componentName, componentData))
     {
         AddComponent(entity, componentName);
     }
@@ -192,7 +194,7 @@ void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const name& comp
 {
     archetype_id archetypeID;
     const archetype& currentArchetype = GetArchetype(entity);
-    const component_id componentID = m_componentsRegistry->GetComponentID(componentName);
+    const component_id componentID = GetComponentsRegistry()->GetComponentID(componentName);
     if (!currentArchetype.has_component(componentID))
     {
         return;
@@ -208,7 +210,7 @@ void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const component_
 {
     ecs::name componentName;
     ecs::component_data componentData;
-    if (m_componentsRegistry->TryGetComponentData(componentID, componentName, componentData))
+    if (GetComponentsRegistry()->TryGetComponentData(componentID, componentName, componentData))
     {
         RemoveComponent(entity, componentName);
     }
@@ -239,7 +241,7 @@ void ecs::ArchetypesRegistry::MoveEntity(entity_id entity, const archetype& targ
         void* targetComponentPtr = targetSet.get_component_at_index(componentID, targetIndex);
         component_data componentData;
         name componentName;
-        if (!m_componentsRegistry->TryGetComponentData(componentID, componentName, componentData))
+        if (!GetComponentsRegistry()->TryGetComponentData(componentID, componentName, componentData))
         {
             throw std::runtime_error("Trying to copy a component that was not registered. Call RegisterComponent() first.");
         }
@@ -275,7 +277,7 @@ ecs::archetype_id ecs::ArchetypesRegistry::GetOrCreateArchetypeID(const archetyp
     {
         const archetype_id id = m_archetypeIDGenerator.GenerateNewUniqueID();
         m_archetypesIDMap[archetype] = id; 
-        m_archetypeSets.emplace_back(archetype, m_componentsRegistry.get());
+        m_archetypeSets.emplace_back(archetype, GetComponentsRegistry());
 
         // update the component to archetype map for consistent querying
         for (const component_id componentID : archetype)
@@ -350,4 +352,12 @@ void ecs::ArchetypesRegistry::QueryArchetypes(std::initializer_list<component_id
     }
 }
 
+ecs::ComponentsRegistry* ecs::ArchetypesRegistry::GetComponentsRegistry() const
+{
+    return m_world->GetComponentsRegistry().get();
+}
 
+ecs::World* ecs::ArchetypesRegistry::GetWorld() const
+{   
+    return m_world.get();
+}

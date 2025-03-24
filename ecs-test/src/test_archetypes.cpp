@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
 #include <algorithm>
+#include "World.h"
 #include "Archetypes.h"
 #include "ArchetypesRegistry.h"
 #include "PackedComponentArray.h"
@@ -41,8 +42,10 @@ public:
 protected:
     void SetUp() override
     {
-        m_componentsRegistry = std::make_shared<ecs::ComponentsRegistry>();
-        m_archetypesRegistry = std::make_shared<ecs::ArchetypesRegistry>(m_componentsRegistry);
+        m_world = std::make_shared<ecs::World>();
+        m_world->Initialize();
+        m_componentsRegistry = m_world->GetComponentsRegistry();
+        m_archetypesRegistry = m_world->GetArchetypesRegistry();
         m_emptyArchetype = ecs::archetype();
         m_archetype1 = ecs::archetype::make<FloatComponent>(m_componentsRegistry.get());
         m_archetype2 = ecs::archetype::make<FloatComponent, IntComponent>(m_componentsRegistry.get());
@@ -53,12 +56,14 @@ protected:
     {
         m_archetypesRegistry.reset();
         m_componentsRegistry.reset();
+        m_world.reset();
     }
 
     ecs::archetype m_emptyArchetype;
     ecs::archetype m_archetype1;
     ecs::archetype m_archetype2;
     ecs::archetype m_archetype3;
+    std::shared_ptr<ecs::World> m_world;
     std::shared_ptr<ecs::ArchetypesRegistry> m_archetypesRegistry;
     std::shared_ptr<ecs::ComponentsRegistry> m_componentsRegistry;
 };

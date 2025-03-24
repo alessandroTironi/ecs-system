@@ -48,6 +48,7 @@ protected:
     void SetUp() override
     {
         m_world = std::make_shared<ecs::World>();
+        m_world->Initialize();
 	}
 
     void TearDown() override
