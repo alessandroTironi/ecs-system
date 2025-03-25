@@ -61,6 +61,12 @@ namespace ecs
         size_t GetNumArchetypes() const { return m_archetypeSets.size(); }
         void Reset();
 
+        /** 
+         * @brief Calls the provided function over all the entities that have the given components. 
+         * 
+         * @param function The function to call for each entity.
+         * @param components The components to query for.
+         */
         template<typename... Components>
         void ForEachEntity(std::function<void(EntityHandle, Components&...)> function)
         {
@@ -109,6 +115,7 @@ namespace ecs
             void* get_component_at_index(const component_id componentID, const size_t index) const;
             void* find_component_at_index(const component_id componentID, const size_t index) const;
             void remove_entity(entity_id entity);
+            void copy_entity_to(const entity_id entity, archetype_set& destination);
             inline const archetype& get_archetype() const { return m_archetype; }
             inline const std::unordered_map<entity_id, size_t>& entity_map() const { return m_entityToIndexMap; }
             inline const entity_id get_entity_at_index(const size_t index) const { return m_indexToEntityMap.at(index);}
