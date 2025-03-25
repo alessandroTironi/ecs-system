@@ -76,9 +76,10 @@ namespace ecs
                 // @todo we need a defer function for handling these cases.
 
                 const archetype_set& archetypeSet = m_archetypeSets[archetypeID];
-                for (size_t entityIndex = archetypeSet.get_num_entities(); entityIndex >= 0; --entityIndex)
+                for (size_t i = 0; i < archetypeSet.get_num_entities(); ++i)
                 {
                     const size_t numEntities = archetypeSet.get_num_entities();
+                    const size_t entityIndex = numEntities - i - 1;
                     if (entityIndex >= numEntities)
                     {
                         continue;
