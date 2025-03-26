@@ -90,3 +90,18 @@ void ecs::packed_component_array_t::delete_at(const size_t index)
     std::memcpy(last, toDelete, m_instanceSize);
     m_size -= 1;
 }
+
+void ecs::packed_component_array_t::copy_to(size_t index, ecs::packed_component_array_t& destination)
+{
+    if (index >= m_size)
+    {
+        throw std::out_of_range("Index out of bounds");
+    }
+
+    // get pointer to the source component
+    void* source = get_component(index);
+
+    // perform copy
+    destination.add_component();
+    std::memcpy(destination.last(), source, m_instanceSize);
+}

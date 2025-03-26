@@ -41,9 +41,42 @@ namespace ecs
         inline size_t component_size() const { return m_instanceSize; }
         inline size_t capacity() const { return m_capacity; }
 
+        /**
+         * @brief Adds a component at the end of the array. 
+         * 
+         * @return Pointer to the added component.
+         */
         void* add_component();
+        
+        /**
+         * @brief Returns a pointer to the component at the given index. 
+         * 
+         * @param index The index of the component to return.
+         * @return Pointer to the component at the given index.
+         */
         void* get_component(const size_t index) const;
+
+        /**
+         * @brief Returns a pointer to the last component in the array. 
+         * 
+         * @return Pointer to the last component in the array.
+         */
+        void* last() const { return get_component(m_size - 1); }
+
+        /**
+         * @brief Deletes the component at the given index. 
+         * 
+         * @param index The index of the component to delete.
+         */
         void delete_at(const size_t index);
+
+        /**
+         * @brief Copies the component at the given index to the destination array. 
+         * 
+         * @param index The index of the component to copy.
+         * @param destination The destination array to copy the component to.
+         */
+        void copy_to(size_t index, packed_component_array_t& destination);
 
     private:
         std::unique_ptr<void, void(*)(void*)> m_data;
@@ -61,11 +94,21 @@ namespace ecs
             : packed_component_array_t(componentsRegistry->GetOrAddComponentData<ComponentType>())
         {}
 
+        /**
+         * @brief Adds a component at the end of the array. 
+         * 
+         * @return Reference to the added component.
+         */
         ComponentType& add_component()
         {
             return *static_cast<ComponentType*>(packed_component_array_t::add_component());
         }
 
+        /**
+         * @brief Adds a component at the end of the array, by directly constructing it in place. 
+         * 
+         * @return Reference to the added component.
+         */
         template<typename... Args>
         ComponentType& emplace_component(Args&&... args)
         {
@@ -73,6 +116,12 @@ namespace ecs
             return *new (component) ComponentType(std::forward<Args>(args)...);
         }
 
+        /**
+         * @brief Returns a reference to the component at the given index. 
+         * 
+         * @param index The index of the component to return.
+         * @return Reference to the component at the given index.
+         */
         ComponentType& get_component(const size_t index) const
         {
             return *static_cast<ComponentType*>(packed_component_array_t::get_component(index));

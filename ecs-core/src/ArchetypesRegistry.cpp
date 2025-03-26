@@ -103,6 +103,25 @@ void ecs::ArchetypesRegistry::archetype_set::remove_entity(ecs::entity_id entity
     }
 }
 
+void ecs::ArchetypesRegistry::archetype_set::copy_entity_to(const entity_id entity, archetype_set& destination)
+{
+    destination.add_entity(entity);
+
+    for (auto componentIt = m_archetype.begin(); componentIt != m_archetype.end(); ++componentIt)
+    {
+        if (!destination.get_archetype().has_component(*componentIt))
+        {
+            continue;
+        }
+
+        std::shared_ptr<packed_component_array_t> sourceComponentArray = m_componentArraysMap.at(*componentIt);
+        std::shared_ptr<packed_component_array_t> targetComponentArray = destination.m_componentArraysMap.at(*componentIt);
+
+        const size_t entityIndexInSource = get_entity_index(entity);
+        sourceComponentArray->copy_to(entityIndexInSource, *targetComponentArray.get());
+    }
+}
+
 void ecs::ArchetypesRegistry::AddEntity(ecs::entity_id entity, std::initializer_list<ecs::component_data> componentsData)
 {
     AddEntity(entity, archetype(componentsData));
@@ -222,36 +241,12 @@ void ecs::ArchetypesRegistry::MoveEntity(entity_id entity, const archetype& targ
 
     const archetype_id currentArchetypeID = m_entitiesArchetypeHashesMap.at(entity);
     archetype_set& currentSet = m_archetypeSets[currentArchetypeID];
-    const size_t currentIndex = currentSet.get_entity_index(entity);
 
     // allocate memory for storing components of the entity in the new archetype.
     archetype_set& targetSet = m_archetypeSets[targetArchetypeID];
-    targetSet.add_entity(entity);
-    const size_t targetIndex = targetSet.get_entity_index(entity);
 
-    for (auto componentIt = currentSet.get_archetype().begin(); componentIt != currentSet.get_archetype().end(); ++componentIt)
-    {
-        const component_id componentID = *componentIt;
-        if (!targetSet.get_archetype().has_component(componentID))
-        {
-            continue;
-        }
-        
-        void* componentPtr = currentSet.get_component_at_index(componentID, currentIndex);
-        void* targetComponentPtr = targetSet.get_component_at_index(componentID, targetIndex);
-        component_data componentData;
-        name componentName;
-        if (!GetComponentsRegistry()->TryGetComponentData(componentID, componentName, componentData))
-        {
-            throw std::runtime_error("Trying to copy a component that was not registered. Call RegisterComponent() first.");
-        }
-
-        // copy component from current to target archetype set.
-        const size_t sizeOfComponent = componentData.data_size();
-        std::memcpy(targetComponentPtr, componentPtr, sizeOfComponent);
-    }
-
-    // remove entity from old set
+    // remove copy all components to new set and remove entity from current one.
+    currentSet.copy_entity_to(entity, targetSet);
     currentSet.remove_entity(entity);
 
     // update entities to archetypes map

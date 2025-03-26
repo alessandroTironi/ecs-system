@@ -47,3 +47,14 @@ The entire handling of the archetypes could be better. I don't have a clear unde
 Besides building the query system, a couple of interesting ideas for reducing memory allocations could be:
 - writing custom memory allocators for unordered maps
 - in archetypes, store the first 8/16 components inline and the others on the heap.
+
+
+## March 25, 2025
+
+The first loop of the complete system is finally finished. I tested it with a basic SDL app that spawn 20k dots and makes them bounce inside the window. The frame rate was 30fps: I must say that I expected some more, but it's also true that the entire system can still be heavily optimized, so that's what I will focus on in the next days, until I reach a point which is satifying enough to be named version 1.0. I will start collecting a todo list in each entry of this diary, and keep it updated during development.
+
+### TO DO list
+- Replace the use of ecs::name as key type for maps with std::type_index, which does not allocate memory and it's much more reliable.
+- Improve the iteration over entities of a query: it still feels it can be improved.
+- Consider using partially inline data structs, i.e., data struct with a default size for inline data and a pointer to dynamically allocated memory that stores data exceeding the default inline size.
+- Implemented cached queries, i.e., queries that store the result (in terms of set of archetypes) so that it does not need to be recomputed in the future.
