@@ -7,18 +7,19 @@
 #include "Types.h"
 #include "World.h"
 #include "Entity.h"
+#include "QueryTypes.h"
 
 namespace ecs
 {
 	template<typename... Components>
-	struct query
+	struct query : public query_base
 	{
 	public:
 		/** Type of the function that can be passed to the forEach() method. */
 		using iteration_function = std::function<void(EntityHandle, Components&...)>;
 
-		query() {}
-		query(std::weak_ptr<World> world) : m_world(world) {}
+		query() : query_base() {}
+		query(std::weak_ptr<World> world) : query_base(world) {}
 
 		/**
 		 * @brief Iterate over all entities that match the query and call the given function for each of them.
@@ -50,8 +51,5 @@ namespace ecs
 		{
 			return query<Components...>(world);
 		}
-
-	private:
-		std::weak_ptr<World> m_world;
 	};
 }

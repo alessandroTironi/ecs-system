@@ -10,9 +10,11 @@ namespace ecs
 {
     class World;
     class ArchetypesRegistry;
+    struct query_base;
 
     class EntityHandle
     {
+        friend class QueryEntityHandle;
     public:
         EntityHandle();
         EntityHandle(std::weak_ptr<World> world, entity_id id, archetype_id archetypeID);
@@ -64,17 +66,19 @@ namespace ecs
         inline archetype_id archetypeID() const { return m_archetypeID; }
         inline std::weak_ptr<World> world() const { return m_world;}
 
+        ArchetypesRegistry* GetArchetypesRegistry() const;
+        ComponentsRegistry* GetComponentsRegistry() const;
+        World* GetWorld() const { return m_world.lock().get();}
+
     private:
         void AddComponent(component_id componentID);
         void* GetComponent(component_id componentID) const;
         void* FindComponent(component_id componentID) const noexcept;
         void RemoveComponent(component_id componentID);
 
-        ArchetypesRegistry* GetArchetypesRegistry() const;
-        ComponentsRegistry* GetComponentsRegistry() const;
-
         entity_id m_id;
         archetype_id m_archetypeID;
         std::weak_ptr<World> m_world;
+        query_base* m_query;
     };
 }

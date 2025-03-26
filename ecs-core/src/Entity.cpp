@@ -1,6 +1,7 @@
 #include "Entity.h"
 #include "ComponentsRegistry.h"
 #include "World.h"
+#include "QueryTypes.h"
 
 using namespace ecs;
 
