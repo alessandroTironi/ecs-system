@@ -13,7 +13,8 @@ namespace ecs
     {
     public:
         query_base() = default;
-        query_base(std::weak_ptr<World> world) : m_world(world) {}
+        query_base(std::weak_ptr<World> world) 
+            : m_world(world) {}
     protected:
         std::weak_ptr<World> m_world;
     };

@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
 #include <algorithm>
+#include <functional>
 #include "World.h"
+#include "Entity.h"
 #include "Archetypes.h"
 #include "ArchetypesRegistry.h"
 #include "PackedComponentArray.h"
@@ -300,10 +302,51 @@ TEST_F(TestArchetypes, TestAddComponentToEntityInArchetypesDatabase)
 TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
 {
     m_archetypesRegistry->AddEntity<IntComponent>(0);
+    m_archetypesRegistry->AddEntity<IntComponent>(1);
+    m_archetypesRegistry->AddEntity<IntComponent>(2);
     ASSERT_NO_THROW(m_archetypesRegistry->RemoveComponent<FloatComponent>(0))
         << "Removing a non-existing component should not throw any exception, but just do nothing";
+    const ecs::archetype_id intArchetypeID = m_archetypesRegistry->GetArchetypeID(0);
     
-    m_archetypesRegistry->AddComponent<FloatComponent>(0);
-    m_archetypesRegistry->RemoveComponent<FloatComponent>(0);
-    ASSERT_THROW(m_archetypesRegistry->GetComponent<FloatComponent>(0), std::out_of_range);
+    m_archetypesRegistry->AddComponent<FloatComponent>(2);
+    const ecs::archetype_id intFloatArchetypeID = m_archetypesRegistry->GetArchetypeID(2);
+
+    EXPECT_NE(intArchetypeID, intFloatArchetypeID);
+    m_archetypesRegistry->RemoveComponent<FloatComponent>(2);
+    ASSERT_THROW(m_archetypesRegistry->GetComponent<FloatComponent>(2), std::out_of_range);
+    ASSERT_NO_THROW(m_archetypesRegistry->GetComponent<IntComponent>(2));
+    EXPECT_EQ(intArchetypeID, m_archetypesRegistry->GetArchetypeID(2));
+}
+
+TEST_F(TestArchetypes, TestComplexOperation)
+{
+    m_archetypesRegistry->AddEntity<FloatComponent>(0);
+    m_archetypesRegistry->AddEntity<FloatComponent>(1);
+    m_archetypesRegistry->AddEntity<FloatComponent, IntComponent>(2);
+    m_archetypesRegistry->AddEntity<IntComponent>(3);
+    m_archetypesRegistry->AddEntity<FloatComponent, IntComponent, DoubleComponent>(4);
+
+    const ecs::archetype_id floatArchetypeID = m_archetypesRegistry->GetArchetypeID(0);
+    const ecs::archetype_id intArchetypeID = m_archetypesRegistry->GetArchetypeID(3);
+    const ecs::archetype_id floatIntArchetypeID = m_archetypesRegistry->GetArchetypeID(2);
+    const ecs::archetype_id floatIntDoubleArchetypeID = m_archetypesRegistry->GetArchetypeID(4);
+
+    m_archetypesRegistry->AddComponent<IntComponent>(0);
+    m_archetypesRegistry->AddComponent<IntComponent>(1); 
+    
+    EXPECT_EQ(m_archetypesRegistry->GetArchetypeID(0), floatIntArchetypeID);
+    EXPECT_EQ(m_archetypesRegistry->GetArchetypeID(1), floatIntArchetypeID);
+
+    size_t numFloats = 0;
+    std::function<void(ecs::EntityHandle, FloatComponent&)> countFloats = 
+        [&numFloats](ecs::EntityHandle entity, FloatComponent& floatComponent) { ++numFloats; };
+    m_archetypesRegistry->ForEachEntity<FloatComponent>(countFloats);
+    EXPECT_EQ(numFloats, 4);
+
+    size_t numInts = 0;
+    std::function<void(ecs::EntityHandle, IntComponent&)> countInts = 
+        [&numInts](ecs::EntityHandle entity, IntComponent& intComponent) { ++numInts; };
+    m_archetypesRegistry->ForEachEntity<IntComponent>(countInts);
+    EXPECT_EQ(numInts, 5);
+
 }

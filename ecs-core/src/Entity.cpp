@@ -2,6 +2,7 @@
 #include "ComponentsRegistry.h"
 #include "World.h"
 #include "QueryTypes.h"
+#include "BatchComponentActionProcessor.h"
 
 using namespace ecs;
 
@@ -10,8 +11,9 @@ EntityHandle::EntityHandle()
     
 }
 
-EntityHandle::EntityHandle(std::weak_ptr<World> world, entity_id id, archetype_id archetypeID)
-    : m_world(world), m_id(id), m_archetypeID(archetypeID)
+EntityHandle::EntityHandle(std::weak_ptr<World> world, entity_id id, archetype_id archetypeID, 
+    std::shared_ptr<BatchComponentActionProcessor> batchComponentActionProcessor)
+    : m_world(world), m_id(id), m_archetypeID(archetypeID), m_batchComponentActionProcessor(batchComponentActionProcessor)
 {}
 
 
@@ -21,6 +23,14 @@ void EntityHandle::AddComponent(component_id componentID)
     {
         archetypesRegistry->AddComponent(m_id, componentID);
         m_archetypeID = archetypesRegistry->GetArchetypeID(m_id);
+    }
+}
+
+void EntityHandle::DeferredAddComponent(component_id componentID)
+{
+    if (m_batchComponentActionProcessor)
+    {
+        m_batchComponentActionProcessor->AddAction(EBatchComponentActionType::Add, m_id, componentID);
     }
 }
 
@@ -49,6 +59,14 @@ void EntityHandle::RemoveComponent(component_id componentID)
     if (ArchetypesRegistry* archetypesRegistry = GetArchetypesRegistry())
     {
         archetypesRegistry->RemoveComponent(m_id, componentID);
+    }
+}
+
+void EntityHandle::DeferredRemoveComponent(component_id componentID)
+{
+    if (m_batchComponentActionProcessor)
+    {
+        m_batchComponentActionProcessor->AddAction(EBatchComponentActionType::Remove, m_id, componentID);
     }
 }
 

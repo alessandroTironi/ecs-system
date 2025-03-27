@@ -88,12 +88,12 @@ void ecs::ArchetypesRegistry::archetype_set::remove_entity(ecs::entity_id entity
 
     const size_t index = optionalIndex->second;
     const size_t lastIndex = m_entityToIndexMap.size() - 1;
-    const entity_id lastEntity = m_indexToEntityMap[lastIndex];
     for (auto packedArrayIt = m_componentArraysMap.begin(); packedArrayIt != m_componentArraysMap.end(); ++packedArrayIt)
     {
         packedArrayIt->second->delete_at(index);
     }
 
+    const entity_id lastEntity = m_indexToEntityMap[lastIndex];
     m_indexToEntityMap.erase(lastIndex);
     m_entityToIndexMap.erase(entity);
     if (entity != lastEntity)

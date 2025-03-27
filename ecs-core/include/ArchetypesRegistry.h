@@ -2,12 +2,14 @@
 
 #include <unordered_map>
 #include <memory>
+#include <functional>
 #include "Types.h"
 #include "Entity.h"
 #include "Archetypes.h"
 #include "PackedComponentArray.h"
 #include "ComponentsRegistry.h"
 #include "IDGenerator.h"
+#include "BatchComponentActionProcessor.h"
 
 namespace ecs
 {
@@ -16,6 +18,7 @@ namespace ecs
     class ArchetypesRegistry
     {
         friend class EntityHandle;
+        friend class BatchComponentActionProcessor;
     public:
         ArchetypesRegistry() = default;
         ArchetypesRegistry(std::shared_ptr<World> world) : m_world(world) {}
@@ -73,14 +76,10 @@ namespace ecs
             std::set<archetype_id> archetypes;
             QueryArchetypes({ GetComponentsRegistry()->GetComponentID<Components>()... }, archetypes);
 
+            std::shared_ptr<BatchComponentActionProcessor> batchComponentActionProcessor =
+                std::make_shared<BatchComponentActionProcessor>(m_world);
             for (const archetype_id archetypeID : archetypes) 
             {
-                // We iterate over all the entities in each archetype by reverse index, rather than by
-                // entity ID. This is not just more cache friendly, but it also allows dynamic 
-                // edits on the components of each entity. 
-                // This still does not prevent an entity from being evaluated multiple or zero times, so
-                // @todo we need a defer function for handling these cases.
-
                 const archetype_set& archetypeSet = m_archetypeSets[archetypeID];
                 for (size_t i = 0; i < archetypeSet.get_num_entities(); ++i)
                 {
@@ -92,11 +91,12 @@ namespace ecs
                     }
 
                     const entity_id entity = archetypeSet.get_entity_at_index(entityIndex);
-                    EntityHandle handle = EntityHandle(m_world, entity, archetypeID);
+                    EntityHandle handle = EntityHandle(m_world, entity, archetypeID, batchComponentActionProcessor);
                     function(handle, *static_cast<Components*>(archetypeSet.get_component_at_index(GetComponentsRegistry()->GetComponentID<Components>(), entityIndex))...);
-                
                 }
             }
+
+            batchComponentActionProcessor->ProcessActions();
         }
 
         void QueryEntities(std::initializer_list<component_id> components, std::vector<entity_id>& entities);

@@ -10,14 +10,15 @@ namespace ecs
 {
     class World;
     class ArchetypesRegistry;
-    struct query_base;
+    class BatchComponentActionProcessor;
 
     class EntityHandle
     {
         friend class QueryEntityHandle;
     public:
         EntityHandle();
-        EntityHandle(std::weak_ptr<World> world, entity_id id, archetype_id archetypeID);
+        EntityHandle(std::weak_ptr<World> world, entity_id id, archetype_id archetypeID, 
+            std::shared_ptr<BatchComponentActionProcessor> batchComponentActionProcessor = nullptr);
 
         template<typename ComponentType>
         void AddComponent()
@@ -26,6 +27,16 @@ namespace ecs
             {
                 const component_id componentID = componentsRegistry->GetComponentID<ComponentType>();
                 AddComponent(componentID);
+            }
+        }
+
+        template<typename ComponentType>
+        void DeferredAddComponent()
+        {
+            if (ComponentsRegistry* componentsRegistry = GetComponentsRegistry())
+            {
+                const component_id componentID = componentsRegistry->GetComponentID<ComponentType>();
+                DeferredAddComponent(componentID);
             }
         }
 
@@ -62,6 +73,16 @@ namespace ecs
             }
         }
 
+        template<typename ComponentType>
+        void DeferredRemoveComponent()
+        {
+            if (ComponentsRegistry* componentsRegistry = GetComponentsRegistry())
+            {
+                const component_id componentID = componentsRegistry->GetComponentID<ComponentType>();
+                DeferredRemoveComponent(componentID);
+            }
+        }
+
         inline entity_id id() const { return m_id; }
         inline archetype_id archetypeID() const { return m_archetypeID; }
         inline std::weak_ptr<World> world() const { return m_world;}
@@ -72,13 +93,15 @@ namespace ecs
 
     private:
         void AddComponent(component_id componentID);
+        void DeferredAddComponent(component_id componentID);
         void* GetComponent(component_id componentID) const;
         void* FindComponent(component_id componentID) const noexcept;
         void RemoveComponent(component_id componentID);
+        void DeferredRemoveComponent(component_id componentID);
 
         entity_id m_id;
         archetype_id m_archetypeID;
         std::weak_ptr<World> m_world;
-        query_base* m_query;
+        std::shared_ptr<BatchComponentActionProcessor> m_batchComponentActionProcessor;
     };
 }
