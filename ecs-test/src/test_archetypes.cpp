@@ -162,7 +162,7 @@ TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
 {
     ecs::packed_component_array_t packedArray1;
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent), floatComponentData));
     ASSERT_NO_THROW(packedArray1 = ecs::packed_component_array_t(floatComponentData));
     ASSERT_EQ(packedArray1.component_size(), sizeof(FloatComponent));
     ASSERT_EQ(packedArray1.size(), 0);
@@ -173,7 +173,7 @@ TEST_F(TestArchetypes, TestPackedComponentArrayCreation)
 TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 {
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent), floatComponentData));
     ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent = packedArray.add_component();
     EXPECT_EQ(packedArray.size(), 1);
@@ -183,7 +183,7 @@ TEST_F(TestArchetypes, TestAddComponentToPackedArray)
 TEST_F(TestArchetypes, TestAddComponentRealloc)
 {
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent), floatComponentData));
     ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent1 = packedArray.add_component();
     void* newComponent2 = packedArray.add_component();
@@ -207,7 +207,7 @@ TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 {
     m_componentsRegistry->RegisterComponent<FloatComponent>(2);
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent), floatComponentData));
     ecs::packed_component_array_t packedArray(floatComponentData);
     void* newComponent1 = packedArray.add_component();
     void* newComponent2 = packedArray.add_component();
@@ -220,7 +220,7 @@ TEST_F(TestArchetypes, TestGetComponentFromPackedArray)
 TEST_F(TestArchetypes, TestDeleteComponentFromPackedArray)
 {
     ecs::component_data floatComponentData;
-    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent).name(), floatComponentData));
+    ASSERT_TRUE(m_componentsRegistry->TryGetComponentData(typeid(FloatComponent), floatComponentData));
     ecs::packed_component_array_t packedArray(floatComponentData);
     void* c1 = packedArray.add_component();
     void* c2 = packedArray.add_component();

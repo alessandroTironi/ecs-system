@@ -11,8 +11,8 @@ ecs::ArchetypesRegistry::archetype_set::archetype_set(const ecs::archetype& arch
     for (auto componentIt = m_archetype.begin(); componentIt != m_archetype.end(); ++componentIt)
     {
         ecs::component_data componentData;
-        ecs::name componentName;
-        if (!componentsRegistry->TryGetComponentData(*componentIt, componentName, componentData))
+        ecs::type_key componentType;
+        if (!componentsRegistry->TryGetComponentData(*componentIt, componentType, componentData))
         {
             throw std::invalid_argument("Component not found in the database. Call RegisterComponent() first.");
         }
@@ -185,10 +185,10 @@ ecs::archetype_id ecs::ArchetypesRegistry::GetArchetypeID(entity_id entity) cons
     return m_entitiesArchetypeHashesMap.at(entity);
 }
 
-void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const name& componentName)
+void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const type_key& componentType)
 {
     const archetype& currentArchetype = GetArchetype(entity);
-    const component_id componentID = m_world->GetComponentsRegistry()->GetComponentID(componentName);
+    const component_id componentID = m_world->GetComponentsRegistry()->GetComponentID(componentType);
     if (currentArchetype.has_component(componentID))
     {
         return;
@@ -202,19 +202,19 @@ void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const name& compone
 
 void ecs::ArchetypesRegistry::AddComponent(entity_id entity, const component_id componentID)
 {
-    ecs::name componentName; 
+    ecs::type_key componentType; 
     ecs::component_data componentData;
-    if (GetComponentsRegistry()->TryGetComponentData(componentID, componentName, componentData))
+    if (GetComponentsRegistry()->TryGetComponentData(componentID, componentType, componentData))
     {
-        AddComponent(entity, componentName);
+        AddComponent(entity, componentType);
     }
 }
 
-void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const name& componentName)
+void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const type_key& componentType)
 {
     archetype_id archetypeID;
     const archetype& currentArchetype = GetArchetype(entity);
-    const component_id componentID = GetComponentsRegistry()->GetComponentID(componentName);
+    const component_id componentID = GetComponentsRegistry()->GetComponentID(componentType);
     if (!currentArchetype.has_component(componentID))
     {
         return;
@@ -228,11 +228,11 @@ void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const name& comp
 
 void ecs::ArchetypesRegistry::RemoveComponent(entity_id entity, const component_id componentID)
 {
-    ecs::name componentName;
+    ecs::type_key componentType;
     ecs::component_data componentData;
-    if (GetComponentsRegistry()->TryGetComponentData(componentID, componentName, componentData))
+    if (GetComponentsRegistry()->TryGetComponentData(componentID, componentType, componentData))
     {
-        RemoveComponent(entity, componentName);
+        RemoveComponent(entity, componentType);
     }
 }
 

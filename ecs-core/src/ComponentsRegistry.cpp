@@ -1,18 +1,18 @@
 #include "ComponentsRegistry.h"
 
-ecs::component_id ecs::ComponentsRegistry::AddComponentData(const ecs::name& componentName, 
+ecs::component_id ecs::ComponentsRegistry::AddComponentData(const ecs::type_key& componentType, 
 	const size_t dataSize, const size_t initialCapacity)
 {
-	auto optionalComponentData = m_componentsClassMap.find(componentName);
+	auto optionalComponentData = m_componentsClassMap.find(componentType);
 	if (optionalComponentData == m_componentsClassMap.end())
 	{
 		const component_id newID = m_componentIDGenerator.GenerateNewUniqueID();
-		m_componentsClassMap.emplace(componentName, component_data(dataSize, newID, initialCapacity));
-		if (newID >= m_componentNames.size())
+		m_componentsClassMap.emplace(componentType, component_data(dataSize, newID, initialCapacity));
+		if (newID >= m_componentTypes.size())
 		{
-			m_componentNames.resize(newID + 8);
+			m_componentTypes.resize(newID + 8);
 		}
-		m_componentNames[newID] = componentName;
+		m_componentTypes[newID] = componentType;
 		return newID;
 	}
 	else
@@ -21,9 +21,9 @@ ecs::component_id ecs::ComponentsRegistry::AddComponentData(const ecs::name& com
 	}
 }
 
-bool ecs::ComponentsRegistry::TryGetComponentData(const ecs::name& componentName, component_data& outComponentData)
+bool ecs::ComponentsRegistry::TryGetComponentData(const ecs::type_key& componentType, component_data& outComponentData)
 {
-	auto optionalComponentData = m_componentsClassMap.find(componentName);
+	auto optionalComponentData = m_componentsClassMap.find(componentType);
 	if (optionalComponentData == m_componentsClassMap.end())
 	{
 		return false;
@@ -35,14 +35,14 @@ bool ecs::ComponentsRegistry::TryGetComponentData(const ecs::name& componentName
 	}
 }
 
-bool ecs::ComponentsRegistry::TryGetComponentData(const component_id componentID, name& outComponentName, component_data& outComponentData)
+bool ecs::ComponentsRegistry::TryGetComponentData(const component_id componentID, type_key& outComponentType, component_data& outComponentData)
 {
-	if (componentID >= m_componentNames.size())
+	if (componentID >= m_componentTypes.size())
 	{
 		return false;
 	}
 
-	outComponentName = m_componentNames[componentID];
-	outComponentData = m_componentsClassMap[outComponentName];
+	outComponentType = m_componentTypes[componentID];
+	outComponentData = m_componentsClassMap[outComponentType];
 	return true;
 }

@@ -143,9 +143,9 @@ namespace ecs
         void* GetComponent(entity_id entity, const component_id componentID);
         void* FindComponent(entity_id entity, const component_id componentID);
 
-        void AddComponent(entity_id entity, const name& componentName);
+        void AddComponent(entity_id entity, const type_key& componentType);
         void AddComponent(entity_id entity, const component_id componentID);
-        void RemoveComponent(entity_id entity, const name& componentName);
+        void RemoveComponent(entity_id entity, const type_key& componentType);
         void RemoveComponent(entity_id entity, const component_id componentID);
 
         void MoveEntity(entity_id entity, const archetype& targetArchetype);
