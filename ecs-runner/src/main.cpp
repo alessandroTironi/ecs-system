@@ -251,7 +251,6 @@ int main()
 
         // Draw frame rate texture
         std::string fpsText = "FPS: " + std::to_string(static_cast<int>(1.0f / deltaTime));
-        std::cout << fpsText << "  (" << deltaTime << ")" <<std::endl;
         SDL_DestroyTexture(textTexture);
         SDL_Surface* textSurface = TTF_RenderText_Solid(font, fpsText.c_str(), textColor);
         textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
