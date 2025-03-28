@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <limits>
-#include "IDGenerator.h"
+#include "Core/IDGenerator.h"
 
 using ::testing::Test;
 

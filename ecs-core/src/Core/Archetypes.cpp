@@ -1,4 +1,4 @@
-#include "Archetypes.h"
+#include "Core/Archetypes.h"
 #include <iostream>
 
 ecs::archetype::archetype()

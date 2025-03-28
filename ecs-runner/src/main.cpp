@@ -5,8 +5,8 @@
 #include <cmath>
 #include <algorithm>
 
-#include "World.h"
-#include "ArchetypeQuery.h"
+#include "Core/World.h"
+#include "Core/ArchetypeQuery.h"
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"

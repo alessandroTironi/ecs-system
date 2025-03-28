@@ -1,5 +1,5 @@
-#include "ArchetypesRegistry.h"
-#include "World.h"
+#include "Core/ArchetypesRegistry.h"
+#include "Core/World.h"
 #include <algorithm>
 
 

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "CompactString.h"
+#include "Core/CompactString.h"
 
 using ::testing::Test;
 

@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "World.h"
-#include "Entity.h"
-#include "ComponentData.h"
-#include "ISystem.h"
-#include "ArchetypeQuery.h"
+#include "Core/World.h"
+#include "Core/Entity.h"
+#include "Core/ComponentData.h"
+#include "Core/ISystem.h"
+#include "Core/ArchetypeQuery.h"
 
 using ::testing::Test; 
 

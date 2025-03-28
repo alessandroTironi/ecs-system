@@ -1,4 +1,4 @@
-#include "PackedComponentArray.h"
+#include "Core/PackedComponentArray.h"
 
 ecs::packed_component_array_t::packed_component_array_t() : m_data(nullptr, [](void*){}),
     m_size{0}, m_serial{0}, m_instanceSize{0}, m_capacity{0}

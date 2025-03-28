@@ -1,7 +1,7 @@
-#include "World.h"
-#include "ArchetypesRegistry.h"
-#include "ComponentsRegistry.h"
-#include "Entity.h"
+#include "Core/World.h"
+#include "Core/ArchetypesRegistry.h"
+#include "Core/ComponentsRegistry.h"
+#include "Core/Entity.h"
 
 ecs::World::~World()
 {

@@ -2,12 +2,12 @@
 #include <stdexcept>
 #include <algorithm>
 #include <functional>
-#include "World.h"
-#include "Entity.h"
-#include "Archetypes.h"
-#include "ArchetypesRegistry.h"
-#include "PackedComponentArray.h"
-#include "ComponentData.h"
+#include "Core/World.h"
+#include "Core/Entity.h"
+#include "Core/Archetypes.h"
+#include "Core/ArchetypesRegistry.h"
+#include "Core/PackedComponentArray.h"
+#include "Core/ComponentData.h"
 
 using ::testing::Test;
 

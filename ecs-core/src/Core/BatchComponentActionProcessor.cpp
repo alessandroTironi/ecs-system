@@ -1,6 +1,6 @@
-#include "BatchComponentActionProcessor.h"
-#include "World.h"
-#include "ArchetypesRegistry.h"
+#include "Core/BatchComponentActionProcessor.h"
+#include "Core/World.h"
+#include "Core/ArchetypesRegistry.h"
 
 using namespace ecs;
 

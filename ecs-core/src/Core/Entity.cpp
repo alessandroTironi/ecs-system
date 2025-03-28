@@ -1,8 +1,8 @@
-#include "Entity.h"
-#include "ComponentsRegistry.h"
-#include "World.h"
-#include "QueryTypes.h"
-#include "BatchComponentActionProcessor.h"
+#include "Core/Entity.h"
+#include "Core/ComponentsRegistry.h"
+#include "Core/World.h"
+#include "Core/QueryTypes.h"
+#include "Core/BatchComponentActionProcessor.h"
 
 using namespace ecs;
 

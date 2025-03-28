@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <set>
-#include "Types.h"
-#include "Archetypes.h"
-#include "World.h"
-#include "ArchetypeQuery.h"
-#include "Entity.h"
+#include "Core/Types.h"
+#include "Core/Archetypes.h"
+#include "Core/World.h"
+#include "Core/ArchetypeQuery.h"
+#include "Core/Entity.h"
 
 using ::testing::Test;
 
