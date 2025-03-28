@@ -75,8 +75,9 @@ namespace ecs
          * 
          * @param index The index of the component to copy.
          * @param destination The destination array to copy the component to.
+         * @param destinationIndex The index of the destination array to copy the component to.
          */
-        void copy_to(size_t index, packed_component_array_t& destination);
+        void copy_to(size_t index, packed_component_array_t& destination, size_t destinationIndex);
 
     private:
         std::unique_ptr<void, void(*)(void*)> m_data;

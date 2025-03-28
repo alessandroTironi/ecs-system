@@ -60,6 +60,15 @@ namespace ecs
 
         const archetype& GetArchetype(entity_id entity) const;
         archetype_id GetArchetypeID(entity_id entity) const;
+        inline size_t GetNumEntitiesForArchetype(archetype_id archetypeID) const 
+        {
+            if (archetypeID >= m_archetypeSets.size())
+            {
+                return 0;
+            }
+
+            return m_archetypeSets[archetypeID].get_num_entities();
+        }
         
         size_t GetNumArchetypes() const { return m_archetypeSets.size(); }
         void Reset();

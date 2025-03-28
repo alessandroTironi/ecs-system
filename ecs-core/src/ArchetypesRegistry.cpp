@@ -118,7 +118,8 @@ void ecs::ArchetypesRegistry::archetype_set::copy_entity_to(const entity_id enti
         std::shared_ptr<packed_component_array_t> targetComponentArray = destination.m_componentArraysMap.at(*componentIt);
 
         const size_t entityIndexInSource = get_entity_index(entity);
-        sourceComponentArray->copy_to(entityIndexInSource, *targetComponentArray.get());
+        sourceComponentArray->copy_to(entityIndexInSource, *targetComponentArray.get(),
+                                      targetComponentArray->size() - 1);
     }
 }
 

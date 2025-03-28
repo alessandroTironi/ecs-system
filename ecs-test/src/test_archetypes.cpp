@@ -318,7 +318,7 @@ TEST_F(TestArchetypes, TestRemoveComponentFromEntityInArchetypeDatabase)
     EXPECT_EQ(intArchetypeID, m_archetypesRegistry->GetArchetypeID(2));
 }
 
-TEST_F(TestArchetypes, TestComplexOperation)
+TEST_F(TestArchetypes, TestComplexUpdateOfArchetypes)
 {
     m_archetypesRegistry->AddEntity<FloatComponent>(0);
     m_archetypesRegistry->AddEntity<FloatComponent>(1);
@@ -331,9 +331,19 @@ TEST_F(TestArchetypes, TestComplexOperation)
     const ecs::archetype_id floatIntArchetypeID = m_archetypesRegistry->GetArchetypeID(2);
     const ecs::archetype_id floatIntDoubleArchetypeID = m_archetypesRegistry->GetArchetypeID(4);
 
+    EXPECT_EQ(m_archetypesRegistry->GetNumEntitiesForArchetype(floatArchetypeID), 2);
+    EXPECT_EQ(m_archetypesRegistry->GetNumEntitiesForArchetype(intArchetypeID), 1);
+    EXPECT_EQ(m_archetypesRegistry->GetNumEntitiesForArchetype(floatIntArchetypeID), 1);
+    EXPECT_EQ(m_archetypesRegistry->GetNumEntitiesForArchetype(floatIntDoubleArchetypeID), 1);
+
     m_archetypesRegistry->AddComponent<IntComponent>(0);
     m_archetypesRegistry->AddComponent<IntComponent>(1); 
-    
+
+    EXPECT_EQ(m_archetypesRegistry->GetNumEntitiesForArchetype(floatArchetypeID), 0);
+    EXPECT_EQ(m_archetypesRegistry->GetNumEntitiesForArchetype(intArchetypeID), 1);
+    EXPECT_EQ(m_archetypesRegistry->GetNumEntitiesForArchetype(floatIntArchetypeID), 3);
+    EXPECT_EQ(m_archetypesRegistry->GetNumEntitiesForArchetype(floatIntDoubleArchetypeID), 1);
+
     EXPECT_EQ(m_archetypesRegistry->GetArchetypeID(0), floatIntArchetypeID);
     EXPECT_EQ(m_archetypesRegistry->GetArchetypeID(1), floatIntArchetypeID);
 
@@ -348,5 +358,4 @@ TEST_F(TestArchetypes, TestComplexOperation)
         [&numInts](ecs::EntityHandle entity, IntComponent& intComponent) { ++numInts; };
     m_archetypesRegistry->ForEachEntity<IntComponent>(countInts);
     EXPECT_EQ(numInts, 5);
-
 }
