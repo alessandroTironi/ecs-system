@@ -143,6 +143,6 @@ namespace ecs
 
 		IDGenerator<entity_id> m_entityIDGenerator;
 
-		std::unordered_map<std::type_index, std::shared_ptr<ISystem>> m_registeredSystems;
+		std::unordered_map<type_key, std::shared_ptr<ISystem>> m_registeredSystems;
 	};
 }
