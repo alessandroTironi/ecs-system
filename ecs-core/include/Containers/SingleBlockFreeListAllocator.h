@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "memory.h"
+#include <cassert>
 
 namespace ecs
 {
@@ -12,11 +13,11 @@ namespace ecs
         {
             m_capacity = InitialCapacity;
 
-            m_data = Malloc(sizeof(T) * m_capacity);
+            m_data = static_cast<T*>(Malloc(sizeof(T) * m_capacity));
             m_usedCount = 0;
 
-            m_freeIndices = Malloc(sizeof(size_t) * m_capacity);
-            m_freeIndices = m_capacity;
+            m_freeIndices = static_cast<size_t*>(Malloc(sizeof(size_t) * m_capacity));
+            m_freeCount = m_capacity;
 
             for (size_t i = 0; i < m_capacity; ++i)
             {
@@ -30,40 +31,48 @@ namespace ecs
             Free(m_freeIndices);
         }
 
-        T* AllocateBlock()
+        size_t AllocateBlock()
         {
             if (m_freeCount == 0)
             {
-                // resize
+                const size_t oldCapacity = m_capacity;
                 m_capacity *= 2;
-                m_data = Realloc(m_data, sizeof(T) * m_capacity);
-                m_freeIndices = Realloc(m_freeIndices, sizeof(size_t) * m_capacity);
+
+                m_data = static_cast<T*>(Realloc(m_data, sizeof(T) * m_capacity));
+                m_freeIndices = static_cast<size_t*>(Realloc(m_freeIndices, sizeof(size_t) * m_capacity));
 
                 for (size_t i = m_freeCount; i < m_capacity; ++i)
                 {
-                    m_freeIndices[m_freeCount++] = m_capacity - i - 1;
+                    m_freeIndices[i] = m_capacity - i - 1;
                 }
+
+                m_freeCount += oldCapacity;
             }
 
             m_usedCount += 1;
-            return static_cast<T*>(&m_data[m_freeIndices[m_freeCount--]]);
+            const size_t index = m_freeIndices[--m_freeCount];
+            return index;
         }
 
-        void FreeBlock(T* ptr)
+        void FreeBlock(size_t index)
         {
-            void* asVoidPtr = static_cast<void*>(ptr);
-            const size_t index = asVoidPtr - m_data;
             m_freeIndices[m_freeCount++] = index;
             m_usedCount -= 1;
-            delete ptr;
+            m_data[index].~T();
         }
 
         inline size_t usedCount() const noexcept { return m_usedCount; }
         inline size_t freeCount() const noexcept { return m_freeCount; }
         inline size_t capacity() const noexcept { return m_capacity; }
 
+        T& operator[](const size_t index)
+        {
+            assert(index < m_usedCount);
+            return m_data[index];
+        }
+
     private:
-        void* m_data = nullptr;
+        T* m_data = nullptr;
         size_t m_usedCount = 0;
         size_t* m_freeIndices = nullptr;
         size_t m_freeCount = 0;
