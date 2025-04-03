@@ -39,7 +39,62 @@ namespace ecs
             }
             else
             {
-                throw std::runtime_error("Not implemented");
+                // 1. Insert the node as in a normal BST, coloring it red.
+                size_t parentIndex = NIL;
+                size_t currentIndex = m_rootIndex;
+                while (currentIndex != NIL)
+                {
+                    parentIndex = currentIndex;
+                    node& currentNode = m_allocator[currentIndex];
+                    if (value > currentNode.value)
+                    {
+                        currentIndex = currentNode.right;
+                    }
+                    else if (value == currentNode.value)
+                    {
+                        // already in tree, return
+                        return;
+                    }
+                    else
+                    {
+                        currentIndex = currentNode.left;
+                    }
+                }
+
+                node& newNode = m_allocator[m_allocator.AllocateBlock()];
+                newNode.value = value;
+                newNode.parent = parentIndex;
+                newNode.left = NIL;
+                newNode.right = NIL;
+                newNode.red = true;
+
+                // 2. Validation
+                node& parentNode = m_allocator[parentIndex];
+                if (!parentNode.red)
+                {
+                    // no need to rebalance
+                    return;
+                }
+
+                // 3. Rebalance
+                node uncleNode;
+                if (!try_get_uncle_node(newNode, uncleNode))
+                {
+                    return;
+                }
+
+                if (uncleNode.red)
+                {
+                    uncleNode.red = false;
+                }
+                else if (uncleNode.is_right_child(m_allocator))
+                {
+                    left_rotate(uncleNode);
+                }
+                else
+                {
+                    right_rotate(uncleNode);
+                }
             }
         }
 
@@ -111,6 +166,11 @@ namespace ecs
         {
             throw std::runtime_error("Not implemented");
         }
+
+        bool try_get_uncle_node(const node& childNode, node& outUncleNode) const noexcept 
+        {
+            throw std::runtime_error("Not implemented");
+        }
         
         struct node
         {
@@ -127,6 +187,11 @@ namespace ecs
             node(T inValue, size_t inParent, size_t inLeft, size_t inRight, bool inRed)
                 : value{inValue}, parent{inParent}, left{inLeft}, right{inRight}, red{inRed}
             {}
+
+            inline bool is_right_child(const SingleBlockFreeListAllocator& allocator) const 
+            {
+                
+            }
         };
 
         size_t m_size = 0;
