@@ -65,7 +65,7 @@ namespace ecs
         inline size_t freeCount() const noexcept { return m_freeCount; }
         inline size_t capacity() const noexcept { return m_capacity; }
 
-        T& operator[](const size_t index)
+        T& operator[](const size_t index) const
         {
             assert(index < m_usedCount);
             return m_data[index];

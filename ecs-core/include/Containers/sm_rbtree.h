@@ -9,10 +9,14 @@
 
 namespace ecs
 {
-    template<typename T>
+    template<typename T, size_t InitialCapacity = 8>
     struct sm_rbtree
     {
     public:
+        struct node;
+
+        using Allocator = SingleBlockFreeListAllocator<node, InitialCapacity>;
+
         sm_rbtree()
         {
 
@@ -61,7 +65,8 @@ namespace ecs
                     }
                 }
 
-                node& newNode = m_allocator[m_allocator.AllocateBlock()];
+                const size_t newNodeIndex = m_allocator.AllocateBlock();
+                node& newNode = m_allocator[newNodeIndex];
                 newNode.value = value;
                 newNode.parent = parentIndex;
                 newNode.left = NIL;
@@ -70,6 +75,17 @@ namespace ecs
 
                 // 2. Validation
                 node& parentNode = m_allocator[parentIndex];
+                if (newNode.value > parentNode.value)
+                {
+                    parentNode.right = newNodeIndex;
+                }
+                else
+                {
+                    parentNode.left = newNodeIndex;
+                }
+
+                m_size += 1;
+
                 if (!parentNode.red)
                 {
                     // no need to rebalance
@@ -77,23 +93,24 @@ namespace ecs
                 }
 
                 // 3. Rebalance
-                node uncleNode;
-                if (!try_get_uncle_node(newNode, uncleNode))
+                size_t uncleNodeIndex;
+                if (!try_get_uncle_node(newNodeIndex, uncleNodeIndex))
                 {
                     return;
                 }
 
+                node& uncleNode = m_allocator[uncleNodeIndex];
                 if (uncleNode.red)
                 {
                     uncleNode.red = false;
                 }
                 else if (uncleNode.is_right_child(m_allocator))
                 {
-                    left_rotate(uncleNode);
+                    left_rotate(uncleNodeIndex);
                 }
                 else
                 {
-                    right_rotate(uncleNode);
+                    right_rotate(uncleNodeIndex);
                 }
             }
         }
@@ -167,9 +184,31 @@ namespace ecs
             throw std::runtime_error("Not implemented");
         }
 
-        bool try_get_uncle_node(const node& childNode, node& outUncleNode) const noexcept 
+        bool try_get_uncle_node(const size_t childIndex, size_t& outUncleIndex) const noexcept 
         {
-            throw std::runtime_error("Not implemented");
+            node& childNode = m_allocator[childIndex];
+            if (childNode.parent == NIL)
+            {
+                return false;
+            }
+
+            node& parentNode = m_allocator[childNode.parent];
+            if (parentNode.parent == NIL)
+            {
+                return false;
+            }
+
+            node& grandParentNode = m_allocator[parentNode.parent];
+            if (grandParentNode.left == childNode.parent)
+            {
+                outUncleIndex = grandParentNode.right;
+            }
+            else
+            {
+                outUncleIndex = grandParentNode.left;
+            }
+
+            return true;
         }
         
         struct node
@@ -188,16 +227,22 @@ namespace ecs
                 : value{inValue}, parent{inParent}, left{inLeft}, right{inRight}, red{inRed}
             {}
 
-            inline bool is_right_child(const SingleBlockFreeListAllocator& allocator) const 
+            inline bool is_right_child(const Allocator& allocator) const 
             {
-                
+                if (parent == NIL)
+                {
+                    return false;
+                }
+
+                node& parentNode = allocator[parent];
+                return parentNode.value <= value;
             }
         };
 
         size_t m_size = 0;
         size_t m_rootIndex = 0;
         
-        SingleBlockFreeListAllocator<node> m_allocator;
+        Allocator m_allocator;
     };
 }
 
