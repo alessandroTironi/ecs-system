@@ -37,6 +37,18 @@ TEST_F(TestSharedMemoryRBTree, TestInsertIdempotent)
     EXPECT_EQ(tree.size(), 1);
 }
 
+TEST_F(TestSharedMemoryRBTree, TestInsertNonRootIdempotent)
+{
+    ecs::sm_rbtree<int> tree;
+    tree.insert(1);
+
+    tree.insert(2);
+    EXPECT_EQ(tree.size(), 2);
+    
+    tree.insert(2);
+    EXPECT_EQ(tree.size(), 2);
+}
+
 TEST_F(TestSharedMemoryRBTree, TestErase)
 {
     ecs::sm_rbtree<int> tree;
