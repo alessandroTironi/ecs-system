@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include "SingleBlockFreeListAllocator.h"
+
+#define NIL 0 
 
 namespace ecs
 {
@@ -22,7 +25,22 @@ namespace ecs
 
         void insert(T value)
         {
-            throw std::runtime_error("Not implemented");
+            if (m_rootIndex == NIL)
+            {
+                // First insertion of in the tree
+                const size_t nodeIndex = m_allocator.AllocateBlock();
+                node& rootNode = m_allocator[nodeIndex];
+                rootNode.parent = NIL;
+                rootNode.left = NIL;
+                rootNode.right = NIL;
+                rootNode.red = false;
+
+                m_size += 1;
+            }
+            else
+            {
+                throw std::runtime_error("Not implemented");
+            }
         }
 
         void erase(T value)
@@ -78,7 +96,22 @@ namespace ecs
 
         inline size_t size() const noexcept { return m_size; }
 
+        bool is_valid() const noexcept 
+        {
+            throw std::runtime_error("Not implemented");
+        }
+
     private:
+        void left_rotate(size_t index)
+        {
+            throw std::runtime_error("Not implemented");
+        }
+
+        void right_rotate(size_t index)
+        {
+            throw std::runtime_error("Not implemented");
+        }
+        
         struct node
         {
             T value;
@@ -97,30 +130,10 @@ namespace ecs
         };
 
         size_t m_size = 0;
-
-        static thread_local void* s_nodes;
-        static thread_local size_t s_usedNodesCount;
-        static thread_local size_t* s_freeIndices;
-        static thread_local size_t s_freeIndicesCount;
-        static thread_local size_t s_capacity;
-        static thread_local size_t s_referenceCount;
+        size_t m_rootIndex = 0;
+        
+        SingleBlockFreeListAllocator<node> m_allocator;
     };
 }
 
-template<typename T>
-thread_local void* ecs::sm_rbtree<T>::s_nodes = nullptr;
-
-template<typename T>
-thread_local size_t ecs::sm_rbtree<T>::s_usedNodesCount;
-
-template<typename T>
-thread_local size_t* ecs::sm_rbtree<T>::s_freeIndices;
-
-template<typename T>
-thread_local size_t ecs::sm_rbtree<T>::s_freeIndicesCount;
-
-template<typename T>
-thread_local size_t ecs::sm_rbtree<T>::s_capacity;
-
-template<typename T>
-thread_local size_t ecs::sm_rbtree<T>::s_referenceCount;
+#undef NIL
