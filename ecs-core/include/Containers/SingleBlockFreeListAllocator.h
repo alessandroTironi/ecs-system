@@ -61,6 +61,11 @@ namespace ecs
             m_data[index].~T();
         }
 
+        inline size_t CalculateIndex(T* ptr) const
+        {
+            return (ptr - m_data);
+        }
+
         inline size_t usedCount() const noexcept { return m_usedCount; }
         inline size_t freeCount() const noexcept { return m_freeCount; }
         inline size_t capacity() const noexcept { return m_capacity; }

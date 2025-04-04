@@ -12,10 +12,12 @@ namespace ecs
     template<typename T, size_t InitialCapacity = 8>
     struct sm_rbtree
     {
-    public:
-        struct node;
+    private:
+        struct node_t;
+        struct node_handle_t;
 
-        using Allocator = SingleBlockFreeListAllocator<node, InitialCapacity>;
+    public:
+        using Allocator = SingleBlockFreeListAllocator<node_t, InitialCapacity>;
 
         sm_rbtree()
         {
@@ -29,15 +31,13 @@ namespace ecs
 
         void insert(T value)
         {
+            node_t newNode(value, NIL, NIL, NIL, false);
             if (m_rootIndex == NIL)
             {
                 // First insertion of in the tree
                 const size_t nodeIndex = m_allocator.AllocateBlock();
-                node& rootNode = m_allocator[nodeIndex];
-                rootNode.parent = NIL;
-                rootNode.left = NIL;
-                rootNode.right = NIL;
-                rootNode.red = false;
+                node_t& rootNode = m_allocator[nodeIndex];
+                rootNode = newNode;
 
                 m_size += 1;
             }
@@ -49,7 +49,7 @@ namespace ecs
                 while (currentIndex != NIL)
                 {
                     parentIndex = currentIndex;
-                    node& currentNode = m_allocator[currentIndex];
+                    node_t& currentNode = m_allocator[currentIndex];
                     if (value > currentNode.value)
                     {
                         currentIndex = currentNode.right;
@@ -66,15 +66,12 @@ namespace ecs
                 }
 
                 const size_t newNodeIndex = m_allocator.AllocateBlock();
-                node& newNode = m_allocator[newNodeIndex];
-                newNode.value = value;
                 newNode.parent = parentIndex;
-                newNode.left = NIL;
-                newNode.right = NIL;
                 newNode.red = true;
+                m_allocator[newNodeIndex] = newNode;
 
                 // 2. Validation
-                node& parentNode = m_allocator[parentIndex];
+                node_t& parentNode = m_allocator[parentIndex];
                 if (newNode.value > parentNode.value)
                 {
                     parentNode.right = newNodeIndex;
@@ -92,26 +89,7 @@ namespace ecs
                     return;
                 }
 
-                // 3. Rebalance
-                size_t uncleNodeIndex;
-                if (!try_get_uncle_node(newNodeIndex, uncleNodeIndex))
-                {
-                    return;
-                }
-
-                node& uncleNode = m_allocator[uncleNodeIndex];
-                if (uncleNode.red)
-                {
-                    uncleNode.red = false;
-                }
-                else if (uncleNode.is_right_child(m_allocator))
-                {
-                    left_rotate(uncleNodeIndex);
-                }
-                else
-                {
-                    right_rotate(uncleNodeIndex);
-                }
+                balance_tree(newNodeIndex);
             }
         }
 
@@ -174,44 +152,74 @@ namespace ecs
         }
 
     private:
-        void left_rotate(size_t index)
+        node_handle get_node(size_t index) const
         {
-            throw std::runtime_error("Not implemented");
+            return node_handle(index, &m_allocator);
         }
 
-        void right_rotate(size_t index)
+        void left_rotate(node_handle_t node)
         {
-            throw std::runtime_error("Not implemented");
+            
         }
 
-        bool try_get_uncle_node(const size_t childIndex, size_t& outUncleIndex) const noexcept 
+        void right_rotate(node_handle_t thisNode)
         {
-            node& childNode = m_allocator[childIndex];
-            if (childNode.parent == NIL)
+            // get required handles
+            node_t& node = thisNode.node();
+            node_handle_t leftChild = thisNode.left();
+            node_handle_t rightChild = thisNode.right();
+
+            // perform rotation
+            leftChild.node().right = thisNode.index;
+            leftChild.node().parent = thisNode().parent().index;
+            thisNode.node().parent = leftChild.index;
+            thisNode.node().left = rightChild.index;
+        }
+
+        void balance_tree(const node_handle_t current)
+        {
+            node_t& currentNode = current.node();
+            if (currentNode.parent == NIL)
             {
-                return false;
+                // It's root node, no need to rebalance. Just ensure the color is black
+                currentNode.red = false;
+                return;
             }
 
-            node& parentNode = m_allocator[childNode.parent];
-            if (parentNode.parent == NIL)
+            node_handle_t uncle = current.uncle();
+            if (!uncle.is_valid())
             {
-                return false;
+                // @todo are we sure?
+                return;
             }
 
-            node& grandParentNode = m_allocator[parentNode.parent];
-            if (grandParentNode.left == childNode.parent)
+            node_t& uncleNode = uncle.node();
+            node_t& parentNode = current.parent().node();
+            if (uncleNode.red)
             {
-                outUncleIndex = grandParentNode.right;
+                // change color of parent and uncle to red
+                uncleNode.red = true;
+                parentNode.red = true;
+
+                // set grandparent's color to black
+                if (parentNode.parent == NIL)
+                {
+                    return;
+                }
+                node_t& grandParent = m_allocator[parentNode.parent];
+                grandParent.red = true;
+
+                // restart balance from grand parent
+                balance_tree(current.grand_parent());
+
             }
             else
             {
-                outUncleIndex = grandParentNode.left;
-            }
 
-            return true;
+            }
         }
         
-        struct node
+        struct node_t
         {
             T value;
             size_t parent;
@@ -219,11 +227,11 @@ namespace ecs
             size_t right;
             bool red : 1;
 
-            node() = default;
-            node(T inValue, size_t inParent, bool inRed = true)
+            node_t() = default;
+            node_t(T inValue, size_t inParent, bool inRed = true)
                 : value{inValue}, parent{inParent}, red{inRed}
             {}
-            node(T inValue, size_t inParent, size_t inLeft, size_t inRight, bool inRed)
+            node_t(T inValue, size_t inParent, size_t inLeft, size_t inRight, bool inRed)
                 : value{inValue}, parent{inParent}, left{inLeft}, right{inRight}, red{inRed}
             {}
 
@@ -234,9 +242,48 @@ namespace ecs
                     return false;
                 }
 
-                node& parentNode = allocator[parent];
+                node_t& parentNode = allocator[parent];
                 return parentNode.value <= value;
             }
+        };
+
+        struct node_handle_t
+        {
+            size_t index;
+            Allocator* allocator;
+
+            node_handle_t(Allocator* inAllocator) : index{NIL}, allocator{inAllocator} {}
+            node_handle_t(size_t inIndex, Allocator* inAllocator)
+                : index{inIndex}, allocator{inAllocator}
+            {}
+
+            const static node_handle_t NilNode = node_handle_t(NIL, nullptr);
+            bool is_valid() const { return index != NIL && allocator != nullptr; }
+
+            inline node_t& node() { return allocator[index]; }
+            inline node_handle_t parent() const { return is_valid()? node_handle_t(node().parent, allocator) : NilNode; }
+            inline node_handle_t left() const { return node_handle_t(node().left, allocator); }
+            inline node_handle_t right() const { return node_handle_t(node().right, allocator); }
+            inline node_handle_t grand_parent() const { return parent().parent(); }
+            
+            node_handle_t sibling() 
+            {
+                if (parent().is_valid())
+                {
+                    if (parent().node().value > node().value)
+                    {
+                        return node_handle_t(parent().node().right, allocator);
+                    }
+                    else
+                    {
+                        return node_handle_t(parent().node().left, allocator);
+                    }
+                } 
+
+                return node_handle_t(allocator);
+            }
+
+            inline node_handle_t uncle() const { return parent().sibling(); }
         };
 
         size_t m_size = 0;
