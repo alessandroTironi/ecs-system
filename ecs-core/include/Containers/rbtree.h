@@ -16,7 +16,7 @@ namespace ecs
     };
 
     template<typename T, size_t InitialCapacity = 8>
-    struct sm_rbtree
+    struct rbtree
     {
     private:
         struct node_t;
@@ -27,12 +27,12 @@ namespace ecs
 
         static constexpr size_t NIL = std::numeric_limits<size_t>::max();
 
-        sm_rbtree()
+        rbtree()
         {
             m_rootIndex = NIL;
         }
 
-        ~sm_rbtree()
+        ~rbtree()
         {
 
         }
@@ -102,7 +102,7 @@ namespace ecs
         struct iterator
         {
         public:
-            iterator(sm_rbtree<T>* inTree, size_t inIndex)
+            iterator(rbtree<T>* inTree, size_t inIndex)
                 : m_ownerTree{inTree}, m_index{inIndex}
             {}
 
@@ -132,7 +132,7 @@ namespace ecs
             }
 
         private:
-            sm_rbtree<T>* m_ownerTree;
+            rbtree<T>* m_ownerTree;
             size_t m_index;
             size_t m_lastVisited = 0;
         };
@@ -505,5 +505,5 @@ namespace ecs
 }
 
 template<typename T, size_t Capacity>
-const ecs::sm_rbtree<T, Capacity>::node_handle_t ecs::sm_rbtree<T, Capacity>::node_handle_t::NilNode =
-    ecs::sm_rbtree<T, Capacity>::node_handle_t();
+const ecs::rbtree<T, Capacity>::node_handle_t ecs::rbtree<T, Capacity>::node_handle_t::NilNode =
+    ecs::rbtree<T, Capacity>::node_handle_t();

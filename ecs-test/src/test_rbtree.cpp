@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "Containers/sm_rbtree.h"
+#include "Containers/rbtree.h"
 
 using ::testing::Test;
 
@@ -27,24 +27,24 @@ protected:
         }
     }
 
-    ecs::sm_rbtree<int> m_tree;
+    ecs::rbtree<int> m_tree;
 };
 
 TEST_F(TestRBTree, TestFirstAllocation)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     EXPECT_EQ(tree.size(), 0);
 }
 
 TEST_F(TestRBTree, TestValidEmptyTree)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     EXPECT_TRUE(tree.is_valid_tree());
 }
 
 TEST_F(TestRBTree, TestInsert)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     ASSERT_NO_THROW(tree.insert(1));
     EXPECT_EQ(tree.size(), 1);
     EXPECT_TRUE(tree.is_valid_tree());
@@ -52,7 +52,7 @@ TEST_F(TestRBTree, TestInsert)
 
 TEST_F(TestRBTree, TestInsertIdempotent)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     tree.insert(1);
     tree.insert(1);
     EXPECT_EQ(tree.size(), 1);
@@ -61,7 +61,7 @@ TEST_F(TestRBTree, TestInsertIdempotent)
 
 TEST_F(TestRBTree, TestInsertNonRootIdempotent)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     tree.insert(1);
 
     tree.insert(2);
@@ -75,7 +75,7 @@ TEST_F(TestRBTree, TestInsertNonRootIdempotent)
 
 TEST_F(TestRBTree, TestErase)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     ASSERT_NO_THROW(tree.erase(1));
     EXPECT_TRUE(tree.is_valid_tree());
 
@@ -86,7 +86,7 @@ TEST_F(TestRBTree, TestErase)
 
 TEST_F(TestRBTree, TestClear)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     tree.insert(1);
     tree.insert(2);
     tree.insert(3);
@@ -98,7 +98,7 @@ TEST_F(TestRBTree, TestClear)
 
 TEST_F(TestRBTree, TestFind)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     tree.insert(1);
     tree.insert(2);
     tree.insert(3);
@@ -109,7 +109,7 @@ TEST_F(TestRBTree, TestFind)
 
 TEST_F(TestRBTree, TestIterator)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     tree.insert(1);
     tree.insert(2);
     tree.insert(3);
@@ -126,7 +126,7 @@ TEST_F(TestRBTree, TestIterator)
 
 TEST_F(TestRBTree, TestOrder)
 {
-    ecs::sm_rbtree<int> tree;
+    ecs::rbtree<int> tree;
     tree.insert(5);
     tree.insert(4);
     tree.insert(3);
