@@ -3,7 +3,8 @@
 
 using ::testing::Test;
 
-class TestSharedMemoryRBTree : public Test 
+
+class TestRBTree : public Test 
 {
     virtual void SetUp() override
     {
@@ -14,51 +15,76 @@ class TestSharedMemoryRBTree : public Test
     {
 
     }
+
+protected:
+    void TestInsertionSequence(std::initializer_list<int> values)
+    {
+        for (const int& value : values)
+        {
+            m_tree.insert(value);
+            ASSERT_TRUE(m_tree.is_valid_tree())
+                << "Tree lost balance after inserting " << value;
+        }
+    }
+
+    ecs::sm_rbtree<int> m_tree;
 };
 
-TEST_F(TestSharedMemoryRBTree, TestFirstAllocation)
+TEST_F(TestRBTree, TestFirstAllocation)
 {
     ecs::sm_rbtree<int> tree;
     EXPECT_EQ(tree.size(), 0);
 }
 
-TEST_F(TestSharedMemoryRBTree, TestInsert)
+TEST_F(TestRBTree, TestValidEmptyTree)
+{
+    ecs::sm_rbtree<int> tree;
+    EXPECT_TRUE(tree.is_valid_tree());
+}
+
+TEST_F(TestRBTree, TestInsert)
 {
     ecs::sm_rbtree<int> tree;
     ASSERT_NO_THROW(tree.insert(1));
     EXPECT_EQ(tree.size(), 1);
+    EXPECT_TRUE(tree.is_valid_tree());
 }
 
-TEST_F(TestSharedMemoryRBTree, TestInsertIdempotent)
+TEST_F(TestRBTree, TestInsertIdempotent)
 {
     ecs::sm_rbtree<int> tree;
     tree.insert(1);
     tree.insert(1);
     EXPECT_EQ(tree.size(), 1);
+    EXPECT_TRUE(tree.is_valid_tree());
 }
 
-TEST_F(TestSharedMemoryRBTree, TestInsertNonRootIdempotent)
+TEST_F(TestRBTree, TestInsertNonRootIdempotent)
 {
     ecs::sm_rbtree<int> tree;
     tree.insert(1);
 
     tree.insert(2);
     EXPECT_EQ(tree.size(), 2);
+    EXPECT_TRUE(tree.is_valid_tree());
     
     tree.insert(2);
     EXPECT_EQ(tree.size(), 2);
+    EXPECT_TRUE(tree.is_valid_tree());
 }
 
-TEST_F(TestSharedMemoryRBTree, TestErase)
+TEST_F(TestRBTree, TestErase)
 {
     ecs::sm_rbtree<int> tree;
     ASSERT_NO_THROW(tree.erase(1));
+    EXPECT_TRUE(tree.is_valid_tree());
 
     tree.insert(1);
     ASSERT_NO_THROW(tree.erase(1));
+    EXPECT_TRUE(tree.is_valid_tree());
 }
 
-TEST_F(TestSharedMemoryRBTree, TestClear)
+TEST_F(TestRBTree, TestClear)
 {
     ecs::sm_rbtree<int> tree;
     tree.insert(1);
@@ -67,9 +93,10 @@ TEST_F(TestSharedMemoryRBTree, TestClear)
 
     ASSERT_NO_THROW(tree.clear());
     EXPECT_EQ(tree.size(), 0);
+    EXPECT_TRUE(tree.is_valid_tree());
 }
 
-TEST_F(TestSharedMemoryRBTree, TestFind)
+TEST_F(TestRBTree, TestFind)
 {
     ecs::sm_rbtree<int> tree;
     tree.insert(1);
@@ -80,7 +107,7 @@ TEST_F(TestSharedMemoryRBTree, TestFind)
     EXPECT_NE(tree.find(1), tree.end());
 }
 
-TEST_F(TestSharedMemoryRBTree, TestIterator)
+TEST_F(TestRBTree, TestIterator)
 {
     ecs::sm_rbtree<int> tree;
     tree.insert(1);
@@ -97,7 +124,7 @@ TEST_F(TestSharedMemoryRBTree, TestIterator)
     EXPECT_EQ(it, tree.end());
 }
 
-TEST_F(TestSharedMemoryRBTree, TestOrder)
+TEST_F(TestRBTree, TestOrder)
 {
     ecs::sm_rbtree<int> tree;
     tree.insert(5);
@@ -112,4 +139,79 @@ TEST_F(TestSharedMemoryRBTree, TestOrder)
         EXPECT_TRUE(it.value() > prev);
         prev = it.value();
     }
+}
+
+TEST_F(TestRBTree, TestSimpleRotations)
+{
+    TestInsertionSequence({ 10, 5, 15, 3, 7, 12, 20 });
+}
+
+TEST_F(TestRBTree, TestLeftLeftCase)
+{
+    TestInsertionSequence({30, 20, 10});
+}
+
+TEST_F(TestRBTree, TestRightRightCase)
+{
+    TestInsertionSequence({ 10, 20, 30 });
+}
+
+TEST_F(TestRBTree, TestLeftRightCase)
+{
+    TestInsertionSequence({ 30, 10, 20 });
+}
+
+TEST_F(TestRBTree, TestRightLeftCase)
+{
+    TestInsertionSequence({ 10, 30, 20 });
+}
+
+TEST_F(TestRBTree, TestRedUncleCase)
+{
+    TestInsertionSequence({ 20, 10, 30, 5, 15});
+}
+
+TEST_F(TestRBTree, TestBlackUncleWithZigZagPattern)
+{
+    TestInsertionSequence({ 20, 10, 5, 15 });
+}
+
+TEST_F(TestRBTree, TestRootRecoloring)
+{
+    TestInsertionSequence({ 10, 5, 15, 3, 7, 12, 20, 2});
+}
+
+TEST_F(TestRBTree, TestConsecutiveRebalancing)
+{
+    TestInsertionSequence({ 50, 25, 75, 10, 30, 60, 80, 5, 15, 27, 55, 1});
+}
+
+TEST_F(TestRBTree, TestDeepTree)
+{
+    TestInsertionSequence({ 50, 25, 75, 12, 37, 62, 87, 6, 18, 31, 43, 56, 68, 81, 93, 3, 9, 15, 21, 28, 34, 40, 46, 53, 59, 65, 71, 78, 84, 90, 96 });
+}
+
+TEST_F(TestRBTree, TestAlternatingPatterns)
+{
+    TestInsertionSequence({ 100, 50, 150, 25, 75, 125, 175, 12, 37, 62, 87, 112, 137, 162, 187 });
+}
+
+TEST_F(TestRBTree, TestCascadingRebalance)
+{
+    TestInsertionSequence({ 16, 8, 24, 4, 12, 20, 28, 2, 6, 10, 14, 18, 22, 26, 30, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31 });
+}
+
+TEST_F(TestRBTree, TestNearlyCompleteTreeWithUnbalancedInsertion)
+{
+    TestInsertionSequence({ 8, 4, 12, 2, 6, 10, 14, 1, 3, 5, 7, 9, 11, 13, 15 });
+}
+
+TEST_F(TestRBTree, TestPathologicalIncreasingSequence)
+{
+    TestInsertionSequence({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+}
+
+TEST_F(TestRBTree, TestPathologicalDecreasingSequence)
+{
+    TestInsertionSequence({ 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 });
 }

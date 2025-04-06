@@ -3,12 +3,18 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <limits>
 #include "SingleBlockFreeListAllocator.h"
-
-#define NIL 0 
 
 namespace ecs
 {
+    enum class rbtreecolors : uint8_t
+    {
+        NIL,
+        RED,
+        BLACK
+    };
+
     template<typename T, size_t InitialCapacity = 8>
     struct sm_rbtree
     {
@@ -19,9 +25,11 @@ namespace ecs
     public:
         using Allocator = SingleBlockFreeListAllocator<node_t, InitialCapacity>;
 
+        static constexpr size_t NIL = std::numeric_limits<size_t>::max();
+
         sm_rbtree()
         {
-
+            m_rootIndex = NIL;
         }
 
         ~sm_rbtree()
@@ -31,66 +39,54 @@ namespace ecs
 
         void insert(T value)
         {
-            node_t newNode(value, NIL, NIL, NIL, false);
-            if (m_rootIndex == NIL)
+            node_t newNode(value, NIL, NIL, NIL, rbtreecolors::RED);
+            node_handle_t y = node_handle_t(NIL, &m_allocator);
+            node_handle_t x = get_node(m_rootIndex);
+            while (x != node_handle_t::NilNode)
             {
-                // First insertion of in the tree
-                const size_t nodeIndex = m_allocator.AllocateBlock();
-                node_t& rootNode = m_allocator[nodeIndex];
-                rootNode = newNode;
-
-                m_size += 1;
-            }
-            else
-            {
-                // 1. Insert the node as in a normal BST, coloring it red.
-                size_t parentIndex = NIL;
-                size_t currentIndex = m_rootIndex;
-                while (currentIndex != NIL)
+                y = x;
+                if (value < x.node().value)
                 {
-                    parentIndex = currentIndex;
-                    node_t& currentNode = m_allocator[currentIndex];
-                    if (value > currentNode.value)
-                    {
-                        currentIndex = currentNode.right;
-                    }
-                    else if (value == currentNode.value)
-                    {
-                        // already in tree, return
-                        return;
-                    }
-                    else
-                    {
-                        currentIndex = currentNode.left;
-                    }
-                }
-
-                const size_t newNodeIndex = m_allocator.AllocateBlock();
-                newNode.parent = parentIndex;
-                newNode.red = true;
-                m_allocator[newNodeIndex] = newNode;
-
-                // 2. Validation
-                node_t& parentNode = m_allocator[parentIndex];
-                if (newNode.value > parentNode.value)
-                {
-                    parentNode.right = newNodeIndex;
+                    x = x.left();
                 }
                 else
                 {
-                    parentNode.left = newNodeIndex;
+                    x = x.right();
                 }
-
-                m_size += 1;
-
-                if (!parentNode.red)
-                {
-                    // no need to rebalance
-                    return;
-                }
-
-                balance_tree(newNodeIndex);
             }
+            newNode.parent = y.index;
+            node_handle_t z = node_handle_t::NilNode;
+
+            if (!y.is_valid())
+            {
+                m_rootIndex = m_allocator.AllocateBlock();
+                m_allocator[m_rootIndex] = newNode;
+                z = get_node(m_rootIndex);
+            }
+            else if (newNode.value < y.node().value)
+            {
+                const size_t zIndex = m_allocator.AllocateBlock();
+                m_allocator[zIndex] = newNode;
+                z = get_node(zIndex);
+                y.set_left_child(z);
+            }
+            else if (newNode.value > y.node().value)
+            {
+                const size_t zIndex = m_allocator.AllocateBlock();
+                m_allocator[zIndex] = newNode;
+                z = get_node(zIndex);
+                y.set_right_child(z);
+            }
+            else
+            {
+                return;
+            }
+
+            m_size += 1;
+            z.set_left_child(node_handle_t::NilNode);
+            z.set_right_child(node_handle_t::NilNode);
+            z.set_color(rbtreecolors::RED);
+            balance_tree(z);
         }
 
         void erase(T value)
@@ -130,6 +126,11 @@ namespace ecs
                 throw std::runtime_error("Not implemented");
             }
 
+            node_handle_t get_node_handle() const 
+            {
+                return m_ownerTree->get_node(m_index);
+            }
+
         private:
             sm_rbtree<T>* m_ownerTree;
             size_t m_index;
@@ -146,93 +147,250 @@ namespace ecs
 
         inline size_t size() const noexcept { return m_size; }
 
-        bool is_valid() const noexcept 
-        {
-            throw std::runtime_error("Not implemented");
-        }
-
     private:
-        node_handle get_node(size_t index) const
+        node_handle_t get_node(size_t index) const
         {
-            return node_handle(index, &m_allocator);
-        }
-
-        void left_rotate(node_handle_t node)
-        {
-            
-        }
-
-        void right_rotate(node_handle_t thisNode)
-        {
-            // get required handles
-            node_t& node = thisNode.node();
-            node_handle_t leftChild = thisNode.left();
-            node_handle_t rightChild = thisNode.right();
-
-            // perform rotation
-            leftChild.node().right = thisNode.index;
-            leftChild.node().parent = thisNode().parent().index;
-            thisNode.node().parent = leftChild.index;
-            thisNode.node().left = rightChild.index;
-        }
-
-        void balance_tree(const node_handle_t current)
-        {
-            node_t& currentNode = current.node();
-            if (currentNode.parent == NIL)
+            if (index == NIL)
             {
-                // It's root node, no need to rebalance. Just ensure the color is black
-                currentNode.red = false;
-                return;
+                return node_handle_t::NilNode;
             }
 
-            node_handle_t uncle = current.uncle();
-            if (!uncle.is_valid())
+            return node_handle_t(index, &m_allocator);
+        }
+
+        void left_rotate(node_handle_t x)
+        {
+            node_handle_t y = x.right();
+
+            // Turn y's left subtree into x's right subtree
+            x.set_right_child(y.left());
+            if (y.left().is_valid())
             {
-                // @todo are we sure?
-                return;
+                y.left().set_parent(x); 
             }
 
-            node_t& uncleNode = uncle.node();
-            node_t& parentNode = current.parent().node();
-            if (uncleNode.red)
+            // y's new parent was x's parent
+            y.set_parent(x.parent());
+
+            // Check if we need to update the root index
+            if (!x.parent().is_valid()) 
             {
-                // change color of parent and uncle to red
-                uncleNode.red = true;
-                parentNode.red = true;
+                m_rootIndex = y.index;
+            }
 
-                // set grandparent's color to black
-                if (parentNode.parent == NIL)
-                {
-                    return;
-                }
-                node_t& grandParent = m_allocator[parentNode.parent];
-                grandParent.red = true;
-
-                // restart balance from grand parent
-                balance_tree(current.grand_parent());
-
+            // Set the parent to point to y instead of x
+            if (x.is_left_child())
+            {
+                x.parent().set_left_child(y);
             }
             else
             {
-
+                x.parent().set_right_child(y);
             }
+
+            // finally set x as y's left child
+            y.set_left_child(x);
+            x.set_parent(y);
+        }
+
+        void right_rotate(node_handle_t x)
+        {
+            node_handle_t y = x.left();
+
+            // Turn y's right subtree into x's left subtree
+            x.set_left_child(y.right());
+            if (y.right().is_valid())
+            {
+                y.right().set_parent(x); 
+            }
+
+            // y's new parent was x's parent
+            y.set_parent(x.parent());
+
+            // Check if we need to update the root index
+            if (!x.parent().is_valid()) 
+            {
+                m_rootIndex = y.index;
+            }
+
+            // Set the parent to point to y instead of x
+            if (x.is_left_child())
+            {
+                x.parent().set_left_child(y);
+            }
+            else
+            {
+                x.parent().set_right_child(y);
+            }
+
+            // finally set x as y's right child
+            y.set_right_child(x);
+            x.set_parent(y);
+        }
+
+        void balance_tree(node_handle_t current)
+        {
+            if (!current.parent().is_valid())
+            {
+                current.set_color(rbtreecolors::BLACK);
+                return;
+            }
+
+            // If parent is black, we're done
+            if (!current.parent().is_red())
+            {
+                return;
+            }
+
+            while (current.parent().is_valid() && current.parent().is_red())
+            {
+                if (current.parent().is_left_child())
+                {
+                    node_handle_t y = current.parent().parent().right();
+                    if (y.is_valid() && y.is_red())
+                    {
+                        current.parent().set_color(rbtreecolors::BLACK);
+                        y.set_color(rbtreecolors::BLACK);
+                        current.grand_parent().set_color(rbtreecolors::RED);
+                        current = current.grand_parent();
+                    }
+                    else if (current.is_right_child())
+                    {
+                        current = current.parent();
+                        left_rotate(current);
+                    }
+
+                    current.parent().set_color(rbtreecolors::BLACK);
+                    current.grand_parent().set_color(rbtreecolors::RED);
+                    right_rotate(current.grand_parent());
+                }
+                else if (current.parent().is_right_child())
+                {
+                    node_handle_t y = current.parent().parent().left();
+                    if (y.is_valid() && y.is_red())
+                    {
+                        current.parent().set_color(rbtreecolors::BLACK);
+                        y.set_color(rbtreecolors::BLACK);
+                        current.grand_parent().set_color(rbtreecolors::RED);
+                        current = current.grand_parent();
+                    }
+                    else if (current.is_left_child())
+                    {
+                        current = current.parent();
+                        right_rotate(current);
+                    }
+
+                    current.parent().set_color(rbtreecolors::BLACK);
+                    current.grand_parent().set_color(rbtreecolors::RED);
+                    left_rotate(current.grand_parent());
+                }
+            }
+
+            get_node(m_rootIndex).set_color(rbtreecolors::BLACK);
         }
         
+    private:
+        void get_leaf_nodes(node_handle_t rootNode, std::vector<node_handle_t>& outLeafNodes) const
+        {
+            if (rootNode.is_leaf())
+            {
+                outLeafNodes.push_back(rootNode);
+            }
+            else
+            {
+                if (rootNode.left().is_valid())
+                {
+                    get_leaf_nodes(rootNode.left(), outLeafNodes);
+                }
+
+                if (rootNode.right().is_valid())
+                {
+                    get_leaf_nodes(rootNode.right(), outLeafNodes);
+                }
+            }
+        }
+
+        size_t count_black_nodes(node_handle_t from, node_handle_t to) const
+        {
+            if (from.node().value == to.node().value)
+            {
+                return from.is_black()? 1 : 0;
+            }
+            else if (to.node().value > from.node().value)
+            {
+                return count_black_nodes(from.right(), to);
+            }   
+            else
+            {
+                return count_black_nodes(from.left(), to);
+            }
+        }
+
+        bool is_valid_subtree(node_handle_t rootNode) const 
+        {
+            if (rootNode.is_red() && (rootNode.left().is_red() || rootNode.right().is_red()))
+            {
+                // error: if a node is red, both its children must be black
+                return false;
+            }
+
+            // get all leaf nodes from here
+            std::vector<node_handle_t> leafNodes;
+            get_leaf_nodes(rootNode, leafNodes);
+
+            // ensure 
+            if (leafNodes.size() == 0)
+            {
+                return true;
+            }
+
+            const size_t requiredNumBlackNodes = count_black_nodes(rootNode, leafNodes[0]);
+            for (size_t i = 1; i < leafNodes.size(); ++i)
+            {
+                if (count_black_nodes(rootNode, leafNodes[i]) != requiredNumBlackNodes)
+                {
+                    // error: not all the path from this node to any leaf has the same amount of black nodes
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    public:
+        bool is_valid_tree() const
+        {
+            node_handle_t rootNode = get_node(m_rootIndex);
+            if (!rootNode.is_valid())
+            {
+                // an empty tree is still a valid tree
+                return true;
+            }
+
+            if (!rootNode.is_black())
+            {
+                // error: the root node must always be black
+                return false;
+            }
+
+            return is_valid_subtree(rootNode);
+        }
+
+    private:
+
         struct node_t
         {
             T value;
             size_t parent;
             size_t left;
             size_t right;
-            bool red : 1;
+            rbtreecolors color;
 
             node_t() = default;
-            node_t(T inValue, size_t inParent, bool inRed = true)
-                : value{inValue}, parent{inParent}, red{inRed}
+            node_t(T inValue, size_t inParent, rbtreecolors inColor = rbtreecolors::RED)
+                : value{inValue}, parent{inParent}, color{inColor}
             {}
-            node_t(T inValue, size_t inParent, size_t inLeft, size_t inRight, bool inRed)
-                : value{inValue}, parent{inParent}, left{inLeft}, right{inRight}, red{inRed}
+            node_t(T inValue, size_t inParent, size_t inLeft, size_t inRight, rbtreecolors inColor)
+                : value{inValue}, parent{inParent}, left{inLeft}, right{inRight}, color{inColor}
             {}
 
             inline bool is_right_child(const Allocator& allocator) const 
@@ -249,22 +407,72 @@ namespace ecs
 
         struct node_handle_t
         {
-            size_t index;
-            Allocator* allocator;
+            size_t index = NIL;
+            const Allocator* allocator = nullptr;
 
-            node_handle_t(Allocator* inAllocator) : index{NIL}, allocator{inAllocator} {}
-            node_handle_t(size_t inIndex, Allocator* inAllocator)
+            node_handle_t() = default;
+            node_handle_t(size_t inIndex, const Allocator* inAllocator)
                 : index{inIndex}, allocator{inAllocator}
             {}
 
-            const static node_handle_t NilNode = node_handle_t(NIL, nullptr);
+            const static node_handle_t NilNode;
+
             bool is_valid() const { return index != NIL && allocator != nullptr; }
 
-            inline node_t& node() { return allocator[index]; }
-            inline node_handle_t parent() const { return is_valid()? node_handle_t(node().parent, allocator) : NilNode; }
-            inline node_handle_t left() const { return node_handle_t(node().left, allocator); }
-            inline node_handle_t right() const { return node_handle_t(node().right, allocator); }
+            inline node_t& node() const 
+            { 
+                return (*allocator)[index]; 
+            }
+
+            inline node_handle_t parent() const { return is_valid() && node().parent != NIL? node_handle_t(node().parent, allocator) : NilNode; }
+            inline node_handle_t left() const { return is_valid()? node_handle_t(node().left, allocator) : NilNode; }
+            inline node_handle_t right() const { return is_valid()? node_handle_t(node().right, allocator) : NilNode; }
             inline node_handle_t grand_parent() const { return parent().parent(); }
+            inline bool is_red() const { return is_valid()? node().color == rbtreecolors::RED : false; }
+            inline bool is_black() const { return is_valid()? node().color == rbtreecolors::BLACK : true; }
+            inline bool is_leaf() const { return !left().is_valid() && !right().is_valid(); }
+
+            inline void set_parent(node_handle_t newParent) 
+            { 
+                if (is_valid())
+                {
+                    node().parent = newParent.index;
+                } 
+            }
+
+            inline void set_left_child(node_handle_t newChild) 
+            { 
+                if (is_valid())
+                {
+                    node().left = newChild.index; 
+                }
+            }
+
+            inline void set_right_child(node_handle_t newChild) 
+            { 
+                if (is_valid())
+                {
+                    node().right = newChild.index; 
+                }
+            }
+
+            inline void set_color(rbtreecolors color) 
+            { 
+                if (is_valid())
+                {
+                    node().color = color; 
+                }
+            }
+
+            inline bool operator==(const node_handle_t& other) const noexcept
+            {
+                return index == other.index;
+            }
+
+            inline bool operator!=(const node_handle_t& other) const noexcept
+            {
+                return index != other.index;
+            }
             
             node_handle_t sibling() 
             {
@@ -280,10 +488,13 @@ namespace ecs
                     }
                 } 
 
-                return node_handle_t(allocator);
+                return node_handle_t(NIL, nullptr);
             }
 
             inline node_handle_t uncle() const { return parent().sibling(); }
+
+            inline bool is_right_child() const { return parent().right().index == index; }
+            inline bool is_left_child() const { return parent().left().index == index; }
         };
 
         size_t m_size = 0;
@@ -293,4 +504,6 @@ namespace ecs
     };
 }
 
-#undef NIL
+template<typename T, size_t Capacity>
+const ecs::sm_rbtree<T, Capacity>::node_handle_t ecs::sm_rbtree<T, Capacity>::node_handle_t::NilNode =
+    ecs::sm_rbtree<T, Capacity>::node_handle_t();
