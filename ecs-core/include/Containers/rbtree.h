@@ -91,7 +91,78 @@ namespace ecs
 
         void erase(T value)
         {
-            throw std::runtime_error("Not implemented");
+            // find node to delete
+            node_handle_t toDelete = binary_search(value);
+            if (!toDelete.is_valid())
+            {
+                // node is not in the tree
+                return;
+            }
+
+            rbtreecolors originalColor = toDelete.node().color;
+            node_handle_t x = node_handle_t::NilNode;
+
+            if (!toDelete.left().is_valid())
+            {
+                // Case 1: left child of the node to delete is NIL: replace the node to
+                // delete with its right subtree
+                x = toDelete.right();
+                toDelete.parent().set_right_child(x);
+                x.set_parent(toDelete.parent());
+                if (toDelete.index == m_rootIndex)
+                {
+                    m_rootIndex = x.index;
+                }
+            }
+            else if (!toDelete.right().is_valid())
+            {
+                // Case 2: right child of the node to delete is NIL: replace the node to
+                // delete with its left subtree
+                x = toDelete.left();
+                toDelete.parent().set_left_child(x);
+                x.set_parent(toDelete.parent());
+                if (toDelete.index == m_rootIndex)
+                {
+                    m_rootIndex = x.index;
+                }
+            }
+            else
+            {
+                // Case 3: no NIL childs
+                node_handle_t y = find_minimum(toDelete);
+                originalColor = y.node().color;
+                x = y.right();
+                if (toDelete == y.parent())
+                {
+                    x.set_parent(y);
+                }
+                else
+                {
+                    // transplant y with y's right child
+                    transplant_subtree(y, y.right());
+                    y.set_right_child(toDelete.right());
+                    y.right().set_parent(y);
+                }
+
+                transplant_subtree(toDelete, y);
+                if (toDelete.left() != y)
+                {
+                    y.set_left_child(toDelete.left());
+                }
+                y.left().set_parent(y);
+                y.set_color(toDelete.node().color);
+                if (toDelete.index == m_rootIndex)
+                {
+                    m_rootIndex = y.index;
+                }
+            }
+
+            if (originalColor == rbtreecolors::BLACK)
+            {
+                fixup_post_erase(x);
+            }
+
+            m_size -= 1;
         }
 
         void clear()
@@ -148,6 +219,70 @@ namespace ecs
         inline size_t size() const noexcept { return m_size; }
 
     private:
+        node_handle_t binary_search(T value) const
+        {
+            if (m_size == 0)
+            {
+                return node_handle_t::NilNode;
+            }
+
+            node_handle_t current = get_node(m_rootIndex);
+            while (current.is_valid())
+            {
+                const T currentValue = current.node().value;
+                if (currentValue == value)
+                {
+                    break;
+                }
+                else if (value > currentValue)
+                {
+                    current = current.right();
+                }
+                else
+                {
+                    current = current.left();
+                }
+            }
+
+            return current;
+        }
+
+        node_handle_t find_minimum(node_handle_t root) const
+        {
+            node_handle_t current = root;
+            while (current.is_valid())
+            {
+                if (current.left().is_valid())
+                {
+                    current = current.left();
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return current;
+        }
+
+        void transplant_subtree(node_handle_t u, node_handle_t v)
+        {
+            if (!u.parent().is_valid())
+            {
+                m_rootIndex = v.index;
+            }
+            else if (u.is_left_child())
+            {
+                u.parent().set_left_child(v);
+            }
+            else
+            {
+                u.parent().set_right_child(v);
+            }
+
+            v.set_parent(u.parent());
+        }
+
         node_handle_t get_node(size_t index) const
         {
             if (index == NIL)
@@ -288,11 +423,87 @@ namespace ecs
 
             get_node(m_rootIndex).set_color(rbtreecolors::BLACK);
         }
+
+        void fixup_post_erase(node_handle_t x)
+        {
+            node_handle_t s = node_handle_t::NilNode;
+            while (x.index != m_rootIndex && x.is_black())
+            {
+                if (x.is_left_child())
+                {
+                    s = x.parent().right();
+                    if (s.is_red())
+                    {
+                        s.set_color(rbtreecolors::BLACK);
+                        x.parent().set_color(rbtreecolors::RED);
+                        left_rotate(x.parent());
+                        s = x.parent().right();
+                    }
+
+                    if (s.left().is_black() && s.right().is_black())
+                    {
+                        s.set_color(rbtreecolors::RED);
+                        x = x.parent();
+                    }
+                    else
+                    {
+                        if (s.right().is_black())
+                        {
+                            s.left().set_color(rbtreecolors::BLACK);
+                            s.set_color(rbtreecolors::RED);
+                            right_rotate(s);
+                            s = x.parent().right();
+                        }
+
+                        s.set_color(x.parent().node().color);
+                        x.parent().set_color(rbtreecolors::BLACK);
+                        s.right().set_color(rbtreecolors::BLACK);
+                        left_rotate(x.parent());
+                        x = get_node(m_rootIndex);
+                    }
+                }
+                else
+                {
+                    s = x.parent().left();
+                    if (s.is_red())
+                    {
+                        s.set_color(rbtreecolors::BLACK);
+                        x.parent().set_color(rbtreecolors::RED);
+                        right_rotate(x.parent());
+                        s = x.parent().left();
+                    }
+
+                    if (s.left().is_black() && s.right().is_black())
+                    {
+                        s.set_color(rbtreecolors::RED);
+                        x = x.parent();
+                    }
+                    else
+                    {
+                        if (s.left().is_black())
+                        {
+                            s.right().set_color(rbtreecolors::BLACK);
+                            s.set_color(rbtreecolors::RED);
+                            left_rotate(s);
+                            s = x.parent().left();
+                        }
+
+                        s.set_color(x.parent().node().color);
+                        x.parent().set_color(rbtreecolors::BLACK);
+                        s.left().set_color(rbtreecolors::BLACK);
+                        right_rotate(x.parent());
+                        x = get_node(m_rootIndex);
+                    }
+                }
+            }
+
+            x.set_color(rbtreecolors::BLACK);
+        }
         
     private:
         void get_leaf_nodes(node_handle_t rootNode, std::vector<node_handle_t>& outLeafNodes) const
         {
-            if (rootNode.is_leaf())
+            if (rootNode.is_valid() && rootNode.is_leaf())
             {
                 outLeafNodes.push_back(rootNode);
             }
