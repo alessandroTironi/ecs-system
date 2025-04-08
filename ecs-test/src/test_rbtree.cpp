@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "Containers/rbtree.h"
+#include <iostream>
 
 using ::testing::Test;
 
@@ -288,7 +289,10 @@ TEST_F(TestRBTree, TestSequentialEraseWithRebalancing)
     {
 #ifdef DEBUG_BUILD
         if (val == 50)
+        {
             m_tree.enableDebugMode = true;
+            std::cout << m_tree.to_string() << std::endl;
+        }
 #endif
         m_tree.erase(val);
 #ifdef DEBUG_BUILD

@@ -64,7 +64,7 @@ namespace ecs
             newNode.set_parent(y);
             if (!y.is_valid())
             {
-                m_rootIndex = newNode.index;
+                set_root(newNode);
             }
             else if (newNode.node().value < y.node().value)
             {
@@ -225,6 +225,33 @@ namespace ecs
         bool enableDebugMode = false;
 #endif
 
+        std::string to_string(node_handle_t rootNode, size_t depth) const
+        {
+            std::string thisString;
+            for (int i = 0; i < depth; ++i)
+                thisString = std::format("  {}", thisString);
+            thisString = std::format("{}{}{}", thisString,
+                m_rootIndex == rootNode.index? "": 
+                (
+                    rootNode.is_right_child()? "R:": "L:"
+                ),
+                rootNode.to_string());
+
+            if (rootNode.is_valid())
+            {
+                return std::format("{}:\n{}\n{}", thisString, 
+                    to_string(rootNode.right(), depth + 1),
+                    to_string(rootNode.left(), depth + 1));
+            }
+
+            return "";
+        }
+
+        std::string to_string() const 
+        {
+            return to_string(get_node(m_rootIndex), 0);
+        }
+
     private:
         node_handle_t find_minimum(node_handle_t root) const
         {
@@ -271,7 +298,7 @@ namespace ecs
             y.set_parent(x.parent());
             if (!x.parent().is_valid())
             {
-                m_rootIndex = y.index;
+                set_root(y);
             }
             else if (x.is_left_child())
             {
@@ -303,7 +330,7 @@ namespace ecs
             x.set_parent(y.parent());
             if (!y.parent().is_valid())
             {
-                m_rootIndex = y.index;
+                set_root(y);
             }
             else if (y.is_left_child())
             {
@@ -387,7 +414,7 @@ namespace ecs
         {
             if (!u.parent().is_valid())
             {
-                m_rootIndex = v.index;
+                set_root(v);
             }
             else if (u.is_left_child())
             {
@@ -615,6 +642,19 @@ namespace ecs
             m_allocator[nodeIndex] = node_t(value, NIL, NIL, NIL, rbtreecolors::RED);
             m_size += 1;
             return get_node(nodeIndex);
+        }
+
+        void set_root(node_handle_t newRoot)
+        {
+            m_rootIndex = newRoot.index;
+            newRoot.set_parent(node_handle_t::NilNode);
+
+#ifdef DEBUG_BUILD
+            if (enableDebugMode)
+            {
+                std::cout << "Set root to " << newRoot.to_string() << std::endl;
+            }
+#endif
         }
 
     private:
