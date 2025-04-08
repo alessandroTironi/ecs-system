@@ -294,12 +294,15 @@ TEST_F(TestRBTree, TestSequentialEraseWithRebalancing)
             std::cout << m_tree.to_string() << std::endl;
         }
 #endif
+        const std::string before = m_tree.to_string();
         m_tree.erase(val);
+        const std::string after = m_tree.to_string();
 #ifdef DEBUG_BUILD
         m_tree.enableDebugMode = false;
 #endif
         ASSERT_TRUE(m_tree.is_valid_tree())
-            << "Lost balancing after removing " << val;
+            << "Lost balancing after removing " << val << std::endl << "Before was: " << std::endl 
+            << before << std::endl << "After was: " << std::endl << after;
     }
 
     EXPECT_EQ(m_tree.size(), 0);
