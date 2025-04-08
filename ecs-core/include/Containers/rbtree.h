@@ -79,7 +79,92 @@ namespace ecs
 
         void erase(T value)
         {
-            throw std::runtime_error("Not implemented");
+            node_handle_t z = get_node(m_rootIndex);
+            while (z.is_valid())
+            {
+                const T zValue = z.node().value;
+                if (value < zValue)
+                {
+                    z = z.left();
+                }
+                else if (value > zValue)
+                {
+                    z = z.right();
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (!z.is_valid())
+            {
+                // node not found
+                return;
+            }
+
+            node_handle_t y = z;
+            node_handle_t x = node_handle_t::NilNode;
+            rbtreecolors yOriginalColor = y.node().color;
+
+            if (!z.left().is_valid())
+            {
+                x = z.right();
+                transplant(z, z.right());
+            }
+            else if (!z.right().is_valid())
+            {
+                x = z.left();
+                transplant(z, z.left());
+            }
+            else
+            {
+                y = find_minimum(z.right());
+                yOriginalColor = y.node().color;
+                x = y.right();
+
+                if (y.parent() == z)
+                {
+                    if (x.is_valid())
+                    {
+                        x.set_parent(y);
+                    }
+                }
+                else
+                {
+                    if (x.is_valid())
+                    {
+                        x.set_parent(y.parent());
+                    }
+                    transplant(y, y.right());
+
+                    if (y.right().is_valid())
+                    {
+                        y.right().set_parent(y);
+                    }
+
+                    y.set_right(z.right());
+                    if (y.right().is_valid())
+                    {
+                        y.right().set_parent(y);
+                    }
+                }
+
+                transplant(z, y);
+                y.set_left(z.left());
+                if (y.left().is_valid())
+                {
+                    y.left().set_parent(y);
+                }
+                y.set_color(z.node().color);
+            }
+
+            if (yOriginalColor == rbtreecolors::BLACK && x.is_valid())
+            {
+                fixup_erase(x);
+            }
+
+            // @todo deallocate z
         }
 
         void clear()
@@ -136,34 +221,6 @@ namespace ecs
         inline size_t size() const noexcept { return m_size; }
 
     private:
-        node_handle_t binary_search(T value) const
-        {
-            if (m_size == 0)
-            {
-                return node_handle_t::NilNode;
-            }
-
-            node_handle_t current = get_node(m_rootIndex);
-            while (current.is_valid())
-            {
-                const T currentValue = current.node().value;
-                if (currentValue == value)
-                {
-                    break;
-                }
-                else if (value > currentValue)
-                {
-                    current = current.right();
-                }
-                else
-                {
-                    current = current.left();
-                }
-            }
-
-            return current;
-        }
-
         node_handle_t find_minimum(node_handle_t root) const
         {
             node_handle_t current = root;

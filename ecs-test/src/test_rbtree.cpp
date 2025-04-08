@@ -279,7 +279,7 @@ TEST_F(TestRBTree, TestEraseRequiringMultipleRebalancing)
     EXPECT_TRUE(m_tree.is_valid_tree());
 }
 
-TEST_F(TestRBTree, SequentialDeletionsWithRebalancing)
+TEST_F(TestRBTree, TestSequentialEraseWithRebalancing)
 {
     TestInsertionSequence({50, 25, 75, 12, 37, 62, 87, 6, 18, 31, 43, 56, 68, 81, 93});
 
