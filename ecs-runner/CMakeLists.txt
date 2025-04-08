@@ -70,6 +70,7 @@ file(GLOB_RECURSE SOURCES "include/*.h" "include/*.cpp" "src/*.h" "src/*.cpp")
 
 # Add source to this project's executable.
 add_executable(ecs-runner ${SOURCES})
+set_debug_macro(ecs-runner)
 
 # Link against SDL2, SDL2_image and SDL2_ttf
 target_link_libraries(ecs-runner 

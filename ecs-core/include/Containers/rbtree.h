@@ -4,6 +4,8 @@
 #include <memory>
 #include <stdexcept>
 #include <limits>
+#include <string>
+#include <format>
 #include "SingleBlockFreeListAllocator.h"
 
 namespace ecs
@@ -23,7 +25,6 @@ namespace ecs
 
     public:
         using Allocator = SingleBlockFreeListAllocator<node_t, InitialCapacity>;
-
         static constexpr size_t NIL = std::numeric_limits<size_t>::max();
 
         rbtree()
@@ -220,6 +221,10 @@ namespace ecs
 
         inline size_t size() const noexcept { return m_size; }
 
+#ifdef DEBUG_BUILD
+        bool enableDebugMode = false;
+#endif
+
     private:
         node_handle_t find_minimum(node_handle_t root) const
         {
@@ -246,7 +251,7 @@ namespace ecs
                 return node_handle_t::NilNode;
             }
 
-            return node_handle_t(index, &m_allocator);
+            return node_handle_t(index, &m_allocator, this);
         }
 
         void left_rotate(node_handle_t x)
@@ -635,10 +640,11 @@ namespace ecs
         {
             size_t index = NIL;
             const Allocator* allocator = nullptr;
+            const rbtree<T, InitialCapacity>* owner = nullptr;
 
             node_handle_t() = default;
-            node_handle_t(size_t inIndex, const Allocator* inAllocator)
-                : index{inIndex}, allocator{inAllocator}
+            node_handle_t(size_t inIndex, const Allocator* inAllocator, const rbtree<T, InitialCapacity>* inOwner)
+                : index{inIndex}, allocator{inAllocator}, owner{inOwner}
             {}
 
             const static node_handle_t NilNode;
@@ -652,17 +658,17 @@ namespace ecs
 
             inline node_handle_t parent() const 
             { 
-                return is_valid() && node().parent != NIL? node_handle_t(node().parent, allocator) : NilNode; 
+                return is_valid() && node().parent != NIL? node_handle_t(node().parent, allocator, owner) : NilNode; 
             }
 
             inline node_handle_t left() const 
             { 
-                return is_valid()? node_handle_t(node().left, allocator) : NilNode; 
+                return is_valid()? node_handle_t(node().left, allocator, owner) : NilNode; 
             }
 
             inline node_handle_t right() const 
             { 
-                return is_valid()? node_handle_t(node().right, allocator) : NilNode; 
+                return is_valid()? node_handle_t(node().right, allocator, owner) : NilNode; 
             }
 
             inline node_handle_t grand_parent() const 
@@ -680,6 +686,13 @@ namespace ecs
                 {
                     node().parent = newParent.index;
                 } 
+
+#ifdef DEBUG_BUILD
+                if (owner->enableDebugMode)
+                {
+                    std::cout << "Set " << to_string() << "'s parent to " << newParent.to_string() << std::endl;
+                }
+#endif
             }
 
             inline void set_left(node_handle_t newChild) 
@@ -688,6 +701,13 @@ namespace ecs
                 {
                     node().left = newChild.index; 
                 }
+
+#ifdef DEBUG_BUILD
+                if (owner->enableDebugMode)
+                {
+                    std::cout << "Set " << to_string() << "'s left child to " << newChild.to_string() << std::endl;
+                }
+#endif
             }
 
             inline void set_right(node_handle_t newChild) 
@@ -695,6 +715,13 @@ namespace ecs
                 if (is_valid())
                 {
                     node().right = newChild.index; 
+
+#ifdef DEBUG_BUILD
+                    if (owner->enableDebugMode)
+                    {
+                        std::cout << "Set " << to_string() << "'s right child to " << newChild.to_string() << std::endl;
+                    }
+#endif
                 }
             }
 
@@ -703,6 +730,13 @@ namespace ecs
                 if (is_valid())
                 {
                     node().color = color; 
+
+#ifdef DEBUG_BUILD
+                    if (owner->enableDebugMode)
+                    {
+                        std::cout << "Set color of " << to_string() << " to " << (color == rbtreecolors::BLACK? "BLACK" : "RED") << std::endl;
+                    }
+#endif
                 }
             }
 
@@ -714,6 +748,18 @@ namespace ecs
             inline bool operator!=(const node_handle_t& other) const noexcept
             {
                 return index != other.index;
+            }
+
+            inline std::string to_string() const 
+            {
+                if (!is_valid())
+                {
+                    return "INVALID";
+                }
+
+                std::string s = std::format("{} ({}{})", node().value, index,
+                    (is_red()? "R" : "B"));
+                return s;
             }
             
             node_handle_t sibling() 
@@ -748,6 +794,7 @@ namespace ecs
 
         size_t m_size = 0;
         size_t m_rootIndex = 0;
+        
         
         Allocator m_allocator;
     };

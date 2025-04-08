@@ -3,6 +3,13 @@
 #
 cmake_minimum_required(VERSION 3.20)
 
+function(set_debug_macro target)
+    target_compile_definitions(${target} PRIVATE
+        $<$<CONFIG:Debug>:DEBUG_BUILD>
+    )
+endfunction()
+
+
 # Enable Hot Reload for MSVC
 set(CMAKE_EXPERIMENTAL_CXX_SCANDEP_SOURCE ON)
 

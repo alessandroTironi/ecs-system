@@ -25,6 +25,7 @@ include_directories("${ECS_CORE_INCLUDE_DIR}" "include")
 # Create the unit test executable
 file(GLOB TEST_SOURCES "src/*.cpp")
 add_executable(ecs-test ${TEST_SOURCES})
+set_debug_macro(ecs-test)
 
 # Link to the sprite-eater-core library and gtest
 target_link_libraries(ecs-test

@@ -286,7 +286,14 @@ TEST_F(TestRBTree, TestSequentialEraseWithRebalancing)
     std::vector<int> deleteOrder = {12, 87, 25, 56, 93, 37, 75, 6, 62, 43, 50, 31, 68, 18, 81};
     for (int val: deleteOrder)
     {
+#ifdef DEBUG_BUILD
+        if (val == 50)
+            m_tree.enableDebugMode = true;
+#endif
         m_tree.erase(val);
+#ifdef DEBUG_BUILD
+        m_tree.enableDebugMode = false;
+#endif
         ASSERT_TRUE(m_tree.is_valid_tree())
             << "Lost balancing after removing " << val;
     }
