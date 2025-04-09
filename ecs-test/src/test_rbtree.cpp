@@ -28,6 +28,42 @@ protected:
         }
     }
 
+    void TestInsertionSequenceFollowedByDeletionSequence(std::initializer_list<int> valuesToInsert,
+        std::initializer_list<int> valuesToErase, bool logSteps = false)
+    {
+        for (const int& value : valuesToInsert)
+        {
+            const std::string before = m_tree.to_string();
+            m_tree.insert(value);
+            const std::string after = m_tree.to_string();
+            if (logSteps)
+            {
+                std::cout << "Tree after inserting " << value << ": " << std::endl << after << std::endl;
+            }
+
+            ASSERT_TRUE(m_tree.is_valid_tree())
+                << "Tree lost balance after inserting " << value << std::endl 
+                << "Before was: " << std::endl << before << std::endl 
+                << "After was: " << std::endl << after << std::endl;
+        }
+
+        for (const int& value : valuesToErase)
+        {
+            const std::string before = m_tree.to_string();
+            m_tree.erase(value);
+            const std::string after = m_tree.to_string();
+            if (logSteps)
+            {
+                std::cout << "Tree after erasing " << value << ": " << std::endl << after << std::endl;
+            }
+
+            ASSERT_TRUE(m_tree.is_valid_tree())
+                << "Tree lost balance after erasing " << value << std::endl 
+                << "Before was: " << std::endl << before << std::endl 
+                << "After was: " << std::endl << after << std::endl;
+        }
+    }
+
     ecs::rbtree<int> m_tree;
 };
 
@@ -282,28 +318,10 @@ TEST_F(TestRBTree, TestEraseRequiringMultipleRebalancing)
 
 TEST_F(TestRBTree, TestSequentialEraseWithRebalancing)
 {
-    TestInsertionSequence({50, 25, 75, 12, 37, 62, 87, 6, 18, 31, 43, 56, 68, 81, 93});
-
-    std::vector<int> deleteOrder = {12, 87, 25, 56, 93, 37, 75, 6, 62, 43, 50, 31, 68, 18, 81};
-    for (int val: deleteOrder)
-    {
-#ifdef DEBUG_BUILD
-        if (val == 50)
-        {
-            m_tree.enableDebugMode = true;
-            std::cout << m_tree.to_string() << std::endl;
-        }
-#endif
-        const std::string before = m_tree.to_string();
-        m_tree.erase(val);
-        const std::string after = m_tree.to_string();
-#ifdef DEBUG_BUILD
-        m_tree.enableDebugMode = false;
-#endif
-        ASSERT_TRUE(m_tree.is_valid_tree())
-            << "Lost balancing after removing " << val << std::endl << "Before was: " << std::endl 
-            << before << std::endl << "After was: " << std::endl << after;
-    }
+    TestInsertionSequenceFollowedByDeletionSequence(
+        {50, 25, 75, 12, 37, 62, 87, 6, 18, 31, 43, 56, 68, 81, 93},
+        {12, 87, 25, 56, 93, 37, 75, 6, 62, 43, 50, 31, 68, 18, 81}
+    );
 
     EXPECT_EQ(m_tree.size(), 0);
 }
