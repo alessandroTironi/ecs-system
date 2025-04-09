@@ -8,6 +8,177 @@ namespace ecs
     template <typename T>
     class rbtree 
     {
+    public:
+        rbtree() : root(nullptr), node_count(0) {}
+    
+        ~rbtree() {
+            clear_recursive(root);
+        }
+    
+        // Returns true if the value was inserted, false if it already exists
+        bool insert(const T& value) 
+        {
+            // Check if value already exists
+            if (search(value) != nullptr)
+                return false;
+            
+            Node* new_node = new Node(value);
+            Node* y = nullptr;
+            Node* x = root;
+            
+            while (x != nullptr) {
+                y = x;
+                if (value < x->value)
+                    x = x->left;
+                else
+                    x = x->right;
+            }
+            
+            new_node->parent = y;
+            if (y == nullptr)
+                root = new_node;
+            else if (value < y->value)
+                y->left = new_node;
+            else
+                y->right = new_node;
+            
+            // Fix the tree
+            if (new_node->parent == nullptr) {
+                new_node->color = BLACK;
+                node_count++;
+                return true;
+            }
+            
+            if (new_node->parent->parent == nullptr) {
+                node_count++;
+                return true;
+            }
+            
+            fix_insert(new_node);
+            node_count++;
+            return true;
+        }
+    
+        // Returns true if the value was erased, false if it wasn't found
+        bool erase(const T& value) 
+        {
+            Node* z = search(value);
+            if (z == nullptr)
+                return false;
+            
+            Node* y = z;
+            Node* x = nullptr;
+            Node* x_parent = nullptr;
+            bool x_is_left_child = false;
+            Color y_original_color = y->color;
+            
+            if (z->left == nullptr) {
+                x = z->right;
+                x_parent = z->parent;
+                x_is_left_child = (z->parent != nullptr && z == z->parent->left);
+                transplant(z, z->right);
+            } else if (z->right == nullptr) {
+                x = z->left;
+                x_parent = z->parent;
+                x_is_left_child = (z->parent != nullptr && z == z->parent->left);
+                transplant(z, z->left);
+            } else {
+                y = minimum(z->right);
+                y_original_color = y->color;
+                x = y->right;
+                
+                if (y->parent == z) {
+                    if (x != nullptr)
+                        x->parent = y;
+                    x_parent = y;
+                    x_is_left_child = false; // x is a right child of y
+                } else {
+                    x_parent = y->parent;
+                    x_is_left_child = (y == y->parent->left);
+                    transplant(y, y->right);
+                    y->right = z->right;
+                    if (y->right != nullptr)
+                        y->right->parent = y;
+                }
+                
+                transplant(z, y);
+                y->left = z->left;
+                if (y->left != nullptr)
+                    y->left->parent = y;
+                y->color = z->color;
+            }
+            
+            if (y_original_color == BLACK)
+                fix_erase(x, x_parent, x_is_left_child);
+            
+            delete z;
+            node_count--;
+            return true;
+        }
+    
+        // Verifies that the tree satisfies all red-black tree properties
+        bool is_valid_tree() const 
+        {
+            if (root == nullptr)
+                return true;
+            
+            // Property 1: Every node is either red or black. (Enforced by enum)
+            
+            // Property 2: The root is black
+            if (root->color != BLACK)
+                return false;
+            
+            // Property 3: Every leaf (NULL) is black. (Implicitly true)
+            
+            // Property 4: If a node is red, then both its children are black.
+            if (!check_red_property(root))
+                return false;
+            
+            // Property 5: For each node, all simple paths from the node to descendant leaves 
+            // contain the same number of black nodes.
+            int height = 0;
+            if (!check_black_height(root, height))
+                return false;
+            
+            // Additionally, check that it's a valid binary search tree
+            return is_binary_search_tree(root, nullptr, nullptr);
+        }
+
+        // Additional utility functions
+        size_t size() const {
+            return node_count;
+        }
+    
+        bool contains(const T& value) const {
+            return search(value) != nullptr;
+        }
+    
+        bool empty() const {
+            return root == nullptr;
+        }
+    
+        void clear() {
+            clear_recursive(root);
+            root = nullptr;
+            node_count = 0;
+        }
+
+        std::string to_string() const 
+        {
+            std::stringstream ss;
+            ss << "RedBlackTree (size=" << node_count << "):" << std::endl;
+            
+            if (root == nullptr) {
+                ss << "    [Empty tree]" << std::endl;
+                return ss.str();
+            }
+            
+            // Use recursive helper to build the tree representation
+            to_string_recursive(root, ss);
+            
+            return ss.str();
+        }
+
     private:
         enum Color { RED, BLACK };
     
@@ -351,178 +522,6 @@ namespace ecs
             
             to_string_recursive(node->left, ss, depth + 1);
             to_string_recursive(node->right, ss, depth + 1);
-        }
-    
-    public:
-        rbtree() : root(nullptr), node_count(0) {}
-    
-        ~rbtree() {
-            clear_recursive(root);
-        }
-    
-        // Returns true if the value was inserted, false if it already exists
-        bool insert(const T& value) 
-        {
-            // Check if value already exists
-            if (search(value) != nullptr)
-                return false;
-            
-            Node* new_node = new Node(value);
-            Node* y = nullptr;
-            Node* x = root;
-            
-            while (x != nullptr) {
-                y = x;
-                if (value < x->value)
-                    x = x->left;
-                else
-                    x = x->right;
-            }
-            
-            new_node->parent = y;
-            if (y == nullptr)
-                root = new_node;
-            else if (value < y->value)
-                y->left = new_node;
-            else
-                y->right = new_node;
-            
-            // Fix the tree
-            if (new_node->parent == nullptr) {
-                new_node->color = BLACK;
-                node_count++;
-                return true;
-            }
-            
-            if (new_node->parent->parent == nullptr) {
-                node_count++;
-                return true;
-            }
-            
-            fix_insert(new_node);
-            node_count++;
-            return true;
-        }
-    
-        // Returns true if the value was erased, false if it wasn't found
-        bool erase(const T& value) 
-        {
-            Node* z = search(value);
-            if (z == nullptr)
-                return false;
-            
-            Node* y = z;
-            Node* x = nullptr;
-            Node* x_parent = nullptr;
-            bool x_is_left_child = false;
-            Color y_original_color = y->color;
-            
-            if (z->left == nullptr) {
-                x = z->right;
-                x_parent = z->parent;
-                x_is_left_child = (z->parent != nullptr && z == z->parent->left);
-                transplant(z, z->right);
-            } else if (z->right == nullptr) {
-                x = z->left;
-                x_parent = z->parent;
-                x_is_left_child = (z->parent != nullptr && z == z->parent->left);
-                transplant(z, z->left);
-            } else {
-                y = minimum(z->right);
-                y_original_color = y->color;
-                x = y->right;
-                
-                if (y->parent == z) {
-                    if (x != nullptr)
-                        x->parent = y;
-                    x_parent = y;
-                    x_is_left_child = false; // x is a right child of y
-                } else {
-                    x_parent = y->parent;
-                    x_is_left_child = (y == y->parent->left);
-                    transplant(y, y->right);
-                    y->right = z->right;
-                    if (y->right != nullptr)
-                        y->right->parent = y;
-                }
-                
-                transplant(z, y);
-                y->left = z->left;
-                if (y->left != nullptr)
-                    y->left->parent = y;
-                y->color = z->color;
-            }
-            
-            if (y_original_color == BLACK)
-                fix_erase(x, x_parent, x_is_left_child);
-            
-            delete z;
-            node_count--;
-            return true;
-        }
-    
-        // Verifies that the tree satisfies all red-black tree properties
-        bool is_valid_tree() const 
-        {
-            if (root == nullptr)
-                return true;
-            
-            // Property 1: Every node is either red or black. (Enforced by enum)
-            
-            // Property 2: The root is black
-            if (root->color != BLACK)
-                return false;
-            
-            // Property 3: Every leaf (NULL) is black. (Implicitly true)
-            
-            // Property 4: If a node is red, then both its children are black.
-            if (!check_red_property(root))
-                return false;
-            
-            // Property 5: For each node, all simple paths from the node to descendant leaves 
-            // contain the same number of black nodes.
-            int height = 0;
-            if (!check_black_height(root, height))
-                return false;
-            
-            // Additionally, check that it's a valid binary search tree
-            return is_binary_search_tree(root, nullptr, nullptr);
-        }
-
-
-        // Additional utility functions
-        size_t size() const {
-            return node_count;
-        }
-    
-        bool contains(const T& value) const {
-            return search(value) != nullptr;
-        }
-    
-        bool empty() const {
-            return root == nullptr;
-        }
-    
-        void clear() {
-            clear_recursive(root);
-            root = nullptr;
-            node_count = 0;
-        }
-
-        std::string to_string() const 
-        {
-            std::stringstream ss;
-            ss << "RedBlackTree (size=" << node_count << "):" << std::endl;
-            
-            if (root == nullptr) {
-                ss << "    [Empty tree]" << std::endl;
-                return ss.str();
-            }
-            
-            // Use recursive helper to build the tree representation
-            to_string_recursive(root, ss);
-            
-            return ss.str();
         }
     };
 }
