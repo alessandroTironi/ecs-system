@@ -80,32 +80,17 @@ namespace ecs
 
         void erase(T value)
         {
-            node_handle_t z = get_node(m_rootIndex);
-            while (z.is_valid())
-            {
-                const T zValue = z.node().value;
-                if (value < zValue)
-                {
-                    z = z.left();
-                }
-                else if (value > zValue)
-                {
-                    z = z.right();
-                }
-                else
-                {
-                    break;
-                }
-            }
-
+            // Find the node to delete
+            node_handle_t z = find_node(value);
+            
             if (!z.is_valid())
             {
-                // node not found
+                // Node not found
                 return;
             }
 
             node_handle_t y = z;
-            node_handle_t x = node_handle_t::NilNode;
+            node_handle_t x;
             rbtreecolors yOriginalColor = y.node().color;
 
             if (!z.left().is_valid())
@@ -120,12 +105,14 @@ namespace ecs
             }
             else
             {
+                // Find successor (minimum in right subtree)
                 y = find_minimum(z.right());
                 yOriginalColor = y.node().color;
                 x = y.right();
 
-                if (y.parent() == z)
+                if (y.parent().index == z.index)
                 {
+                    // y is direct child of z
                     if (x.is_valid())
                     {
                         x.set_parent(y);
@@ -133,17 +120,8 @@ namespace ecs
                 }
                 else
                 {
-                    if (x.is_valid())
-                    {
-                        x.set_parent(y.parent());
-                    }
+                    // y is further down in the tree
                     transplant(y, y.right());
-
-                    if (y.right().is_valid())
-                    {
-                        y.right().set_parent(y);
-                    }
-
                     y.set_right(z.right());
                     if (y.right().is_valid())
                     {
@@ -160,12 +138,14 @@ namespace ecs
                 y.set_color(z.node().color);
             }
 
-            if (yOriginalColor == rbtreecolors::BLACK && x.is_valid())
+            // Only fix the tree if we removed a black node
+            if (yOriginalColor == rbtreecolors::BLACK)
             {
                 fixup_erase(x);
             }
 
-            // @todo deallocate z
+            // Deallocate the removed node
+            deallocate_node(z);
         }
 
         void clear()
@@ -269,6 +249,31 @@ namespace ecs
             }
 
             return current;
+        }
+
+        node_handle_t find_node(T value) const
+        {
+            node_handle_t current = get_node(m_rootIndex);
+            
+            while (current.is_valid())
+            {
+                if (value < current.node().value)
+                {
+                    current = current.left();
+                }
+                else if (value > current.node().value)
+                {
+                    current = current.right();
+                }
+                else
+                {
+                    // Found the node
+                    return current;
+                }
+            }
+            
+            // Node not found
+            return node_handle_t::NilNode;
         }
 
         node_handle_t get_node(size_t index) const
@@ -433,11 +438,13 @@ namespace ecs
 
         void fixup_erase(node_handle_t x)
         {
-            while (x.index != m_rootIndex && x.is_valid() && x.is_black())
+            while (x.index != m_rootIndex && (x.is_valid() && x.is_black()))
             {
                 if (x.is_left_child())
                 {
                     node_handle_t w = x.parent().right();
+                    
+                    // Case 1: x's sibling w is red
                     if (w.is_red())
                     {
                         w.set_color(rbtreecolors::BLACK);
@@ -446,26 +453,28 @@ namespace ecs
                         w = x.parent().right();
                     }
 
-                    if ((!w.left().is_valid() || w.left().is_black())
-                        && (!w.right().is_valid() || w.right().is_black()))
+                    // Case 2: x's sibling w is black, and both of w's children are black
+                    if ((w.left().is_valid() ? w.left().is_black() : true) && 
+                        (w.right().is_valid() ? w.right().is_black() : true))
                     {
                         w.set_color(rbtreecolors::RED);
                         x = x.parent();
                     }
                     else
                     {
-                        if (!w.right().is_valid() || w.right().is_black())
+                        // Case 3: x's sibling w is black, w's left child is red, w's right child is black
+                        if (w.right().is_valid() ? w.right().is_black() : true)
                         {
                             if (w.left().is_valid())
                             {
                                 w.left().set_color(rbtreecolors::BLACK);
                             }
-
                             w.set_color(rbtreecolors::RED);
                             right_rotate(w);
                             w = x.parent().right();
                         }
-
+                        
+                        // Case 4: x's sibling w is black, and w's right child is red
                         w.set_color(x.parent().node().color);
                         x.parent().set_color(rbtreecolors::BLACK);
                         if (w.right().is_valid())
@@ -473,12 +482,14 @@ namespace ecs
                             w.right().set_color(rbtreecolors::BLACK);
                         }
                         left_rotate(x.parent());
-                        x = get_node(m_rootIndex);
+                        x = get_node(m_rootIndex); // Set x to root to terminate the loop
                     }
                 }
-                else
+                else // x is a right child
                 {
                     node_handle_t w = x.parent().left();
+                    
+                    // Case 1: x's sibling w is red
                     if (w.is_red())
                     {
                         w.set_color(rbtreecolors::BLACK);
@@ -487,39 +498,41 @@ namespace ecs
                         w = x.parent().left();
                     }
 
-                    if ((!w.right().is_valid() || w.right().is_black()) &&
-                        (!w.left().is_valid() || w.left().is_black()))
+                    // Case 2: x's sibling w is black, and both of w's children are black
+                    if ((w.right().is_valid() ? w.right().is_black() : true) && 
+                        (w.left().is_valid() ? w.left().is_black() : true))
                     {
                         w.set_color(rbtreecolors::RED);
                         x = x.parent();
                     }
                     else
                     {
-                        if (!w.left().is_valid() || w.left().is_black())
+                        // Case 3: x's sibling w is black, w's right child is red, w's left child is black
+                        if (w.left().is_valid() ? w.left().is_black() : true)
                         {
                             if (w.right().is_valid())
                             {
                                 w.right().set_color(rbtreecolors::BLACK);
                             }
-
                             w.set_color(rbtreecolors::RED);
                             left_rotate(w);
                             w = x.parent().left();
                         }
-
+                        
+                        // Case 4: x's sibling w is black, and w's left child is red
                         w.set_color(x.parent().node().color);
                         x.parent().set_color(rbtreecolors::BLACK);
                         if (w.left().is_valid())
                         {
                             w.left().set_color(rbtreecolors::BLACK);
                         }
-
                         right_rotate(x.parent());
-                        x = get_node(m_rootIndex);
+                        x = get_node(m_rootIndex); // Set x to root to terminate the loop
                     }
                 }
             }
 
+            // Ensure x is black (if it's a valid node)
             if (x.is_valid())
             {
                 x.set_color(rbtreecolors::BLACK);
@@ -545,93 +558,78 @@ namespace ecs
     private:
 
 #pragma region Debug Methods
-        void get_leaf_nodes(node_handle_t rootNode, std::vector<node_handle_t>& outLeafNodes) const
-        {
-            if (rootNode.is_valid() && rootNode.is_leaf())
-            {
-                outLeafNodes.push_back(rootNode);
-            }
-            else
-            {
-                if (rootNode.left().is_valid())
-                {
-                    get_leaf_nodes(rootNode.left(), outLeafNodes);
-                }
-
-                if (rootNode.right().is_valid())
-                {
-                    get_leaf_nodes(rootNode.right(), outLeafNodes);
-                }
-            }
-        }
-
-        size_t count_black_nodes(node_handle_t from, node_handle_t to) const
-        {
-            const T fromValue = from.node().value;
-            const T toValue = to.node().value;
-            const size_t thisNode = from.is_black()? 1 : 0;
-            if (fromValue == toValue)
-            {
-                return thisNode;
-            }
-            else if (toValue > fromValue)
-            {
-                return thisNode + count_black_nodes(from.right(), to);
-            }   
-            else
-            {
-                return thisNode + count_black_nodes(from.left(), to);
-            }
-        }
-
-        bool is_valid_subtree(node_handle_t rootNode) const 
-        {
-            if (rootNode.is_red() && (rootNode.left().is_red() || rootNode.right().is_red()))
-            {
-                // error: if a node is red, both its children must be black
-                return false;
-            }
-
-            // get all leaf nodes from here
-            std::vector<node_handle_t> leafNodes;
-            get_leaf_nodes(rootNode, leafNodes);
-
-            // ensure 
-            if (leafNodes.size() == 0)
-            {
-                return true;
-            }
-
-            const size_t requiredNumBlackNodes = count_black_nodes(rootNode, leafNodes[0]);
-            for (size_t i = 1; i < leafNodes.size(); ++i)
-            {
-                const size_t numBlackNodes = count_black_nodes(rootNode, leafNodes[i]);
-                if (numBlackNodes != requiredNumBlackNodes)
-                {
-                    // error: not all the path from this node to any leaf has the same amount of black nodes
-                    return false;
-                }
-            }
-
-            return true;
-        }
     public:
         bool is_valid_tree() const
         {
-            node_handle_t rootNode = get_node(m_rootIndex);
-            if (!rootNode.is_valid())
+            node_handle_t root = get_node(m_rootIndex);
+            
+            // Empty tree is valid
+            if (!root.is_valid())
+                return true;
+            
+            // Rule 2: The root must be black
+            if (!root.is_black())
+                return false;
+            
+            // Track the maximum and minimum black height
+            int minBlackHeight = std::numeric_limits<int>::max();
+            int maxBlackHeight = std::numeric_limits<int>::min();
+            
+            // Validate all properties using a recursive helper
+            bool valid = validate_node(root, minBlackHeight, maxBlackHeight);
+            
+            // Rule 5: All paths must have the same black height
+            return valid && (minBlackHeight == maxBlackHeight);
+        }
+
+    private:
+        bool validate_node(node_handle_t node, int& minBlackHeight, int& maxBlackHeight) const
+        {
+            // NIL nodes are black by definition
+            if (!node.is_valid())
             {
-                // an empty tree is still a valid tree
+                minBlackHeight = maxBlackHeight = 0;
                 return true;
             }
-
-            if (!rootNode.is_black())
-            {
-                // error: the root node must always be black
+            
+            // Validate left subtree
+            int leftMinBlackHeight = std::numeric_limits<int>::max();
+            int leftMaxBlackHeight = std::numeric_limits<int>::min();
+            bool leftValid = validate_node(node.left(), leftMinBlackHeight, leftMaxBlackHeight);
+            if (!leftValid)
                 return false;
+            
+            // Validate right subtree
+            int rightMinBlackHeight = std::numeric_limits<int>::max();
+            int rightMaxBlackHeight = std::numeric_limits<int>::min();
+            bool rightValid = validate_node(node.right(), rightMinBlackHeight, rightMaxBlackHeight);
+            if (!rightValid)
+                return false;
+            
+            // Rule 4: Red nodes cannot have red children
+            if (node.is_red())
+            {
+                if ((node.left().is_valid() && node.left().is_red()) || 
+                    (node.right().is_valid() && node.right().is_red()))
+                    return false;
             }
-
-            return is_valid_subtree(rootNode);
+            
+            // Validate parent-child relationships
+            if (node.left().is_valid() && node.left().parent().index != node.index)
+                return false;
+            
+            if (node.right().is_valid() && node.right().parent().index != node.index)
+                return false;
+            
+            // Calculate black height for this node
+            int blackIncrement = node.is_black() ? 1 : 0;
+            minBlackHeight = std::min(leftMinBlackHeight, rightMinBlackHeight) + blackIncrement;
+            maxBlackHeight = std::max(leftMaxBlackHeight, rightMaxBlackHeight) + blackIncrement;
+            
+            // Rule 5: Black height must be the same for all paths in the subtree
+            return leftMinBlackHeight == leftMaxBlackHeight && 
+                rightMinBlackHeight == rightMaxBlackHeight &&
+                leftMinBlackHeight == rightMinBlackHeight;
         }
 #pragma endregion
 
@@ -642,6 +640,12 @@ namespace ecs
             m_allocator[nodeIndex] = node_t(value, NIL, NIL, NIL, rbtreecolors::RED);
             m_size += 1;
             return get_node(nodeIndex);
+        }
+
+        void deallocate_node(node_handle_t node)
+        {
+            m_allocator.FreeBlock(node.index);
+            m_size -= 1;
         }
 
         void set_root(node_handle_t newRoot)

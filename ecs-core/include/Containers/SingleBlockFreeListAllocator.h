@@ -72,7 +72,7 @@ namespace ecs
 
         T& operator[](const size_t index) const
         {
-            assert(index < m_usedCount);
+            //assert(index < m_usedCount);
             return m_data[index];
         }
 

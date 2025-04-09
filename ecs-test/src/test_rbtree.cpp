@@ -279,17 +279,10 @@ TEST_F(TestRBTree, TestEraseWithRedNearNephew)
 
 TEST_F(TestRBTree, TestEraseWithRedFarNephew)
 {
-    m_tree.insert(20);
-    m_tree.insert(10);
-    m_tree.insert(30);
-    m_tree.insert(5);
-    m_tree.insert(15);
-    m_tree.insert(25);
-    m_tree.insert(40);
-    m_tree.insert(13); 
-    
-    m_tree.erase(5);
-    EXPECT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        { 20, 10, 30, 5, 15, 25, 40, 13 },
+        { 5 }
+    );
 }
 
 TEST_F(TestRBTree, TestEraseRootFromThreeNodeTree)
