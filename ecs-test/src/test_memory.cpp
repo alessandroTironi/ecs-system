@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "Containers/memory.h"
 #include "Containers/SingleBlockChunkAllocator.h"
+#include "Containers/SingleBlockAllocatorTraits.h"
 
 using ::testing::Test; 
 
@@ -30,7 +31,7 @@ protected:
         Allocator intAllocator;
         size_t index;
         const size_t prevFreeCount = intAllocator.freeCount();
-        ASSERT_NO_THROW(index = intAllocator.AllocateBlock());
+        index = ecs::SingleBlockAllocatorTrait<Allocator, int>::AllocateBlock(intAllocator);
 
         EXPECT_EQ(intAllocator.usedCount(), 1);
         EXPECT_EQ(intAllocator.freeCount(), prevFreeCount - 1);
@@ -40,10 +41,10 @@ protected:
     void TestSingleDeallocation()
     {
         Allocator intAllocator;
-        const size_t index = intAllocator.AllocateBlock();
+        const size_t index = ecs::SingleBlockAllocatorTrait<Allocator, int>::AllocateBlock(intAllocator);
 
         const size_t prevFreeCount = intAllocator.freeCount();
-        intAllocator.FreeBlock(index);
+        ecs::SingleBlockAllocatorTrait<Allocator, int>::FreeBlock(intAllocator, index);
         EXPECT_EQ(intAllocator.usedCount(), 0);
         EXPECT_EQ(intAllocator.freeCount(), prevFreeCount + 1);
     }
@@ -52,7 +53,7 @@ protected:
     void TestAccess()
     {
         Allocator intAllocator;
-        const size_t index = intAllocator.AllocateBlock();
+        const size_t index = ecs::SingleBlockAllocatorTrait<Allocator, int>::AllocateBlock(intAllocator);
         intAllocator[index] = 5;
 
         EXPECT_EQ(intAllocator[index], 5);
@@ -66,11 +67,11 @@ protected:
         
         for (size_t i = 0; i < resizeThreshold; ++i)
         {
-            intAllocator.AllocateBlock();
+            ecs::SingleBlockAllocatorTrait<Allocator, int>::AllocateBlock(intAllocator);
             intAllocator[i] = 10 * i;
         }
 
-        intAllocator.AllocateBlock();
+        ecs::SingleBlockAllocatorTrait<Allocator, int>::AllocateBlock(intAllocator);
         intAllocator[resizeThreshold] = 1000;
         EXPECT_EQ(intAllocator[0], 0);
         EXPECT_EQ(intAllocator[1], 10);
