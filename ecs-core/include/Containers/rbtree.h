@@ -2,6 +2,7 @@
 #include <stack>
 #include <queue>
 #include <cassert>
+#include <optional>
 
 #include "GraphNode.h"
 #include "SingleBlockAllocatorTraits.h"
@@ -14,18 +15,6 @@ namespace ecs
     {
     private:
         enum Color { RED, BLACK };
-        
-        struct Node 
-        {
-            T value;
-            Color color;
-            Node* left;
-            Node* right;
-            Node* parent;
-
-            Node(const T& val, Color c = RED, Node* l = nullptr, Node* r = nullptr, Node* p = nullptr)
-                : value(val), color(c), left(l), right(r), parent(p) {}
-        };
 
         /**
          * A node of this RB-tree.
@@ -55,21 +44,34 @@ namespace ecs
             rbnode_handle_t(size_t inIndex, NodeAllocator* inAllocator)
                 : m_index{inIndex}, m_allocator{inAllocator} {}
 
+            inline size_t index() const noexcept  { return m_index; }
+            inline NodeAllocator* allocator() const noexcept { return m_allocator; }
+
             inline rbnode_t& node() const 
             {
                 assert(m_allocator != nullptr);
                 // @todo assert index is valid
                 return (*m_allocator)[m_index];
             }
+
+            inline T value() const 
+            {
+                return node().value;
+            }
     
             inline rbnode_handle_t parent() const 
             {
                 return rbnode_handle_t(node().parent, m_allocator);
             }
-    
-            inline rbnode_handle_t child(size_t n) const 
+
+            inline rbnode_handle_t left() const 
             {
-                return rbnode_handle_t(node().children[n], m_allocator);
+                return rbnode_handle_t(node().children[0], m_allocator);
+            }
+
+            inline rbnode_handle_t right() const 
+            {
+                return rbnode_handle_t(node().children[1], m_allocator);
             }
 
             inline Color color() const noexcept 
@@ -87,9 +89,14 @@ namespace ecs
                 node().parent = newParent.index();
             }
     
-            inline void set_child(size_t n, rbnode_handle_t newChild) 
+            inline void set_left(rbnode_handle_t newChild) 
             {
-                node().children[n] = newChild.index();
+                node().children[0] = newChild.index();
+            }
+
+            inline void set_right(rbnode_handle_t newChild) 
+            {
+                node().children[1] = newChild.index();
             }
 
             inline void set_color(Color newColor)
@@ -104,7 +111,7 @@ namespace ecs
     
             bool operator!=(const rbnode_handle_t& other) const 
             {
-                return m_index != other.index() || m_allocator != other.m_allocator;
+                return m_index != other.m_index || m_allocator != other.m_allocator;
             }
 
         private:
@@ -114,16 +121,16 @@ namespace ecs
 
         using NodeHandle = rbnode_handle_t;
 
-        Node* m_root;
-        const NodeHandle NIL;
+        NodeHandle m_root;
+        NodeHandle NIL;
         size_t m_size;
         NodeAllocator m_allocator;
-    public:
-        
 
+    public:
         rbtree() : m_size(0)
         {
-            m_root = nullptr;
+            NIL = allocate_node();
+            m_root = NIL;
         }
     
         ~rbtree() 
@@ -135,57 +142,64 @@ namespace ecs
         bool insert(const T& value) 
         {
             // Check if value already exists
-            if (search(value) != nullptr) 
+            if (search(value) != NIL) 
             {
                 return false;
             }
             
-            Node* new_node = new Node(value);
-            Node* y = nullptr;
-            Node* x = m_root;
+            NodeHandle newNode = allocate_node();
+            newNode.set_value(value);
+            newNode.set_color(RED);
+            NodeHandle y = NIL;
+            NodeHandle x = m_root;
             
-            while (x != nullptr) 
+            while (x != NIL) 
             {
                 y = x;
-                if (value < x->value) 
+                if (value < x.value()) 
                 {
-                    x = x->left;
+                    x = x.left();
                 } 
-                else 
+                else if (value > x.value())
                 {
-                    x = x->right;
+                    x = x.right();
+                }
+                else
+                {
+                    deallocate_node(newNode);
+                    return false;
                 }
             }
             
-            new_node->parent = y;
-            if (y == nullptr) 
+            newNode.set_parent(y);
+            if (y == NIL) 
             {
-                m_root = new_node;
+                m_root = newNode;
             } 
-            else if (value < y->value) 
+            else if (value < y.value()) 
             {
-                y->left = new_node;
+                y.set_left(newNode);
             } 
             else 
             {
-                y->right = new_node;
+                y.set_right(newNode);
             }
             
             // Fix the tree
-            if (new_node->parent == nullptr) 
+            if (newNode.parent() == NIL) 
             {
-                new_node->color = BLACK;
+                newNode.set_color(BLACK);
                 m_size++;
                 return true;
             }
             
-            if (new_node->parent->parent == nullptr) 
+            if (newNode.parent().parent() == NIL) 
             {
                 m_size++;
                 return true;
             }
             
-            fix_insert(new_node);
+            fix_insert(newNode);
             m_size++;
             return true;
         }
@@ -193,73 +207,74 @@ namespace ecs
         // Returns true if the value was erased, false if it wasn't found
         bool erase(const T& value) 
         {
-            Node* z = search(value);
-            if (z == nullptr) 
+            NodeHandle z = search(value);
+            if (z == NIL) 
             {
                 return false;
             }
             
-            Node* y = z;
-            Node* x = nullptr;
-            Node* x_parent = nullptr;
+            NodeHandle y = z;
+            NodeHandle x = NIL;
+            NodeHandle xParent = NIL;
             bool x_is_left_child = false;
-            Color y_original_color = y->color;
+            Color y_original_color = y.color();
             
-            if (z->left == nullptr) 
+            if (z.left() == NIL) 
             {
-                x = z->right;
-                x_parent = z->parent;
-                x_is_left_child = (z->parent != nullptr && z == z->parent->left);
-                transplant(z, z->right);
+                x = z.right();
+                xParent = z.parent();
+                x_is_left_child = (z.parent() != NIL && z == z.parent().left());
+                transplant(z, z.right());
             } 
-            else if (z->right == nullptr) 
+            else if (z.right() == NIL) 
             {
-                x = z->left;
-                x_parent = z->parent;
-                x_is_left_child = (z->parent != nullptr && z == z->parent->left);
-                transplant(z, z->left);
+                x = z.left();
+                xParent = z.parent();
+                x_is_left_child = (z.parent() != NIL && z == z.parent().left());
+                transplant(z, z.left());
             } 
             else 
             {
-                y = minimum(z->right);
-                y_original_color = y->color;
-                x = y->right;
+                y = minimum(z.right());
+                y_original_color = y.color();
+                x = y.right();
                 
-                if (y->parent == z) 
+                if (y.parent() == z) 
                 {
-                    if (x != nullptr) {
-                        x->parent = y;
+                    if (x != NIL) 
+                    {
+                        x.set_parent(y);
                     }
-                    x_parent = y;
+                    xParent = y;
                     x_is_left_child = false; // x is a right child of y
                 } 
                 else 
                 {
-                    x_parent = y->parent;
-                    x_is_left_child = (y == y->parent->left);
-                    transplant(y, y->right);
-                    y->right = z->right;
-                    if (y->right != nullptr) 
+                    xParent = y.parent();
+                    x_is_left_child = (y == y.parent().left());
+                    transplant(y, y.right());
+                    y.set_right(z.right());
+                    if (y.right() != NIL) 
                     {
-                        y->right->parent = y;
+                        y.right().set_parent(y);
                     }
                 }
                 
                 transplant(z, y);
-                y->left = z->left;
-                if (y->left != nullptr) 
+                y.set_left(z.left());
+                if (y.left() != NIL) 
                 {
-                    y->left->parent = y;
+                    y.left().set_parent(y);
                 }
-                y->color = z->color;
+                y.set_color(z.color());
             }
             
             if (y_original_color == BLACK) 
             {
-                fix_erase(x, x_parent, x_is_left_child);
+                fix_erase(x, xParent, x_is_left_child);
             }
             
-            delete z;
+            deallocate_node(z);
             m_size--;
             return true;
         }
@@ -267,7 +282,7 @@ namespace ecs
         // Verifies that the tree satisfies all red-black tree properties
         bool is_valid_tree() const 
         {
-            if (m_root == nullptr) 
+            if (m_root == NIL) 
             {
                 return true;
             }
@@ -275,7 +290,7 @@ namespace ecs
             // Property 1: Every node is either red or black. (Enforced by enum)
             
             // Property 2: The root is black
-            if (m_root->color != BLACK) 
+            if (m_root.color() != BLACK) 
             {
                 return false;
             }
@@ -297,7 +312,9 @@ namespace ecs
             }
             
             // Additionally, check that it's a valid binary search tree
-            return is_binary_search_tree(m_root, nullptr, nullptr);
+            std::optional<T> minValue = std::nullopt;
+            std::optional<T> maxValue = std::nullopt;
+            return is_binary_search_tree(m_root, minValue, maxValue);
         }
 
         // Additional utility functions
@@ -319,7 +336,7 @@ namespace ecs
         void clear() 
         {
             clear_recursive(m_root);
-            m_root = nullptr;
+            m_root = NIL;
             m_size = 0;
         }
 
@@ -328,7 +345,7 @@ namespace ecs
             std::stringstream ss;
             ss << "RedBlackTree (size=" << m_size << "):" << std::endl;
             
-            if (m_root == nullptr) 
+            if (m_root == NIL) 
             {
                 ss << "    [Empty tree]" << std::endl;
                 return ss.str();
@@ -348,114 +365,119 @@ namespace ecs
             const size_t allocatedIndex = SingleBlockAllocatorTrait<NodeAllocator, rbnode_t>::AllocateBlock(m_allocator);
             return NodeHandle(allocatedIndex, &m_allocator);
         }
+
+        void deallocate_node(NodeHandle nodeHandle)
+        {
+            SingleBlockAllocatorTrait<NodeAllocator, rbnode_t>::FreeBlock(m_allocator, nodeHandle.index());
+        }
     
         // Helper methods
-        void rotate_left(Node* x) 
+        void rotate_left(NodeHandle x) 
         {
-            Node* y = x->right;
-            x->right = y->left;
+            NodeHandle y = x.right();
+            x.set_right(y.left());
             
-            if (y->left != nullptr) 
+            if (y.left() != NIL) 
             {
-                y->left->parent = x;
+                y.left().set_parent(x);
             }
             
-            y->parent = x->parent;
+            y.set_parent(x.parent());
             
-            if (x->parent == nullptr) 
+            if (x.parent() == NIL) 
             {
                 m_root = y;
             } 
-            else if (x == x->parent->left)
+            else if (x == x.parent().left())
             {
-                x->parent->left = y;
+                x.parent().set_left(y);
             } 
             else 
             {
-                x->parent->right = y;
+                x.parent().set_right(y);
             }
             
-            y->left = x;
-            x->parent = y;
+            y.set_left(x);
+            x.set_parent(y);
         }
     
-        void rotate_right(Node* x) 
+        void rotate_right(NodeHandle x) 
         {
-            Node* y = x->left;
-            x->left = y->right;
+            NodeHandle y = x.left();
+            x.set_left(y.right());
             
-            if (y->right != nullptr) 
+            if (y.right() != NIL) 
             {
-                y->right->parent = x;
+                y.right().set_parent(x);
             }
             
-            y->parent = x->parent;
+            y.set_parent(x.parent());
             
-            if (x->parent == nullptr) 
+            if (x.parent() == NIL) 
             {
                 m_root = y;
             } 
-            else if (x == x->parent->left) 
+            else if (x == x.parent().left()) 
             {
-                x->parent->left = y;
+                x.parent().set_left(y);
             } 
             else 
             {
-                x->parent->right = y;
+                x.parent().set_right(y);
             }
             
-            y->right = x;
-            x->parent = y;
+            y.set_right(x);
+            x.set_parent(y);
         }
     
-        void fix_insert(Node* k) 
+        void fix_insert(NodeHandle k) 
         {
-            Node* u;
+            NodeHandle u;
             
-            while (k->parent != nullptr && k->parent->color == RED) 
+            while (k.parent() != NIL && k.parent().color() == RED) 
             {
-                if (k->parent == k->parent->parent->right) 
+                if (k.parent() == k.parent().parent().right()) 
                 {
-                    u = k->parent->parent->left;
-                    if (u != nullptr && u->color == RED) 
+                    u = k.parent().parent().left();
+                    if (u != NIL && u.color() == RED) 
                     {
-                        u->color = BLACK;
-                        k->parent->color = BLACK;
-                        k->parent->parent->color = RED;
-                        k = k->parent->parent;
+                        u.set_color(BLACK);
+                        k.parent().set_color(BLACK);
+                        k.parent().parent().set_color(RED);
+                        k = k.parent().parent();
                     }
                     else 
                     {
-                        if (k == k->parent->left) 
+                        if (k == k.parent().left()) 
                         {
-                            k = k->parent;
+                            k = k.parent();
                             rotate_right(k);
                         }
-                        k->parent->color = BLACK;
-                        k->parent->parent->color = RED;
-                        rotate_left(k->parent->parent);
+                        k.parent().set_color(BLACK);
+                        k.parent().parent().set_color(RED);
+                        rotate_left(k.parent().parent());
                     }
                 } 
                 else 
                 {
-                    u = k->parent->parent->right;
-                    if (u != nullptr && u->color == RED) 
+                    u = k.parent().parent().right();
+                    if (u != NIL && u.color() == RED) 
                     {
-                        u->color = BLACK;
-                        k->parent->color = BLACK;
-                        k->parent->parent->color = RED;
-                        k = k->parent->parent;
+                        u.set_color(BLACK);
+                        k.parent().set_color(BLACK);
+                        k.parent().parent().set_color(RED);
+                        k = k.parent().parent();
                     } 
                     else 
                     {
-                        if (k == k->parent->right) 
+                        if (k == k.parent().right()) 
                         {
-                            k = k->parent;
+                            k = k.parent();
                             rotate_left(k);
                         }
-                        k->parent->color = BLACK;
-                        k->parent->parent->color = RED;
-                        rotate_right(k->parent->parent);
+                        k.parent().set_color(BLACK);
+                        k.parent().parent().set_color(RED);
+                        rotate_right(k.parent().parent());
                     }
                 }
                 if (k == m_root) 
@@ -463,162 +485,162 @@ namespace ecs
                     break;
                 }
             }
-            m_root->color = BLACK;
+            m_root.set_color(BLACK);
         }
     
-        Node* search(const T& value) const 
+        NodeHandle search(const T& value) const 
         {
-            Node* current = m_root;
-            while (current != nullptr) 
+            NodeHandle current = m_root;
+            while (current != NIL) 
             {
-                if (value == current->value) 
+                if (value == current.value()) 
                 {
                     return current;
                 } 
-                else if (value < current->value) 
+                else if (value < current.value()) 
                 {
-                    current = current->left;
+                    current = current.left();
                 } 
                 else 
                 {
-                    current = current->right;
+                    current = current.right();
                 }
             }
-            return nullptr;
+            return NIL;
         }
     
-        Node* minimum(Node* node) const 
+        NodeHandle minimum(NodeHandle node) const 
         {
-            if (node == nullptr) 
+            if (node == NIL) 
             {
-                return nullptr;
+                return NIL;
             }
             
-            while (node->left != nullptr) 
+            while (node.left() != NIL) 
             {
-                node = node->left;
+                node = node.left();
             }
             
             return node;
         }
     
-        void transplant(Node* u, Node* v) 
+        void transplant(NodeHandle u, NodeHandle v) 
         {
-            if (u->parent == nullptr) 
+            if (u.parent() == NIL) 
             {
                 m_root = v;
             } 
-            else if (u == u->parent->left) 
+            else if (u == u.parent().left()) 
             {
-                u->parent->left = v;
+                u.parent().set_left(v);
             } 
             else 
             {
-                u->parent->right = v;
+                u.parent().set_right(v);
             }
             
-            if (v != nullptr) 
+            if (v != NIL) 
             {
-                v->parent = u->parent;
+                v.set_parent(u.parent());
             }
         }
     
-        void fix_erase(Node* x, Node* x_parent, bool x_is_left_child) 
+        void fix_erase(NodeHandle x, NodeHandle xParent, bool xIsLeftChild) 
         {
-            Node* w;
+            NodeHandle w;
             
-            while ((x == nullptr || x->color == BLACK) && x != m_root) 
+            while ((x == NIL || x.color() == BLACK) && x != m_root) 
             {
-                if (x == nullptr) 
+                if (x == NIL) 
                 {
-                    if (x_is_left_child) 
+                    if (xIsLeftChild) 
                     {
-                        w = x_parent->right;
-                        if (w->color == RED) 
+                        w = xParent.right();
+                        if (w.color() == RED) 
                         {
-                            w->color = BLACK;
-                            x_parent->color = RED;
-                            rotate_left(x_parent);
-                            w = x_parent->right;
+                            w.set_color(BLACK);
+                            xParent.set_color(RED);
+                            rotate_left(xParent);
+                            w = xParent.right();
                         }
                         
-                        if ((w->left == nullptr || w->left->color == BLACK) && 
-                            (w->right == nullptr || w->right->color == BLACK)) 
+                        if ((w.left() == NIL || w.left().color() == BLACK) && 
+                            (w.right() == NIL || w.right().color() == BLACK)) 
                         {
-                            w->color = RED;
-                            x = x_parent;
-                            if (x->parent != nullptr) 
+                            w.set_color(RED);
+                            x = xParent;
+                            if (x.parent() != NIL) 
                             {
-                                x_is_left_child = (x == x->parent->left);
-                                x_parent = x->parent;
+                                xIsLeftChild = (x == x.parent().left());
+                                xParent = x.parent();
                             }
                         } 
                         else 
                         {
-                            if (w->right == nullptr || w->right->color == BLACK) 
+                            if (w.right() == NIL || w.right().color() == BLACK) 
                             {
-                                if (w->left != nullptr) 
+                                if (w.left() != NIL) 
                                 {
-                                    w->left->color = BLACK;
+                                    w.left().set_color(BLACK);
                                 }
-                                w->color = RED;
+                                w.set_color(RED);
                                 rotate_right(w);
-                                w = x_parent->right;
+                                w = xParent.right();
                             }
                             
-                            w->color = x_parent->color;
-                            x_parent->color = BLACK;
-                            if (w->right != nullptr) 
+                            w.set_color(xParent.color());
+                            xParent.set_color(BLACK);
+                            if (w.right() != NIL) 
                             {
-                                w->right->color = BLACK;
+                                w.right().set_color(BLACK);
                             }
-                            rotate_left(x_parent);
+                            rotate_left(xParent);
                             x = m_root;
                         }
                     } 
                     else 
                     {   
                         // x is a right child
-                        w = x_parent->left;
-                        if (w->color == RED) 
+                        w = xParent.left();
+                        if (w.color() == RED) 
                         {
-                            w->color = BLACK;
-                            x_parent->color = RED;
-                            rotate_right(x_parent);
-                            w = x_parent->left;
+                            w.set_color(BLACK);
+                            xParent.set_color(RED);
+                            rotate_right(xParent);
+                            w = xParent.left();
                         }
                         
-                        if ((w->right == nullptr || w->right->color == BLACK) && 
-                            (w->left == nullptr || w->left->color == BLACK)) 
+                        if ((w.right() == NIL || w.right().color() == BLACK) && 
+                            (w.left() == NIL || w.left().color() == BLACK)) 
                         {
-                            w->color = RED;
-                            x = x_parent;
-                            if (x->parent != nullptr) 
+                            w.set_color(RED);
+                            x = xParent;
+                            if (x.parent() != NIL) 
                             {
-                                x_is_left_child = (x == x->parent->left);
-                                x_parent = x->parent;
+                                xIsLeftChild = (x == x.parent().left());
+                                xParent = x.parent();
                             }
                         } 
                         else 
                         {
-                            if (w->left == nullptr || w->left->color == BLACK) 
+                            if (w.left() == NIL || w.left().color() == BLACK) 
                             {
-                                if (w->right != nullptr) 
+                                if (w.right() != NIL) 
                                 {
-                                    w->right->color = BLACK;
+                                    w.right().set_color(BLACK);
                                 }
-                                w->color = RED;
+                                w.set_color(RED);
                                 rotate_left(w);
-                                w = x_parent->left;
+                                w = xParent.left();
                             }
                             
-                            w->color = x_parent->color;
-                            x_parent->color = BLACK;
-                            if (w->left != nullptr) 
+                            w.set_color(xParent.color());
+                            xParent.set_color(BLACK);
+                            if (w.left() != NIL) 
                             {
-                                w->left->color = BLACK;
+                                w.left().set_color(BLACK);
                             }
-                            rotate_right(x_parent);
+                            rotate_right(xParent);
                             x = m_root;
                         }
                     }
@@ -626,181 +648,185 @@ namespace ecs
                 else 
                 { 
                     // x is not nullptr
-                    if (x == x->parent->left) 
+                    if (x == x.parent().left()) 
                     {
-                        w = x->parent->right;
-                        if (w->color == RED) 
+                        w = x.parent().right();
+                        if (w.color() == RED) 
                         {
-                            w->color = BLACK;
-                            x->parent->color = RED;
-                            rotate_left(x->parent);
-                            w = x->parent->right;
+                            w.set_color(BLACK);
+                            x.parent().set_color(RED);
+                            rotate_left(x.parent());
+                            w = x.parent().right();
                         }
                         
-                        if ((w->left == nullptr || w->left->color == BLACK) && 
-                            (w->right == nullptr || w->right->color == BLACK)) 
+                        if ((w.left() == NIL || w.left().color() == BLACK) && 
+                            (w.right() == NIL || w.right().color() == BLACK)) 
                         {
-                            w->color = RED;
-                            x = x->parent;
+                            w.set_color(RED);
+                            x = x.parent();
                         } 
                         else 
                         {
-                            if (w->right == nullptr || w->right->color == BLACK) 
+                            if (w.right() == NIL || w.right().color() == BLACK) 
                             {
-                                if (w->left != nullptr) 
+                                if (w.left() != NIL) 
                                 {
-                                    w->left->color = BLACK;
+                                    w.left().set_color(BLACK);
                                 }
-                                w->color = RED;
+                                w.set_color(RED);
                                 rotate_right(w);
-                                w = x->parent->right;
+                                w = x.parent().right();
                             }
                             
-                            w->color = x->parent->color;
-                            x->parent->color = BLACK;
-                            if (w->right != nullptr) 
+                            w.set_color(x.parent().color());
+                            x.parent().set_color(BLACK);
+                            if (w.right() != NIL) 
                             {
-                                w->right->color = BLACK;
+                                w.right().set_color(BLACK);
                             }
-                            rotate_left(x->parent);
+                            rotate_left(x.parent());
                             x = m_root;
                         }
                     } 
                     else 
                     { // x is a right child
-                        w = x->parent->left;
-                        if (w->color == RED) 
+                        w = x.parent().left();
+                        if (w.color() == RED) 
                         {
-                            w->color = BLACK;
-                            x->parent->color = RED;
-                            rotate_right(x->parent);
-                            w = x->parent->left;
+                            w.set_color(BLACK);
+                            x.parent().set_color(RED);
+                            rotate_right(x.parent());
+                            w = x.parent().left();
                         }
                         
-                        if ((w->right == nullptr || w->right->color == BLACK) && 
-                            (w->left == nullptr || w->left->color == BLACK)) 
+                        if ((w.right() == NIL || w.right().color() == BLACK) && 
+                            (w.left() == NIL || w.left().color() == BLACK)) 
                         {
-                            w->color = RED;
-                            x = x->parent;
+                            w.set_color(RED);
+                            x = x.parent();
                         } 
                         else 
                         {
-                            if (w->left == nullptr || w->left->color == BLACK) 
+                            if (w.left() == NIL || w.left().color() == BLACK) 
                             {
-                                if (w->right != nullptr) 
+                                if (w.right() != NIL) 
                                 {
-                                    w->right->color = BLACK;
+                                    w.right().set_color(BLACK);
                                 }
-                                w->color = RED;
+                                w.set_color(RED);
                                 rotate_left(w);
-                                w = x->parent->left;
+                                w = x.parent().left();
                             }
                             
-                            w->color = x->parent->color;
-                            x->parent->color = BLACK;
-                            if (w->left != nullptr) 
+                            w.set_color(x.parent().color());
+                            x.parent().set_color(BLACK);
+                            if (w.left() != NIL) 
                             {
-                                w->left->color = BLACK;
+                                w.left().set_color(BLACK);
                             }
-                            rotate_right(x->parent);
+                            rotate_right(x.parent());
                             x = m_root;
                         }
                     }
 
-                    x_parent = x->parent;
-                    if (x_parent != nullptr) 
+                    xParent = x.parent();
+                    if (xParent != NIL) 
                     {
-                        x_is_left_child = (x == x_parent->left);
+                        xIsLeftChild = (x == xParent.left());
                     }
                 }
             }
             
-            if (x != nullptr) 
+            if (x != NIL) 
             {
-                x->color = BLACK;
+                x.set_color(BLACK);
             }
         }
     
-        void clear_recursive(Node* node) 
+        void clear_recursive(NodeHandle node) 
         {
-            if (node == nullptr) 
+            if (node == NIL) 
             {
                 return;
             }
             
-            clear_recursive(node->left);
-            clear_recursive(node->right);
-            delete node;
+            clear_recursive(node.left());
+            clear_recursive(node.right());
+            deallocate_node(node);
         }
     
         // Validation methods
-        bool is_binary_search_tree(Node* node, T* min_value, T* max_value) const 
+        bool is_binary_search_tree(NodeHandle node, std::optional<T>& min_value, std::optional<T>& max_value) const 
         {
-            if (node == nullptr) 
+            if (node == NIL) 
             {
                 return true;
             }
             
-            if ((min_value != nullptr && node->value <= *min_value) || 
-                (max_value != nullptr && node->value >= *max_value)) 
-                {
+            if ((min_value.has_value() && node.value() <= min_value) || 
+                (max_value.has_value() && node.value() >= max_value)) 
+            {
                 return false;
             }
             
-            return is_binary_search_tree(node->left, min_value, &node->value) && 
-                   is_binary_search_tree(node->right, &node->value, max_value);
+            std::optional<T> nodeValue = node.value(); 
+            return is_binary_search_tree(node.left(), min_value, nodeValue) && 
+                   is_binary_search_tree(node.right(), nodeValue, max_value);
         }
     
-        bool check_red_property(Node* node) const 
+        bool check_red_property(NodeHandle node) const 
         {
-            if (node == nullptr) {
+            if (node == NIL) {
                 return true;
             }
             
-            if (node->color == RED) {
-                if ((node->left != nullptr && node->left->color == RED) || 
-                    (node->right != nullptr && node->right->color == RED)) {
+            if (node.color() == RED) {
+                if ((node.left() != NIL && node.left().color() == RED) || 
+                    (node.right() != NIL && node.right().color() == RED)) {
                     return false;
                 }
             }
             
-            return check_red_property(node->left) && check_red_property(node->right);
+            return check_red_property(node.left()) && check_red_property(node.right());
         }
     
-        bool check_black_height(Node* node, int& height) const 
+        bool check_black_height(NodeHandle node, int& height) const 
         {
-            if (node == nullptr) {
+            if (node == NIL) 
+            {
                 height = 1; // Null nodes are considered BLACK
                 return true;
             }
             
             int left_height = 0, right_height = 0;
-            if (!check_black_height(node->left, left_height) || 
-                !check_black_height(node->right, right_height)) {
+            if (!check_black_height(node.left(), left_height) || 
+                !check_black_height(node.right(), right_height)) 
+            {
                 return false;
             }
             
-            if (left_height != right_height) {
+            if (left_height != right_height) 
+            {
                 return false;
             }
             
-            height = left_height + (node->color == BLACK ? 1 : 0);
+            height = left_height + (node.color() == BLACK ? 1 : 0);
             return true;
         }
 
-        void to_string_recursive(Node* node, std::stringstream& ss, int depth = 0) const 
+        void to_string_recursive(NodeHandle node, std::stringstream& ss, int depth = 0) const 
         {
-            if (node == nullptr) 
+            if (node == NIL) 
             {
                 ss << std::string(depth * 4, ' ') << "NULL" << std::endl;
                 return;
             }
             
-            ss << std::string(depth * 4, ' ') << node->value << " (" 
-               << (node->color == RED ? "RED" : "BLACK") << ")" << std::endl;
+            ss << std::string(depth * 4, ' ') << node.value() << " (" 
+               << (node.color() == RED ? "RED" : "BLACK") << ")" << std::endl;
             
-            to_string_recursive(node->left, ss, depth + 1);
-            to_string_recursive(node->right, ss, depth + 1);
+            to_string_recursive(node.left(), ss, depth + 1);
+            to_string_recursive(node.right(), ss, depth + 1);
         }
     };
 }
