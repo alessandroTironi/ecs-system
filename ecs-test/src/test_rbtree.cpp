@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "Containers/rbtree.h"
+#include "Containers/SingleBlockChunkAllocator.h"
 #include <iostream>
 
 using ::testing::Test;
@@ -64,7 +65,7 @@ protected:
         }
     }
 
-    ecs::rbtree<int> m_tree;
+    ecs::rbtree<int, ecs::SingleBlockChunkAllocator<int>> m_tree;
 };
 
 TEST_F(TestRBTree, TestFirstAllocation)

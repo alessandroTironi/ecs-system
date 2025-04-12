@@ -3,9 +3,13 @@
 #include <queue>
 #include <cassert>
 
+#include "GraphNode.h"
+#include "SingleBlockAllocatorTraits.h"
+#include "SingleBlockChunkAllocator.h"
+
 namespace ecs
 {
-    template <typename T>
+    template <typename T, typename TAllocator = SingleBlockChunkAllocator<T>>
     class rbtree 
     {
     public:
@@ -238,6 +242,53 @@ namespace ecs
     
             Node(const T& val, Color c = RED, Node* l = nullptr, Node* r = nullptr, Node* p = nullptr)
                 : value(val), color(c), left(l), right(r), parent(p) {}
+        };
+
+        /**
+         * A node of this RB-tree.
+         */
+        struct rbnode_t : public graph_node_t<T, 2>
+        {
+            using Base = graph_node_t<T, 2>;
+
+            Color color;
+
+            rbnode_t() : Base(), color(Color::BLACK) {}
+            rbnode_t(T inValue, size_t inParent, size_t inLeft, size_t inRight, Color inColor)
+                : Base(inValue, inParent, {inLeft, inRight}), color(inColor)
+            {}
+        };
+
+        /**
+         * Handle for graph node of this RB-tree. Allows utility getters and setters
+         * for any field of the node.
+         */
+        struct rbnode_handle_t : public binary_node_handle_t<T, TAllocator>
+        {
+            using Base = binary_node_handle_t<T, TAllocator>;
+            using Base::node;
+            using Base::m_allocator;
+            using Base::m_index;
+
+            rbnode_handle_t() : Base() {}
+            rbnode_handle_t(size_t inIndex, TAllocator* inAllocator)
+                : Base(inIndex, inAllocator) {}
+
+            inline Color color() const noexcept 
+            {
+                return rbnode().color;
+            }
+
+            inline void set_color(Color newColor)
+            {
+                rbnode().color = newColor;
+            }
+
+        private:
+            rbnode_t& rbnode() const 
+            {
+                return *static_cast<rbnode_t>(&(*m_allocator)[m_index]);
+            }
         };
     
         Node* root;

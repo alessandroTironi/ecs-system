@@ -73,19 +73,26 @@ namespace ecs
         Allocator* m_allocator;
     };
 
-    template<typename T, typename Allocator>
-    struct binary_node_handle_t : public node_handle_t<T, 2, Allocator>
+    template<typename T, typename TAllocator>
+    struct binary_node_handle_t : public node_handle_t<T, 2, TAllocator>
     {
-        using Handle = binary_node_handle_t<T, 2, Allocator>;
+        using Base = node_handle_t<T, 2, TAllocator>;
+        using Base::child;
+        using Base::m_allocator;
 
-        inline Handle left() const 
+        binary_node_handle_t() : Base() {}
+        binary_node_handle_t(size_t index, TAllocator* allocator)
+            : Base(index, allocator)
+        {}
+
+        inline binary_node_handle_t<T, TAllocator> left() const 
         {
-            return Handle(child(0), m_allocator);
+            return binary_node_handle_t<T, TAllocator>(child(0).index(), m_allocator);
         }
 
-        inline Handle right() const 
+        inline binary_node_handle_t<T, TAllocator> right() const 
         {
-            return Handle(child(1), m_allocator);
+            return binary_node_handle_t<T, TAllocator>(child(1).index(), m_allocator);
         }
     };
 }
