@@ -11,7 +11,8 @@ namespace ecs
     public:
         rbtree() : root(nullptr), node_count(0) {}
     
-        ~rbtree() {
+        ~rbtree() 
+        {
             clear_recursive(root);
         }
     
@@ -19,37 +20,51 @@ namespace ecs
         bool insert(const T& value) 
         {
             // Check if value already exists
-            if (search(value) != nullptr)
+            if (search(value) != nullptr) {
                 return false;
+            }
             
             Node* new_node = new Node(value);
             Node* y = nullptr;
             Node* x = root;
             
-            while (x != nullptr) {
+            while (x != nullptr) 
+            {
                 y = x;
-                if (value < x->value)
+                if (value < x->value) 
+                {
                     x = x->left;
-                else
+                } 
+                else 
+                {
                     x = x->right;
+                }
             }
             
             new_node->parent = y;
-            if (y == nullptr)
+            if (y == nullptr) 
+            {
                 root = new_node;
-            else if (value < y->value)
+            } 
+            else if (value < y->value) 
+            {
                 y->left = new_node;
-            else
+            } 
+            else 
+            {
                 y->right = new_node;
+            }
             
             // Fix the tree
-            if (new_node->parent == nullptr) {
+            if (new_node->parent == nullptr) 
+            {
                 new_node->color = BLACK;
                 node_count++;
                 return true;
             }
             
-            if (new_node->parent->parent == nullptr) {
+            if (new_node->parent->parent == nullptr) 
+            {
                 node_count++;
                 return true;
             }
@@ -63,8 +78,9 @@ namespace ecs
         bool erase(const T& value) 
         {
             Node* z = search(value);
-            if (z == nullptr)
+            if (z == nullptr) {
                 return false;
+            }
             
             Node* y = z;
             Node* x = nullptr;
@@ -88,8 +104,9 @@ namespace ecs
                 x = y->right;
                 
                 if (y->parent == z) {
-                    if (x != nullptr)
+                    if (x != nullptr) {
                         x->parent = y;
+                    }
                     x_parent = y;
                     x_is_left_child = false; // x is a right child of y
                 } else {
@@ -97,19 +114,22 @@ namespace ecs
                     x_is_left_child = (y == y->parent->left);
                     transplant(y, y->right);
                     y->right = z->right;
-                    if (y->right != nullptr)
+                    if (y->right != nullptr) {
                         y->right->parent = y;
+                    }
                 }
                 
                 transplant(z, y);
                 y->left = z->left;
-                if (y->left != nullptr)
+                if (y->left != nullptr) {
                     y->left->parent = y;
+                }
                 y->color = z->color;
             }
             
-            if (y_original_color == BLACK)
+            if (y_original_color == BLACK) {
                 fix_erase(x, x_parent, x_is_left_child);
+            }
             
             delete z;
             node_count--;
@@ -119,26 +139,30 @@ namespace ecs
         // Verifies that the tree satisfies all red-black tree properties
         bool is_valid_tree() const 
         {
-            if (root == nullptr)
+            if (root == nullptr) {
                 return true;
+            }
             
             // Property 1: Every node is either red or black. (Enforced by enum)
             
             // Property 2: The root is black
-            if (root->color != BLACK)
+            if (root->color != BLACK) {
                 return false;
+            }
             
             // Property 3: Every leaf (NULL) is black. (Implicitly true)
             
             // Property 4: If a node is red, then both its children are black.
-            if (!check_red_property(root))
+            if (!check_red_property(root)) {
                 return false;
+            }
             
             // Property 5: For each node, all simple paths from the node to descendant leaves 
             // contain the same number of black nodes.
             int height = 0;
-            if (!check_black_height(root, height))
+            if (!check_black_height(root, height)) {
                 return false;
+            }
             
             // Additionally, check that it's a valid binary search tree
             return is_binary_search_tree(root, nullptr, nullptr);
@@ -201,17 +225,19 @@ namespace ecs
             Node* y = x->right;
             x->right = y->left;
             
-            if (y->left != nullptr)
+            if (y->left != nullptr) {
                 y->left->parent = x;
+            }
             
             y->parent = x->parent;
             
-            if (x->parent == nullptr)
+            if (x->parent == nullptr) {
                 root = y;
-            else if (x == x->parent->left)
+            } else if (x == x->parent->left) {
                 x->parent->left = y;
-            else
+            } else {
                 x->parent->right = y;
+            }
             
             y->left = x;
             x->parent = y;
@@ -221,17 +247,19 @@ namespace ecs
             Node* y = x->left;
             x->left = y->right;
             
-            if (y->right != nullptr)
+            if (y->right != nullptr) {
                 y->right->parent = x;
+            }
             
             y->parent = x->parent;
             
-            if (x->parent == nullptr)
+            if (x->parent == nullptr) {
                 root = y;
-            else if (x == x->parent->left)
+            } else if (x == x->parent->left) {
                 x->parent->left = y;
-            else
+            } else {
                 x->parent->right = y;
+            }
             
             y->right = x;
             x->parent = y;
@@ -274,7 +302,9 @@ namespace ecs
                         rotate_right(k->parent->parent);
                     }
                 }
-                if (k == root) break;
+                if (k == root) {
+                    break;
+                }
             }
             root->color = BLACK;
         }
@@ -282,36 +312,41 @@ namespace ecs
         Node* search(const T& value) const {
             Node* current = root;
             while (current != nullptr) {
-                if (value == current->value)
+                if (value == current->value) {
                     return current;
-                else if (value < current->value)
+                } else if (value < current->value) {
                     current = current->left;
-                else
+                } else {
                     current = current->right;
+                }
             }
             return nullptr;
         }
     
         Node* minimum(Node* node) const {
-            if (node == nullptr)
+            if (node == nullptr) {
                 return nullptr;
+            }
             
-            while (node->left != nullptr)
+            while (node->left != nullptr) {
                 node = node->left;
+            }
             
             return node;
         }
     
         void transplant(Node* u, Node* v) {
-            if (u->parent == nullptr)
+            if (u->parent == nullptr) {
                 root = v;
-            else if (u == u->parent->left)
+            } else if (u == u->parent->left) {
                 u->parent->left = v;
-            else
+            } else {
                 u->parent->right = v;
+            }
             
-            if (v != nullptr)
+            if (v != nullptr) {
                 v->parent = u->parent;
+            }
         }
     
         void fix_erase(Node* x, Node* x_parent, bool x_is_left_child) {
@@ -338,8 +373,9 @@ namespace ecs
                             }
                         } else {
                             if (w->right == nullptr || w->right->color == BLACK) {
-                                if (w->left != nullptr)
+                                if (w->left != nullptr) {
                                     w->left->color = BLACK;
+                                }
                                 w->color = RED;
                                 rotate_right(w);
                                 w = x_parent->right;
@@ -347,8 +383,9 @@ namespace ecs
                             
                             w->color = x_parent->color;
                             x_parent->color = BLACK;
-                            if (w->right != nullptr)
+                            if (w->right != nullptr) {
                                 w->right->color = BLACK;
+                            }
                             rotate_left(x_parent);
                             x = root;
                         }
@@ -371,8 +408,9 @@ namespace ecs
                             }
                         } else {
                             if (w->left == nullptr || w->left->color == BLACK) {
-                                if (w->right != nullptr)
+                                if (w->right != nullptr) {
                                     w->right->color = BLACK;
+                                }
                                 w->color = RED;
                                 rotate_left(w);
                                 w = x_parent->left;
@@ -380,8 +418,9 @@ namespace ecs
                             
                             w->color = x_parent->color;
                             x_parent->color = BLACK;
-                            if (w->left != nullptr)
+                            if (w->left != nullptr) {
                                 w->left->color = BLACK;
+                            }
                             rotate_right(x_parent);
                             x = root;
                         }
@@ -402,8 +441,9 @@ namespace ecs
                             x = x->parent;
                         } else {
                             if (w->right == nullptr || w->right->color == BLACK) {
-                                if (w->left != nullptr)
+                                if (w->left != nullptr) {
                                     w->left->color = BLACK;
+                                }
                                 w->color = RED;
                                 rotate_right(w);
                                 w = x->parent->right;
@@ -411,8 +451,9 @@ namespace ecs
                             
                             w->color = x->parent->color;
                             x->parent->color = BLACK;
-                            if (w->right != nullptr)
+                            if (w->right != nullptr) {
                                 w->right->color = BLACK;
+                            }
                             rotate_left(x->parent);
                             x = root;
                         }
@@ -431,8 +472,9 @@ namespace ecs
                             x = x->parent;
                         } else {
                             if (w->left == nullptr || w->left->color == BLACK) {
-                                if (w->right != nullptr)
+                                if (w->right != nullptr) {
                                     w->right->color = BLACK;
+                                }
                                 w->color = RED;
                                 rotate_left(w);
                                 w = x->parent->left;
@@ -440,25 +482,29 @@ namespace ecs
                             
                             w->color = x->parent->color;
                             x->parent->color = BLACK;
-                            if (w->left != nullptr)
+                            if (w->left != nullptr) {
                                 w->left->color = BLACK;
+                            }
                             rotate_right(x->parent);
                             x = root;
                         }
                     }
                     x_parent = x->parent;
-                    if (x_parent != nullptr)
+                    if (x_parent != nullptr) {
                         x_is_left_child = (x == x_parent->left);
+                    }
                 }
             }
             
-            if (x != nullptr)
+            if (x != nullptr) {
                 x->color = BLACK;
+            }
         }
     
         void clear_recursive(Node* node) {
-            if (node == nullptr)
+            if (node == nullptr) {
                 return;
+            }
             
             clear_recursive(node->left);
             clear_recursive(node->right);
@@ -467,25 +513,29 @@ namespace ecs
     
         // Validation methods
         bool is_binary_search_tree(Node* node, T* min_value, T* max_value) const {
-            if (node == nullptr)
+            if (node == nullptr) {
                 return true;
+            }
             
             if ((min_value != nullptr && node->value <= *min_value) || 
-                (max_value != nullptr && node->value >= *max_value))
+                (max_value != nullptr && node->value >= *max_value)) {
                 return false;
+            }
             
             return is_binary_search_tree(node->left, min_value, &node->value) && 
                    is_binary_search_tree(node->right, &node->value, max_value);
         }
     
         bool check_red_property(Node* node) const {
-            if (node == nullptr)
+            if (node == nullptr) {
                 return true;
+            }
             
             if (node->color == RED) {
                 if ((node->left != nullptr && node->left->color == RED) || 
-                    (node->right != nullptr && node->right->color == RED))
+                    (node->right != nullptr && node->right->color == RED)) {
                     return false;
+                }
             }
             
             return check_red_property(node->left) && check_red_property(node->right);
@@ -499,11 +549,13 @@ namespace ecs
             
             int left_height = 0, right_height = 0;
             if (!check_black_height(node->left, left_height) || 
-                !check_black_height(node->right, right_height))
+                !check_black_height(node->right, right_height)) {
                 return false;
+            }
             
-            if (left_height != right_height)
+            if (left_height != right_height) {
                 return false;
+            }
             
             height = left_height + (node->color == BLACK ? 1 : 0);
             return true;
