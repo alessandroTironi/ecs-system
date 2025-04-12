@@ -9,15 +9,126 @@
 
 namespace ecs
 {
-    template <typename T, typename TAllocator = SingleBlockChunkAllocator<T>>
+    template <typename T, template<typename> class TAllocator = SingleBlockChunkAllocator>
     class rbtree 
     {
+    private:
+        enum Color { RED, BLACK };
+        
+        struct Node 
+        {
+            T value;
+            Color color;
+            Node* left;
+            Node* right;
+            Node* parent;
+
+            Node(const T& val, Color c = RED, Node* l = nullptr, Node* r = nullptr, Node* p = nullptr)
+                : value(val), color(c), left(l), right(r), parent(p) {}
+        };
+
+        /**
+         * A node of this RB-tree.
+         */
+        struct rbnode_t : public graph_node_t<T, 2>
+        {
+            using Base = graph_node_t<T, 2>;
+
+            Color color;
+
+            rbnode_t() : Base(), color(Color::BLACK) {}
+            rbnode_t(T inValue, size_t inParent, size_t inLeft, size_t inRight, Color inColor)
+                : Base(inValue, inParent, {inLeft, inRight}), color(inColor)
+            {}
+        };
+
+        using NodeAllocator = TAllocator<rbnode_t>;
+
+        /**
+         * Handle for graph node of this RB-tree. Allows utility getters and setters
+         * for any field of the node.
+         */
+        struct rbnode_handle_t 
+        {
+        public:
+            rbnode_handle_t() : m_index{0}, m_allocator{nullptr} {}
+            rbnode_handle_t(size_t inIndex, NodeAllocator* inAllocator)
+                : m_index{inIndex}, m_allocator{inAllocator} {}
+
+            inline rbnode_t& node() const 
+            {
+                assert(m_allocator != nullptr);
+                // @todo assert index is valid
+                return (*m_allocator)[m_index];
+            }
+    
+            inline rbnode_handle_t parent() const 
+            {
+                return rbnode_handle_t(node().parent, m_allocator);
+            }
+    
+            inline rbnode_handle_t child(size_t n) const 
+            {
+                return rbnode_handle_t(node().children[n], m_allocator);
+            }
+
+            inline Color color() const noexcept 
+            {
+                return node().color;
+            }
+    
+            inline void set_value(T value)
+            {
+                node().value = value;
+            }
+    
+            inline void set_parent(rbnode_handle_t newParent) 
+            {
+                node().parent = newParent.index();
+            }
+    
+            inline void set_child(size_t n, rbnode_handle_t newChild) 
+            {
+                node().children[n] = newChild.index();
+            }
+
+            inline void set_color(Color newColor)
+            {
+                node().color = newColor;
+            }
+    
+            bool operator==(const rbnode_handle_t& other) const 
+            {
+                return m_index == other.index() && m_allocator == other.m_allocator;
+            }
+    
+            bool operator!=(const rbnode_handle_t& other) const 
+            {
+                return m_index != other.index() || m_allocator != other.m_allocator;
+            }
+
+        private:
+            size_t m_index;
+            NodeAllocator* m_allocator;
+        };
+
+        using NodeHandle = rbnode_handle_t;
+
+        Node* m_root;
+        const NodeHandle NIL;
+        size_t m_size;
+        NodeAllocator m_allocator;
     public:
-        rbtree() : root(nullptr), node_count(0) {}
+        
+
+        rbtree() : m_size(0)
+        {
+            m_root = nullptr;
+        }
     
         ~rbtree() 
         {
-            clear_recursive(root);
+            clear_recursive(m_root);
         }
     
         // Returns true if the value was inserted, false if it already exists
@@ -31,7 +142,7 @@ namespace ecs
             
             Node* new_node = new Node(value);
             Node* y = nullptr;
-            Node* x = root;
+            Node* x = m_root;
             
             while (x != nullptr) 
             {
@@ -49,7 +160,7 @@ namespace ecs
             new_node->parent = y;
             if (y == nullptr) 
             {
-                root = new_node;
+                m_root = new_node;
             } 
             else if (value < y->value) 
             {
@@ -64,18 +175,18 @@ namespace ecs
             if (new_node->parent == nullptr) 
             {
                 new_node->color = BLACK;
-                node_count++;
+                m_size++;
                 return true;
             }
             
             if (new_node->parent->parent == nullptr) 
             {
-                node_count++;
+                m_size++;
                 return true;
             }
             
             fix_insert(new_node);
-            node_count++;
+            m_size++;
             return true;
         }
     
@@ -149,14 +260,14 @@ namespace ecs
             }
             
             delete z;
-            node_count--;
+            m_size--;
             return true;
         }
     
         // Verifies that the tree satisfies all red-black tree properties
         bool is_valid_tree() const 
         {
-            if (root == nullptr) 
+            if (m_root == nullptr) 
             {
                 return true;
             }
@@ -164,7 +275,7 @@ namespace ecs
             // Property 1: Every node is either red or black. (Enforced by enum)
             
             // Property 2: The root is black
-            if (root->color != BLACK) 
+            if (m_root->color != BLACK) 
             {
                 return false;
             }
@@ -172,7 +283,7 @@ namespace ecs
             // Property 3: Every leaf (NULL) is black. (Implicitly true)
             
             // Property 4: If a node is red, then both its children are black.
-            if (!check_red_property(root)) 
+            if (!check_red_property(m_root)) 
             {
                 return false;
             }
@@ -180,19 +291,19 @@ namespace ecs
             // Property 5: For each node, all simple paths from the node to descendant leaves 
             // contain the same number of black nodes.
             int height = 0;
-            if (!check_black_height(root, height)) 
+            if (!check_black_height(m_root, height)) 
             {
                 return false;
             }
             
             // Additionally, check that it's a valid binary search tree
-            return is_binary_search_tree(root, nullptr, nullptr);
+            return is_binary_search_tree(m_root, nullptr, nullptr);
         }
 
         // Additional utility functions
         size_t size() const 
         {
-            return node_count;
+            return m_size;
         }
     
         bool contains(const T& value) const 
@@ -202,97 +313,41 @@ namespace ecs
     
         bool empty() const 
         {
-            return root == nullptr;
+            return m_root == nullptr;
         }
     
         void clear() 
         {
-            clear_recursive(root);
-            root = nullptr;
-            node_count = 0;
+            clear_recursive(m_root);
+            m_root = nullptr;
+            m_size = 0;
         }
 
         std::string to_string() const 
         {
             std::stringstream ss;
-            ss << "RedBlackTree (size=" << node_count << "):" << std::endl;
+            ss << "RedBlackTree (size=" << m_size << "):" << std::endl;
             
-            if (root == nullptr) 
+            if (m_root == nullptr) 
             {
                 ss << "    [Empty tree]" << std::endl;
                 return ss.str();
             }
             
             // Use recursive helper to build the tree representation
-            to_string_recursive(root, ss);
+            to_string_recursive(m_root, ss);
             
             return ss.str();
         }
 
     private:
-        enum Color { RED, BLACK };
-    
-        struct Node 
+        
+
+        NodeHandle allocate_node()
         {
-            T value;
-            Color color;
-            Node* left;
-            Node* right;
-            Node* parent;
-    
-            Node(const T& val, Color c = RED, Node* l = nullptr, Node* r = nullptr, Node* p = nullptr)
-                : value(val), color(c), left(l), right(r), parent(p) {}
-        };
-
-        /**
-         * A node of this RB-tree.
-         */
-        struct rbnode_t : public graph_node_t<T, 2>
-        {
-            using Base = graph_node_t<T, 2>;
-
-            Color color;
-
-            rbnode_t() : Base(), color(Color::BLACK) {}
-            rbnode_t(T inValue, size_t inParent, size_t inLeft, size_t inRight, Color inColor)
-                : Base(inValue, inParent, {inLeft, inRight}), color(inColor)
-            {}
-        };
-
-        /**
-         * Handle for graph node of this RB-tree. Allows utility getters and setters
-         * for any field of the node.
-         */
-        struct rbnode_handle_t : public binary_node_handle_t<T, TAllocator>
-        {
-            using Base = binary_node_handle_t<T, TAllocator>;
-            using Base::node;
-            using Base::m_allocator;
-            using Base::m_index;
-
-            rbnode_handle_t() : Base() {}
-            rbnode_handle_t(size_t inIndex, TAllocator* inAllocator)
-                : Base(inIndex, inAllocator) {}
-
-            inline Color color() const noexcept 
-            {
-                return rbnode().color;
-            }
-
-            inline void set_color(Color newColor)
-            {
-                rbnode().color = newColor;
-            }
-
-        private:
-            rbnode_t& rbnode() const 
-            {
-                return *static_cast<rbnode_t>(&(*m_allocator)[m_index]);
-            }
-        };
-    
-        Node* root;
-        size_t node_count;
+            const size_t allocatedIndex = SingleBlockAllocatorTrait<NodeAllocator, rbnode_t>::AllocateBlock(m_allocator);
+            return NodeHandle(allocatedIndex, &m_allocator);
+        }
     
         // Helper methods
         void rotate_left(Node* x) 
@@ -309,7 +364,7 @@ namespace ecs
             
             if (x->parent == nullptr) 
             {
-                root = y;
+                m_root = y;
             } 
             else if (x == x->parent->left)
             {
@@ -338,7 +393,7 @@ namespace ecs
             
             if (x->parent == nullptr) 
             {
-                root = y;
+                m_root = y;
             } 
             else if (x == x->parent->left) 
             {
@@ -403,17 +458,17 @@ namespace ecs
                         rotate_right(k->parent->parent);
                     }
                 }
-                if (k == root) 
+                if (k == m_root) 
                 {
                     break;
                 }
             }
-            root->color = BLACK;
+            m_root->color = BLACK;
         }
     
         Node* search(const T& value) const 
         {
-            Node* current = root;
+            Node* current = m_root;
             while (current != nullptr) 
             {
                 if (value == current->value) 
@@ -451,7 +506,7 @@ namespace ecs
         {
             if (u->parent == nullptr) 
             {
-                root = v;
+                m_root = v;
             } 
             else if (u == u->parent->left) 
             {
@@ -472,7 +527,7 @@ namespace ecs
         {
             Node* w;
             
-            while ((x == nullptr || x->color == BLACK) && x != root) 
+            while ((x == nullptr || x->color == BLACK) && x != m_root) 
             {
                 if (x == nullptr) 
                 {
@@ -518,7 +573,7 @@ namespace ecs
                                 w->right->color = BLACK;
                             }
                             rotate_left(x_parent);
-                            x = root;
+                            x = m_root;
                         }
                     } 
                     else 
@@ -564,7 +619,7 @@ namespace ecs
                                 w->left->color = BLACK;
                             }
                             rotate_right(x_parent);
-                            x = root;
+                            x = m_root;
                         }
                     }
                 } 
@@ -608,7 +663,7 @@ namespace ecs
                                 w->right->color = BLACK;
                             }
                             rotate_left(x->parent);
-                            x = root;
+                            x = m_root;
                         }
                     } 
                     else 
@@ -648,7 +703,7 @@ namespace ecs
                                 w->left->color = BLACK;
                             }
                             rotate_right(x->parent);
-                            x = root;
+                            x = m_root;
                         }
                     }
 

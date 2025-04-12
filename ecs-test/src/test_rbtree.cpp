@@ -65,7 +65,7 @@ protected:
         }
     }
 
-    ecs::rbtree<int, ecs::SingleBlockChunkAllocator<int>> m_tree;
+    ecs::rbtree<int, ecs::SingleBlockChunkAllocator> m_tree;
 };
 
 TEST_F(TestRBTree, TestFirstAllocation)
