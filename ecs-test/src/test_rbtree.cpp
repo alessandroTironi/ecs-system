@@ -199,83 +199,50 @@ TEST_F(TestRBTree, TestErase)
 
 TEST_F(TestRBTree, TestEraseRedLeafNode)
 {
-    m_tree.insert(10);
-    m_tree.insert(5);
-    m_tree.insert(15);
-    m_tree.insert(3);
-
-    m_tree.erase(3);
-    EXPECT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        {10, 5, 15, 3},
+        { 3 }
+    );
 }
 
 TEST_F(TestRBTree, TestEraseBlackNodeWithRedChild)
 {
-    m_tree.insert(20);
-    m_tree.insert(10);
-    m_tree.insert(30);
-    m_tree.insert(5);
-    m_tree.insert(15);
-
-    m_tree.erase(10);
-    EXPECT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        { 20, 10, 30, 5, 15 },
+        { 10 }
+    );
 }
 
 TEST_F(TestRBTree, TestEraseBlackLeafNode)
 {
-    m_tree.insert(20);
-    m_tree.insert(10);
-    m_tree.insert(30);
-    m_tree.insert(5);
-    m_tree.insert(25);
-    m_tree.insert(40);
-
-    m_tree.erase(5);
-    EXPECT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        { 20, 10, 30, 5, 25, 40 },
+        { 5 }
+    );
 }
 
 TEST_F(TestRBTree, TestEraseNodeWithRedSibling)
 {
-    m_tree.insert(20);
-    m_tree.insert(10);
-    m_tree.insert(30);
-    m_tree.insert(5);
-    m_tree.insert(15);
-    m_tree.insert(40);
-    m_tree.insert(25);
-
-    m_tree.erase(5);
-    EXPECT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        { 20, 10, 30, 5, 15, 40, 25 },
+        { 5 }
+    );
 }
 
 TEST_F(TestRBTree, TestEraseWithBlackSiblingAndBlackNephews)
 {
-    m_tree.insert(20);
-    m_tree.insert(10);
-    m_tree.insert(30);
-    m_tree.insert(5);
-    m_tree.insert(15);
-    m_tree.insert(25);
-    m_tree.insert(40);
-    m_tree.insert(3);
-    m_tree.insert(7);
-
-    m_tree.erase(3);
-    EXPECT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        { 20, 10, 30, 5, 15, 25, 40, 3, 7 },
+        { 3 }
+    );
 }
 
 TEST_F(TestRBTree, TestEraseWithRedNearNephew)
 {
-    m_tree.insert(20);
-    m_tree.insert(10);
-    m_tree.insert(30);
-    m_tree.insert(5);
-    m_tree.insert(15);
-    m_tree.insert(25);
-    m_tree.insert(40);
-    m_tree.insert(17); 
-    
-    m_tree.erase(25);
-    EXPECT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        { 20, 10, 30, 5, 15, 25, 40, 17 },
+        { 25 }
+    );
 }
 
 TEST_F(TestRBTree, TestEraseWithRedFarNephew)
@@ -288,12 +255,10 @@ TEST_F(TestRBTree, TestEraseWithRedFarNephew)
 
 TEST_F(TestRBTree, TestEraseRootFromThreeNodeTree)
 {
-    m_tree.insert(20);
-    m_tree.insert(10);
-    m_tree.insert(30);
-    
-    m_tree.erase(20);
-    EXPECT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        { 20, 10, 30 },
+        { 20 }
+    );
 }
 
 TEST_F(TestRBTree, TestEraseRequiringMultipleRebalancing)
@@ -316,23 +281,14 @@ TEST_F(TestRBTree, TestSequentialEraseWithRebalancing)
         {50, 25, 75, 12, 37, 62, 87, 6, 18, 31, 43, 56, 68, 81, 93},
         {12, 87, 25, 56, 93, 37, 75, 6, 62, 43, 50, 31, 68, 18, 81}
     );
-
-    EXPECT_EQ(m_tree.size(), 0);
 }
 
 TEST_F(TestRBTree, TestEraseNodeWithBothChildren)
 {
-    m_tree.insert(50);
-    m_tree.insert(25);
-    m_tree.insert(75);
-    m_tree.insert(12);
-    m_tree.insert(37);
-    m_tree.insert(62);
-    m_tree.insert(87);
-    
-    // Delete 25, which has both 12 and 37 as children
-    m_tree.erase(25);
-    ASSERT_TRUE(m_tree.is_valid_tree());
+    TestInsertionSequenceFollowedByDeletionSequence(
+        { 50, 25, 75, 12, 37, 62, 87 },
+        { 25 }
+    );
     
     // Delete 75, which has both 62 and 87 as children
     m_tree.erase(75);
@@ -341,13 +297,7 @@ TEST_F(TestRBTree, TestEraseNodeWithBothChildren)
 
 TEST_F(TestRBTree, TestEraseCausingFixupToRoot)
 {
-    m_tree.insert(10);
-    m_tree.insert(5);
-    m_tree.insert(20);
-    m_tree.insert(3);
-    m_tree.insert(7);
-    m_tree.insert(15);
-    m_tree.insert(25);
+    TestInsertionSequence({ 10, 5, 20, 3, 7, 15, 25 });
     
     // Delete in sequence to force cascading fixup
     m_tree.erase(3);
