@@ -146,6 +146,19 @@ namespace ecs
         {
             clear_recursive(m_root);
         }
+
+        rbtree(const rbtree& other)
+        {
+            m_size = other.size();
+            copy_recursive(other.m_root, NIL);
+        }
+
+        rbtree& operator=(const rbtree& other)
+        {
+            m_size = other.size();
+            copy_recursive(other.m_root, NIL);
+            return *this;
+        }
     
         // Returns true if the value was inserted, false if it already exists
         bool insert(const T& value) 
@@ -935,6 +948,30 @@ namespace ecs
             
             to_string_recursive(node.left(), ss, depth + 1);
             to_string_recursive(node.right(), ss, depth + 1);
+        }
+
+        NodeHandle copy_recursive(NodeHandle nodeToCopy, NodeHandle parentOfCopy)
+        {
+            if (nodeToCopy.is_nil())
+            {
+                return NIL;
+            }
+
+            NodeHandle myNode = allocate_node();
+            NodeHandle left = copy_recursive(nodeToCopy.left(), myNode);
+            NodeHandle right = copy_recursive(nodeToCopy.right(), myNode);
+
+            myNode.set_value(nodeToCopy.value());
+            myNode.set_left(left);
+            myNode.set_right(right);
+            myNode.set_color(nodeToCopy.color());
+            myNode.set_parent(parentOfCopy);
+            if (parentOfCopy.is_nil())
+            {
+                m_root = myNode;
+            }
+
+            return myNode;
         }
     };
 

@@ -403,3 +403,49 @@ TEST_F(TestRBTree, TestOrder)
         prev = it.value();
     }
 }
+
+TEST_F(TestRBTree, TestCopy)
+{
+    ecs::rbtree<int> t1;
+    t1.insert(1);
+    t1.insert(2);
+    t1.insert(3);
+    t1.insert(4);
+
+    ecs::rbtree<int> copied = t1;
+    t1.erase(1);
+    t1.erase(2);
+    t1.erase(3);
+
+    ASSERT_EQ(copied.size(), 4);
+    ASSERT_NE(copied.find(1), copied.end());
+    ASSERT_NE(copied.find(2), copied.end());
+    ASSERT_NE(copied.find(3), copied.end());
+    ASSERT_NE(copied.find(4), copied.end());
+}
+
+/*
+
+TEST_F(TestRBTree, TestIntersection)
+{
+    ecs::rbtree<int> t1;
+    t1.insert(1);
+    t1.insert(3);
+    t1.insert(5);
+    t1.insert(7);
+
+    ecs::rbtree<int> t2;
+    t2.insert(0);
+    t2.insert(2);
+    t2.insert(4);
+    t2.insert(7);
+
+    ecs::rbtree<int> intersection = ecs::make_intersection<int>(t1, t2);
+
+    EXPECT_EQ(intersection.size(), 1);
+    EXPECT_EQ(intersection.find(1), intersection.end());
+    EXPECT_EQ(intersection.find(2), intersection.end());
+    EXPECT_NE(intersection.find(7), intersection.end());
+}
+
+*/
