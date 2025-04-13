@@ -366,6 +366,94 @@ namespace ecs
             return ss.str();
         }
 
+        struct iterator
+        {
+        public:
+            iterator()
+            {
+                m_current = rbtree<T, TAllocator>::NIL;
+                m_goingDown = true;
+            }
+
+            iterator(const rbtree<T, TAllocator>& tree)
+            {
+                m_current = tree.minimum(tree.get_root());
+                m_goingDown = true;
+            };
+
+            inline iterator& operator++() 
+            {
+                if (m_current.is_nil())
+                {
+                    throw std::out_of_range("Reached the end of the iterator");
+                }
+
+                if (m_goingDown)
+                {
+                    m_goingDown = false;
+                    const T currentValue = m_current.value();
+
+                    // go up until we either find a NIL node or we find a node whose value is higher than current.
+                    while (!m_current.is_nil() && m_current.value() <= currentValue)
+                    {
+                        m_current = m_current.parent();
+                    }
+                }
+                else
+                {
+                    m_goingDown = true;
+                    m_current = m_current.right();
+                    if (m_current.is_nil())
+                    {
+                        // reached the end
+                        return *this;
+                    }
+
+                    // go down until we find a valid node
+                    while (!m_current.left().is_nil())
+                    {
+                        m_current = m_current.left();
+                    }
+                }
+
+                return *this;
+            }
+
+            inline T value() const noexcept 
+            {
+                return m_current.value();
+            }
+
+            bool operator==(const iterator& other) const 
+            {
+                return m_current == other.m_current;
+            }
+
+            explicit operator bool() const 
+            {
+                return !m_current.is_nil();
+            }
+
+            const T& operator*() const 
+            {
+                return m_current.node().value;
+            }
+
+        private:
+            NodeHandle m_current;
+            bool m_goingDown = false;
+        };
+
+        inline iterator begin() const noexcept 
+        {
+            return iterator(*this);
+        }
+
+        inline iterator end() const noexcept 
+        {
+            return iterator();
+        }
+
     private:
         
 
@@ -381,6 +469,11 @@ namespace ecs
             {
                 SingleBlockAllocatorTrait<NodeAllocator, rbnode_t>::FreeBlock(m_allocator, nodeHandle.index().value());
             }
+        }
+
+        NodeHandle get_root() const 
+        {
+            return m_root;
         }
     
         // Helper methods

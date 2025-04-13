@@ -322,10 +322,21 @@ TEST_F(TestRBTree, TestClear)
     EXPECT_TRUE(tree.is_valid_tree());
 }
 
-
-
-
-/*
+namespace ecs
+{
+    void PrintTo(const rbtree<int>::iterator& iterator, std::ostream* os) 
+    {
+        if (iterator)
+        {
+            *os << "RB-Tree Iterator: NIL";
+        }
+        else
+        {
+            *os << "RB-Tree Iterator: " << iterator.value();
+        }
+        
+    }
+}
 
 TEST_F(TestRBTree, TestIterator)
 {
@@ -343,6 +354,30 @@ TEST_F(TestRBTree, TestIterator)
     ++it;
     EXPECT_EQ(it, tree.end());
 }
+
+TEST_F(TestRBTree, TestLongIterator)
+{
+    ecs::rbtree<int> tree;
+    tree.insert(10);
+    tree.insert(1);
+    tree.insert(4);
+    tree.insert(3);
+    tree.insert(8);
+    tree.insert(9);
+    tree.insert(2);
+    tree.insert(5);
+    tree.insert(6);
+    tree.insert(7);
+
+    int i = 1;
+    for (auto it = tree.begin(); it != tree.end(); ++it)
+    {
+        ASSERT_EQ(*it, i++);
+    }
+}
+
+
+/*
 
 TEST_F(TestRBTree, TestFind)
 {
