@@ -444,8 +444,6 @@ TEST_F(TestRBTree, TestMove)
     ASSERT_NE(moved.find(4), moved.end());
 }
 
-/*
-
 TEST_F(TestRBTree, TestIntersection)
 {
     ecs::rbtree<int> t1;
@@ -468,4 +466,21 @@ TEST_F(TestRBTree, TestIntersection)
     EXPECT_NE(intersection.find(7), intersection.end());
 }
 
-*/
+TEST_F(TestRBTree, TestNullIntersection)
+{
+    ecs::rbtree<int> t1;
+    t1.insert(1);
+    t1.insert(3);
+    t1.insert(5);
+    t1.insert(7);
+
+    ecs::rbtree<int> t2;
+    t2.insert(0);
+    t2.insert(2);
+    t2.insert(4);
+    t2.insert(6);
+
+    ecs::rbtree<int> intersection = ecs::make_intersection<int>(t1, t2);
+
+    EXPECT_EQ(intersection.size(), 0);
+}

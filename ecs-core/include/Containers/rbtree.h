@@ -991,4 +991,34 @@ namespace ecs
 
     template <typename T, template<typename> class TAllocator>
     const rbtree<T, TAllocator>::NodeHandle rbtree<T, TAllocator>::NIL = rbtree<T, TAllocator>::rbnode_handle_t(std::nullopt, nullptr);
+
+    template <typename T, template<typename> class TAllocator>
+    rbtree<T, TAllocator> make_intersection(const rbtree<T, TAllocator>& tree1, const rbtree<T, TAllocator>& tree2)
+    {
+        auto i1 = tree1.begin();
+        auto i2 = tree2.begin();
+
+        rbtree<T, TAllocator> intersection;
+        while (i1 != tree1.end() && i2 != tree2.end())
+        {
+            const T v1 = *i1;
+            const T v2 = *i2;
+            if (v1 == v2)
+            {
+                ++i1;
+                ++i2;
+                intersection.insert(v1);
+            }
+            else if (v1 > v2)
+            {
+                ++i2;
+            }
+            else 
+            {
+                ++i1;
+            }
+        }
+
+        return intersection;
+    }
 }
