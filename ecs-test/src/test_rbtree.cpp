@@ -322,18 +322,10 @@ TEST_F(TestRBTree, TestClear)
     EXPECT_TRUE(tree.is_valid_tree());
 }
 
+
+
+
 /*
-
-TEST_F(TestRBTree, TestFind)
-{
-    ecs::rbtree<int> tree;
-    tree.insert(1);
-    tree.insert(2);
-    tree.insert(3);
-
-    EXPECT_EQ(tree.find(4), tree.end());
-    EXPECT_NE(tree.find(1), tree.end());
-}
 
 TEST_F(TestRBTree, TestIterator)
 {
@@ -351,6 +343,19 @@ TEST_F(TestRBTree, TestIterator)
     ++it;
     EXPECT_EQ(it, tree.end());
 }
+
+TEST_F(TestRBTree, TestFind)
+{
+    ecs::rbtree<int> tree;
+    tree.insert(1);
+    tree.insert(2);
+    tree.insert(3);
+
+    EXPECT_EQ(tree.find(4), tree.end());
+    EXPECT_NE(tree.find(1), tree.end());
+}
+
+
 
 TEST_F(TestRBTree, TestOrder)
 {

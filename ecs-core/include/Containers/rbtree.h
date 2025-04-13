@@ -40,19 +40,24 @@ namespace ecs
         struct rbnode_handle_t 
         {
         public:
-            rbnode_handle_t() : m_index{0}, m_allocator{nullptr} {}
+            rbnode_handle_t() : m_index{std::nullopt}, m_allocator{nullptr} {}
+            rbnode_handle_t(std::optional<size_t> inIndex, NodeAllocator* inAllocator)
+                : m_index{inIndex}, m_allocator{inAllocator} {}
             rbnode_handle_t(size_t inIndex, NodeAllocator* inAllocator)
                 : m_index{inIndex}, m_allocator{inAllocator} {}
 
-            inline size_t index() const noexcept  { return m_index; }
+            inline std::optional<size_t> index() const noexcept  { return m_index; }
             inline NodeAllocator* allocator() const noexcept { return m_allocator; }
 
             inline rbnode_t& node() const 
             {
                 assert(m_allocator != nullptr);
+                assert(m_index.has_value());
                 // @todo assert index is valid
-                return (*m_allocator)[m_index];
+                return (*m_allocator)[*m_index];
             }
+
+            inline bool is_nil() const noexcept { return !m_index.has_value(); }
 
             inline T value() const 
             {
@@ -106,31 +111,35 @@ namespace ecs
     
             bool operator==(const rbnode_handle_t& other) const 
             {
+                if (is_nil() && other.is_nil())
+                {
+                    return true;
+                }
+
                 return m_index == other.index() && m_allocator == other.m_allocator;
             }
     
             bool operator!=(const rbnode_handle_t& other) const 
             {
-                return m_index != other.m_index || m_allocator != other.m_allocator;
+                return !(*this == other);
             }
 
         private:
-            size_t m_index;
+            std::optional<size_t> m_index;
             NodeAllocator* m_allocator;
         };
 
         using NodeHandle = rbnode_handle_t;
 
         NodeHandle m_root;
-        NodeHandle NIL;
         size_t m_size;
         NodeAllocator m_allocator;
+        static const NodeHandle NIL;
 
     public:
         rbtree() : m_size(0)
         {
-            NIL = allocate_node();
-            m_root = NIL;
+            m_root = rbnode_handle_t(std::nullopt, &m_allocator);
         }
     
         ~rbtree() 
@@ -142,7 +151,7 @@ namespace ecs
         bool insert(const T& value) 
         {
             // Check if value already exists
-            if (search(value) != NIL) 
+            if (!search(value).is_nil()) 
             {
                 return false;
             }
@@ -368,7 +377,10 @@ namespace ecs
 
         void deallocate_node(NodeHandle nodeHandle)
         {
-            SingleBlockAllocatorTrait<NodeAllocator, rbnode_t>::FreeBlock(m_allocator, nodeHandle.index());
+            if (nodeHandle != NIL)
+            {
+                SingleBlockAllocatorTrait<NodeAllocator, rbnode_t>::FreeBlock(m_allocator, nodeHandle.index().value());
+            }
         }
     
         // Helper methods
@@ -829,4 +841,7 @@ namespace ecs
             to_string_recursive(node.right(), ss, depth + 1);
         }
     };
+
+    template <typename T, template<typename> class TAllocator>
+    const rbtree<T, TAllocator>::NodeHandle rbtree<T, TAllocator>::NIL = rbtree<T, TAllocator>::rbnode_handle_t(std::nullopt, nullptr);
 }
