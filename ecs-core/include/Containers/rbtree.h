@@ -153,11 +153,25 @@ namespace ecs
             copy_recursive(other.m_root, NIL);
         }
 
+        rbtree(rbtree&& other)
+        {
+            m_allocator = other.m_allocator;
+            m_root = other.m_root;
+            m_size = other.m_size;
+        }
+
         rbtree& operator=(const rbtree& other)
         {
             m_size = other.size();
             copy_recursive(other.m_root, NIL);
             return *this;
+        }
+
+        rbtree& operator=(rbtree& other)
+        {
+            m_allocator = other.m_allocator;
+            m_root = other.m_root;
+            m_size = other.m_size;
         }
     
         // Returns true if the value was inserted, false if it already exists

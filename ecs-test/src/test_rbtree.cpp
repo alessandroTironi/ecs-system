@@ -424,6 +424,26 @@ TEST_F(TestRBTree, TestCopy)
     ASSERT_NE(copied.find(4), copied.end());
 }
 
+TEST_F(TestRBTree, TestMove)
+{
+    ecs::rbtree<int> t1;
+    t1.insert(1);
+    t1.insert(2);
+    t1.insert(3);
+    t1.insert(4);
+
+    ecs::rbtree<int>& moved = t1;
+    t1.erase(1);
+    t1.erase(2);
+    t1.erase(3);
+
+    ASSERT_EQ(moved.size(), 1);
+    ASSERT_EQ(moved.find(1), moved.end());
+    ASSERT_EQ(moved.find(2), moved.end());
+    ASSERT_EQ(moved.find(3), moved.end());
+    ASSERT_NE(moved.find(4), moved.end());
+}
+
 /*
 
 TEST_F(TestRBTree, TestIntersection)
