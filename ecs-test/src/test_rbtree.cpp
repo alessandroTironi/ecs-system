@@ -376,9 +376,6 @@ TEST_F(TestRBTree, TestLongIterator)
     }
 }
 
-
-/*
-
 TEST_F(TestRBTree, TestFind)
 {
     ecs::rbtree<int> tree;
@@ -389,8 +386,6 @@ TEST_F(TestRBTree, TestFind)
     EXPECT_EQ(tree.find(4), tree.end());
     EXPECT_NE(tree.find(1), tree.end());
 }
-
-
 
 TEST_F(TestRBTree, TestOrder)
 {
@@ -408,5 +403,3 @@ TEST_F(TestRBTree, TestOrder)
         prev = it.value();
     }
 }
-
-*/

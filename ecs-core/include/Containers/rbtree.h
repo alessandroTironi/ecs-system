@@ -372,14 +372,15 @@ namespace ecs
             iterator()
             {
                 m_current = rbtree<T, TAllocator>::NIL;
-                m_goingDown = true;
             }
 
             iterator(const rbtree<T, TAllocator>& tree)
             {
                 m_current = tree.minimum(tree.get_root());
-                m_goingDown = true;
             };
+
+            iterator(NodeHandle node) : m_current{node}
+            {}
 
             inline iterator& operator++() 
             {
@@ -388,12 +389,11 @@ namespace ecs
                     throw std::out_of_range("Reached the end of the iterator");
                 }
 
-                if (m_goingDown)
+                bool mustGoUpwards = m_current.right().is_nil();
+                if (mustGoUpwards)
                 {
-                    m_goingDown = false;
-                    const T currentValue = m_current.value();
-
                     // go up until we either find a NIL node or we find a node whose value is higher than current.
+                    const T currentValue = m_current.value();
                     while (!m_current.is_nil() && m_current.value() <= currentValue)
                     {
                         m_current = m_current.parent();
@@ -401,7 +401,6 @@ namespace ecs
                 }
                 else
                 {
-                    m_goingDown = true;
                     m_current = m_current.right();
                     if (m_current.is_nil())
                     {
@@ -441,7 +440,6 @@ namespace ecs
 
         private:
             NodeHandle m_current;
-            bool m_goingDown = false;
         };
 
         inline iterator begin() const noexcept 
@@ -452,6 +450,11 @@ namespace ecs
         inline iterator end() const noexcept 
         {
             return iterator();
+        }
+
+        inline iterator find(T value) const noexcept 
+        {
+            return iterator(search(value));
         }
 
     private:
