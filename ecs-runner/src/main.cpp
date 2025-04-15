@@ -8,6 +8,8 @@
 #include "Core/World.h"
 #include "Core/ArchetypeQuery.h"
 
+#include "Profiling/ProfilingCore.h"
+
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
 #include "SDL_image.h"
@@ -228,8 +230,11 @@ int main()
 
     static constexpr Uint64 targetFrameTime = static_cast<Uint64>((1.0 / 60.0) * 1000);
 
+    ecs::g_ProfilingDataCollector = ecs::ProfilingDataCollector();
     while (s_keepUpdating)
     {
+        ecs::g_ProfilingDataCollector.StartNewFrame();
+
         currentTime = SDL_GetTicks64();
         Uint64 elapsedTicks = currentTime - previousTime;
         const float deltaTime = static_cast<float>(elapsedTicks) / 1000.0f;
@@ -269,6 +274,8 @@ int main()
         {
             SDL_Delay(targetFrameTime - frameTimeSoFar);
         }
+
+        ecs::g_ProfilingDataCollector.EndFrame();
     }
 
     // Cleanup
