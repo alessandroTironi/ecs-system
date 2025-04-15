@@ -9,16 +9,19 @@
 #include "ComponentsRegistry.h"
 #include "ComponentData.h"
 #include "PackedComponentArray.h"
+#include "Containers/rbtree.h"
 
 namespace ecs 
 {
     struct archetype 
     {
     public:
+        using Signature = rbtree<component_id>;
+
         archetype();
         archetype(std::initializer_list<component_id> signature);
         archetype(std::initializer_list<component_data> componentsData);
-        archetype(const std::set<component_id>&& signature);
+        archetype(const Signature&& signature);
         static archetype make(std::initializer_list<component_id> components);
 
         template<typename FirstComponent, typename... OtherComponents>
@@ -80,7 +83,7 @@ namespace ecs
             archetype. This set is used to compute the archetype's hash.
             @todo find a way to have this container inline for better cache locality and
             avoiding memory allocations.  */
-        std::set<component_id> m_componentIDs;
+        Signature m_componentIDs;
     };
 }
 

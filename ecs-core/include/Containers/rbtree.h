@@ -3,6 +3,8 @@
 #include <queue>
 #include <cassert>
 #include <optional>
+#include <string>
+#include <sstream>
 
 #include "GraphNode.h"
 #include "SingleBlockAllocatorTraits.h"
@@ -160,6 +162,14 @@ namespace ecs
             m_size = other.m_size;
         }
 
+        rbtree(std::initializer_list<T> initializerList) : rbtree()
+        {
+            for (const T& element : initializerList)
+            {
+                insert(element);
+            }
+        }
+
         rbtree& operator=(const rbtree& other)
         {
             m_size = other.size();
@@ -173,6 +183,17 @@ namespace ecs
             m_root = other.m_root;
             m_size = other.m_size;
         }
+
+        bool operator==(const rbtree& other) const 
+        {
+            return equals(other);
+        }
+
+        bool operator!=(const rbtree& other) const 
+        {
+            return !equals(other);
+        }
+
     
         // Returns true if the value was inserted, false if it already exists
         bool insert(const T& value) 
@@ -361,12 +382,12 @@ namespace ecs
     
         bool contains(const T& value) const 
         {
-            return search(value) != nullptr;
+            return search(value) != NIL;
         }
     
         bool empty() const 
         {
-            return m_root == nullptr;
+            return m_root == NIL;
         }
     
         void clear() 
@@ -986,6 +1007,29 @@ namespace ecs
             }
 
             return myNode;
+        }
+
+        bool equals(const rbtree& other) const 
+        {
+            if (m_size != other.size())
+            {
+                return false;
+            }
+
+            auto myIt = begin();
+            auto otherIt = other.begin();
+            while (myIt != end())
+            {
+                if (*myIt != *otherIt)
+                {
+                    return false;
+                }
+
+                ++myIt;
+                ++otherIt;
+            }
+
+            return true;
         }
     };
 

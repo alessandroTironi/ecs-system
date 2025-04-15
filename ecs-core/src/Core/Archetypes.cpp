@@ -24,7 +24,7 @@ ecs::archetype::archetype(std::initializer_list<ecs::component_data> componentsD
     }
 }
 
-ecs::archetype::archetype(const std::set<ecs::component_id>&& components)
+ecs::archetype::archetype(const Signature&& components)
 {
     if (components.size() == 0)
     {
