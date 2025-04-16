@@ -10,6 +10,7 @@
 #include "ComponentsRegistry.h"
 #include "IDGenerator.h"
 #include "BatchComponentActionProcessor.h"
+#include "Containers/rbtree.h"
 
 namespace ecs
 {
@@ -20,6 +21,8 @@ namespace ecs
         friend class EntityHandle;
         friend class BatchComponentActionProcessor;
     public:
+        using ArchetypesSet = rbtree<archetype_id>;
+
         ArchetypesRegistry() = default;
         ArchetypesRegistry(std::shared_ptr<World> world) : m_world(world) {}
 
@@ -82,7 +85,7 @@ namespace ecs
         template<typename... Components>
         void ForEachEntity(std::function<void(EntityHandle, Components&...)> function)
         {
-            std::set<archetype_id> archetypes;
+            ArchetypesSet archetypes;
             QueryArchetypes({ GetComponentsRegistry()->GetComponentID<Components>()... }, archetypes);
 
             std::shared_ptr<BatchComponentActionProcessor> batchComponentActionProcessor =
@@ -153,7 +156,7 @@ namespace ecs
         archetype_id GetOrCreateArchetypeID(const archetype& archetype);
         archetype_set& GetOrCreateArchetypeSet(const archetype& archetype);
 
-        void QueryArchetypes(std::initializer_list<component_id> components, std::set<archetype_id>& foundArchetypes);
+        void QueryArchetypes(std::initializer_list<component_id> components, ArchetypesSet& foundArchetypes);
 
         ComponentsRegistry* GetComponentsRegistry() const; 
         World* GetWorld() const;
@@ -173,7 +176,7 @@ namespace ecs
          * Maps each component ID to a vector made of the IDs of any archetype that contains that component.
          * This is used by the query system to find all the archetypes that contain the given component.
          */
-        std::unordered_map<component_id, std::set<archetype_id>> m_componentToArchetypeSetMap;
+        std::unordered_map<component_id, ArchetypesSet> m_componentToArchetypeSetMap;
 
         /* A reference to the world. */
         std::shared_ptr<World> m_world;

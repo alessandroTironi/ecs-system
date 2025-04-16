@@ -57,7 +57,6 @@ namespace ecs
             {
                 assert(m_allocator != nullptr);
                 assert(m_index.has_value());
-                // @todo assert index is valid
                 return (*m_allocator)[*m_index];
             }
 
@@ -138,7 +137,7 @@ namespace ecs
         NodeHandle m_root;
         size_t m_size;
         NodeAllocator m_allocator;
-        static const NodeHandle NIL;
+        static inline const NodeHandle NIL = NodeHandle(std::nullopt, nullptr);
 
     public:
         rbtree() : m_size(0)
@@ -416,6 +415,32 @@ namespace ecs
             to_string_recursive(m_root, ss);
             
             return ss.str();
+        }
+
+        static void make_intersection(const rbtree& tree1, const rbtree& tree2, rbtree& intersection)
+        {
+            auto i1 = tree1.begin();
+            auto i2 = tree2.begin();
+
+            while (i1 != tree1.end() && i2 != tree2.end())
+            {
+                const T v1 = *i1;
+                const T v2 = *i2;
+                if (v1 == v2)
+                {
+                    ++i1;
+                    ++i2;
+                    intersection.insert(v1);
+                }
+                else if (v1 > v2)
+                {
+                    ++i2;
+                }
+                else 
+                {
+                    ++i1;
+                }
+            }
         }
 
         struct iterator
@@ -1036,37 +1061,5 @@ namespace ecs
             return true;
         }
     };
-
-    template <typename T, template<typename> class TAllocator>
-    const rbtree<T, TAllocator>::NodeHandle rbtree<T, TAllocator>::NIL = rbtree<T, TAllocator>::rbnode_handle_t(std::nullopt, nullptr);
-
-    template <typename T, template<typename> class TAllocator>
-    rbtree<T, TAllocator> make_intersection(const rbtree<T, TAllocator>& tree1, const rbtree<T, TAllocator>& tree2)
-    {
-        auto i1 = tree1.begin();
-        auto i2 = tree2.begin();
-
-        rbtree<T, TAllocator> intersection;
-        while (i1 != tree1.end() && i2 != tree2.end())
-        {
-            const T v1 = *i1;
-            const T v2 = *i2;
-            if (v1 == v2)
-            {
-                ++i1;
-                ++i2;
-                intersection.insert(v1);
-            }
-            else if (v1 > v2)
-            {
-                ++i2;
-            }
-            else 
-            {
-                ++i1;
-            }
-        }
-
-        return intersection;
-    }
+    
 }

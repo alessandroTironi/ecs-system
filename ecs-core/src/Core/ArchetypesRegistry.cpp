@@ -297,7 +297,7 @@ ecs::ArchetypesRegistry::archetype_set& ecs::ArchetypesRegistry::GetOrCreateArch
 
 void ecs::ArchetypesRegistry::QueryEntities(std::initializer_list<component_id> components, std::vector<entity_id>& entities)
 {
-    std::set<archetype_id> matchingArchetypes;
+    ArchetypesSet matchingArchetypes;
     QueryArchetypes(components, matchingArchetypes);
     
     // get all the entities from the matching archetypes 
@@ -315,7 +315,7 @@ void ecs::ArchetypesRegistry::QueryEntities(std::initializer_list<component_id> 
 }
 
 void ecs::ArchetypesRegistry::QueryArchetypes(std::initializer_list<component_id> components, 
-    std::set<archetype_id>& matchingArchetypes)
+    ArchetypesSet& matchingArchetypes)
 {
     matchingArchetypes.clear();
 
@@ -333,15 +333,13 @@ void ecs::ArchetypesRegistry::QueryArchetypes(std::initializer_list<component_id
 
         // reduce the starting set by intersecting with all the other component's sets 
         {
-            std::set<archetype_id> temp;
+            ArchetypesSet temp;
 
             for (++componentIt; componentIt != components.end(); ++componentIt)
             {
                 temp.clear();
-                const std::set<archetype_id>& currentSet = m_componentToArchetypeSetMap[*componentIt];
-                std::set_intersection(matchingArchetypes.begin(), matchingArchetypes.end(),
-                                    currentSet.begin(), currentSet.end(),
-                                    std::inserter(temp, temp.begin()));
+                const ArchetypesSet& currentSet = m_componentToArchetypeSetMap[*componentIt];
+                ArchetypesSet::make_intersection(matchingArchetypes, currentSet, temp);
                 matchingArchetypes = std::move(temp);
             }
         }

@@ -458,7 +458,8 @@ TEST_F(TestRBTree, TestIntersection)
     t2.insert(4);
     t2.insert(7);
 
-    ecs::rbtree<int> intersection = ecs::make_intersection<int>(t1, t2);
+    ecs::rbtree<int> intersection;
+    ecs::rbtree<int>::make_intersection(t1, t2, intersection);
 
     EXPECT_EQ(intersection.size(), 1);
     EXPECT_EQ(intersection.find(1), intersection.end());
@@ -480,7 +481,8 @@ TEST_F(TestRBTree, TestNullIntersection)
     t2.insert(4);
     t2.insert(6);
 
-    ecs::rbtree<int> intersection = ecs::make_intersection<int>(t1, t2);
+    ecs::rbtree<int> intersection;
+    ecs::rbtree<int>::make_intersection(t1, t2, intersection);
 
     EXPECT_EQ(intersection.size(), 0);
 }
