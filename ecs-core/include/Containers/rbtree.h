@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <stack>
 #include <queue>
@@ -177,11 +179,13 @@ namespace ecs
             return *this;
         }
 
-        rbtree& operator=(rbtree& other)
+        rbtree& operator=(rbtree&& other)
         {
-            m_allocator = other.m_allocator;
+            m_allocator = std::move(other.m_allocator);
             m_root = other.m_root;
+            other.m_root = NIL;
             m_size = other.m_size;
+            return *this;
         }
 
         bool operator==(const rbtree& other) const 

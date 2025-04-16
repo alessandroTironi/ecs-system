@@ -15,59 +15,67 @@ namespace ecs
     public:
         SingleBlockChunkAllocator()
         {
-            m_capacity = 8;
-            m_numChunks = (m_capacity >> 5) + 1;
-            m_capacity = m_numChunks * 32;
-            m_data = static_cast<chunk_t*>(Malloc(sizeof(chunk_t) * m_numChunks));
-            for (size_t chunkIndex = 0; chunkIndex < m_numChunks; ++chunkIndex)
+            s_instanceCount += 1;
+            if (s_instanceCount == 1)
             {
-                m_data[chunkIndex] = chunk_t();
-            }
+                s_capacity = 8;
+                s_numChunks = (s_capacity >> 5) + 1;
+                s_capacity = s_numChunks * 32;
+                s_data = static_cast<chunk_t*>(Malloc(sizeof(chunk_t) * s_numChunks));
+                for (size_t chunkIndex = 0; chunkIndex < s_numChunks; ++chunkIndex)
+                {
+                    s_data[chunkIndex] = chunk_t();
+                }
 
-            m_numFreeIndices = m_numChunks * 32;
-            m_freeIndices = static_cast<size_t*>(Malloc(sizeof(size_t) * m_numFreeIndices));
-            for (size_t i = 0; i < m_numFreeIndices; ++i)
-            {
-                m_freeIndices[i] = m_numFreeIndices - i - 1;
+                s_numFreeIndices = s_numChunks * 32;
+                s_freeIndices = static_cast<size_t*>(Malloc(sizeof(size_t) * s_numFreeIndices));
+                for (size_t i = 0; i < s_numFreeIndices; ++i)
+                {
+                    s_freeIndices[i] = s_numFreeIndices - i - 1;
+                }
             }
         }
 
         ~SingleBlockChunkAllocator()
         {
-            Free(m_data);
-            Free(m_freeIndices);
+            s_instanceCount -= 1;
+            if (s_instanceCount == 0)
+            {
+                Free(s_data);
+                Free(s_freeIndices);
+            }
         }
 
         size_t AllocateBlock()
         {
-            if (m_numFreeIndices == 0)
+            if (s_numFreeIndices == 0)
             {
                 // need to allocate new chunks
-                m_capacity *= 2;
-                const size_t previousNumChunks = m_numChunks;
-                m_numChunks = (m_capacity >> 5) + 1;
-                m_data = static_cast<chunk_t*>(Realloc(m_data, sizeof(chunk_t) * m_numChunks));
+                s_capacity *= 2;
+                const size_t previousNumChunks = s_numChunks;
+                s_numChunks = (s_capacity >> 5) + 1;
+                s_data = static_cast<chunk_t*>(Realloc(s_data, sizeof(chunk_t) * s_numChunks));
 
-                for (size_t chunkIndex = previousNumChunks; chunkIndex < m_numChunks; ++chunkIndex)
+                for (size_t chunkIndex = previousNumChunks; chunkIndex < s_numChunks; ++chunkIndex)
                 {
-                    m_data[chunkIndex] = chunk_t();
+                    s_data[chunkIndex] = chunk_t();
                 }
 
-                const size_t previousNumFreeIndices = m_numFreeIndices;
-                m_numFreeIndices = (m_numChunks - previousNumChunks) * 32;
-                m_freeIndices = static_cast<size_t*>(Realloc(m_freeIndices, sizeof(size_t) * m_numFreeIndices));
+                const size_t previousNumFreeIndices = s_numFreeIndices;
+                s_numFreeIndices = (s_numChunks - previousNumChunks) * 32;
+                s_freeIndices = static_cast<size_t*>(Realloc(s_freeIndices, sizeof(size_t) * s_numFreeIndices));
 
-                for (size_t i = 0; i < m_numFreeIndices; ++i)
+                for (size_t i = 0; i < s_numFreeIndices; ++i)
                 {
-                    m_freeIndices[i] = previousNumChunks * 32 + i;
+                    s_freeIndices[i] = previousNumChunks * 32 + i;
                 }
             }
 
-            const size_t nextFreeIndex = m_freeIndices[m_numFreeIndices - 1];
-            m_numFreeIndices -= 1;
+            const size_t nextFreeIndex = s_freeIndices[s_numFreeIndices - 1];
+            s_numFreeIndices -= 1;
 
             const size_t chunkIndex = nextFreeIndex >> 5;
-            chunk_t& freeChunk = m_data[chunkIndex];
+            chunk_t& freeChunk = s_data[chunkIndex];
             const size_t chunkLocalIndex = nextFreeIndex - (chunkIndex * 32);
 
             freeChunk.allocate_block(chunkLocalIndex, T());
@@ -77,25 +85,25 @@ namespace ecs
         void FreeBlock(const size_t index)
         {
             const size_t chunkIndex = index >> 5;
-            chunk_t& freeChunk = m_data[chunkIndex];
+            chunk_t& freeChunk = s_data[chunkIndex];
             const size_t blockIndex = index - (chunkIndex * 32);
 
             freeChunk.free_block(blockIndex);
-            m_freeIndices[m_numFreeIndices++] = index;
+            s_freeIndices[s_numFreeIndices++] = index;
         }
 
         T& operator[](const size_t index) const 
         {
             const size_t chunkIndex = index >> 5;
-            chunk_t& freeChunk = m_data[chunkIndex];
+            chunk_t& freeChunk = s_data[chunkIndex];
             const size_t blockIndex = index - (chunkIndex * 32);
 
-            return m_data[chunkIndex].data[blockIndex];
+            return s_data[chunkIndex].data[blockIndex];
         }
 
-        inline size_t usedCount() const noexcept { return m_numChunks * 32 - m_numFreeIndices; }
-        inline size_t freeCount() const noexcept { return m_numFreeIndices; }
-        inline size_t capacity() const noexcept { return m_capacity; }
+        inline size_t usedCount() const noexcept { return s_numChunks * 32 - s_numFreeIndices; }
+        inline size_t freeCount() const noexcept { return s_numFreeIndices; }
+        inline size_t capacity() const noexcept { return s_capacity; }
 
     private:
         struct chunk_t 
@@ -152,11 +160,13 @@ namespace ecs
         };
 
 
-        chunk_t* m_data = nullptr;
-        size_t m_numChunks = 0;
-        size_t m_capacity;
+        inline static chunk_t* s_data = nullptr;
+        inline static size_t s_numChunks = 0;
+        inline static size_t s_capacity;
 
-        size_t* m_freeIndices = nullptr;
-        size_t m_numFreeIndices = 0;
+        inline static size_t* s_freeIndices = nullptr;
+        inline static size_t s_numFreeIndices = 0;
+
+        inline static size_t s_instanceCount = 0;
     };
 }

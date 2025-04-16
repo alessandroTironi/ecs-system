@@ -48,7 +48,7 @@ protected:
         m_world->Initialize();
         m_componentsRegistry = m_world->GetComponentsRegistry();
         m_archetypesRegistry = m_world->GetArchetypesRegistry();
-        m_emptyArchetype = ecs::archetype();
+        //m_emptyArchetype = ecs::archetype();
         m_archetype1 = ecs::archetype::make<FloatComponent>(m_componentsRegistry.get());
         m_archetype2 = ecs::archetype::make<FloatComponent, IntComponent>(m_componentsRegistry.get());
         m_archetype3 = ecs::archetype::make<FloatComponent, IntComponent, DoubleComponent>(m_componentsRegistry.get());
