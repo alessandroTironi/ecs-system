@@ -25,6 +25,16 @@ namespace ecs
 
 		void AddCycleCounterData(const CycleCounter& counter);
 
+		static inline ProfilingDataCollector* instance() 
+		{
+			if (!m_instance.get())
+			{
+				m_instance = std::make_shared<ProfilingDataCollector>();
+			}
+
+			return m_instance.get();
+		}
+
 	private:
 		struct cycle_data_t
 		{
@@ -39,7 +49,7 @@ namespace ecs
 		std::vector<cycle_data_t> m_cycleCounters;
 
 		std::chrono::high_resolution_clock::time_point m_lastFrameBeginTime;
-	};
 
-	static ProfilingDataCollector g_ProfilingDataCollector;
+		static std::shared_ptr<ProfilingDataCollector> m_instance;
+	};
 }

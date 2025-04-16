@@ -18,5 +18,5 @@ CycleCounter::~CycleCounter()
 
 void CycleCounter::SendToDataCollector()
 {
-	g_ProfilingDataCollector.AddCycleCounterData(*this);
+	ProfilingDataCollector::instance()->AddCycleCounterData(*this);
 }

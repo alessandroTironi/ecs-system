@@ -6,6 +6,8 @@
 
 using namespace ecs;
 
+std::shared_ptr<ProfilingDataCollector> ProfilingDataCollector::m_instance;
+
 ProfilingDataCollector::ProfilingDataCollector()
 {
 	m_cycleCounters.reserve(1024);

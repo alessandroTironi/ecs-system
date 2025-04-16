@@ -230,10 +230,9 @@ int main()
 
     static constexpr Uint64 targetFrameTime = static_cast<Uint64>((1.0 / 60.0) * 1000);
 
-    ecs::g_ProfilingDataCollector = ecs::ProfilingDataCollector();
     while (s_keepUpdating)
     {
-        ecs::g_ProfilingDataCollector.StartNewFrame();
+        ecs::ProfilingDataCollector::instance()->StartNewFrame();
 
         currentTime = SDL_GetTicks64();
         Uint64 elapsedTicks = currentTime - previousTime;
@@ -267,7 +266,7 @@ int main()
 
         // Present the rendered frame
         SDL_RenderPresent(renderer);
-
+        
         // Cap frame rate
         Uint64 frameTimeSoFar = SDL_GetTicks64() - currentTime;
         if (frameTimeSoFar < targetFrameTime)
@@ -275,7 +274,7 @@ int main()
             SDL_Delay(targetFrameTime - frameTimeSoFar);
         }
 
-        ecs::g_ProfilingDataCollector.EndFrame();
+        ecs::ProfilingDataCollector::instance()->EndFrame();
     }
 
     // Cleanup
