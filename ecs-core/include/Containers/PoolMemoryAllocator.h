@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cassert>
 #include <memory_resource>
+#include <unordered_map>
 #include "memory.h"
 
 namespace ecs
@@ -110,5 +111,14 @@ namespace ecs
         private:
             std::pmr::memory_resource* m_upstreamResource{nullptr};
         };
+
+        template<typename TKey, typename TValue>
+        using unordered_map = std::unordered_map< 
+            TKey,
+            TValue,
+            std::hash<TKey>,
+            std::equal_to<TKey>,
+            pool_memory_allocator<std::pair<const TKey, TValue>, 1>
+        >;
     }
 }

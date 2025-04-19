@@ -339,7 +339,11 @@ void ecs::ArchetypesRegistry::QueryArchetypes(std::initializer_list<component_id
             {
                 temp.clear();
                 const ArchetypesSet& currentSet = m_componentToArchetypeSetMap[*componentIt];
-                ArchetypesSet::make_intersection(matchingArchetypes, currentSet, temp);
+                std::set_intersection(matchingArchetypes.begin(), 
+                    matchingArchetypes.end(),
+                    currentSet.begin(), 
+                    currentSet.end(), 
+                    std::inserter(temp, temp.begin()));
                 matchingArchetypes = std::move(temp);
             }
         }

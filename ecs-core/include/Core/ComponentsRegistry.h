@@ -7,6 +7,8 @@
 #include "Types.h"
 #include "IDGenerator.h"
 #include "ComponentData.h"
+#include "Containers/memory.h"
+#include "Containers/PoolMemoryAllocator.h"
 
 namespace ecs
 {
@@ -74,7 +76,7 @@ namespace ecs
         component_id AddComponentData(const type_key& componentType, const size_t dataSize, const size_t initialCapacity = 8);
 
         IDGenerator<component_id> m_componentIDGenerator;
-        std::unordered_map<type_key, component_data> m_componentsClassMap;
+        memory_pool::unordered_map<type_key, component_data> m_componentsClassMap;
         std::vector<type_key> m_componentTypes;
     };
 }
