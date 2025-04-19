@@ -1,8 +1,10 @@
 #include "Containers/memory.h"
 #include <cstdlib>
+#include <cassert>
+#include <cstring>
 
 using namespace ecs;
-using namespace ecs::mem;
+using namespace ecs::memory_pool;
 
 void* ecs::Malloc(size_t size)
 {
@@ -23,13 +25,6 @@ void* ecs::Calloc(size_t count, size_t size)
 {
     return calloc(count, size);
 }
-
-#include "Containers/PoolMemoryAllocator.h"
-#include "Containers/memory.h"
-#include <cassert>
-#include <cstring>
-
-using namespace ecs;
 
 bucket_t::bucket_t(size_t inBlockSize, size_t inBlockCount)
     : blockSize{inBlockSize}, blockCount{inBlockCount}
@@ -81,55 +76,60 @@ void bucket_t::deallocate(void* ptr, size_t bytes) noexcept
     set_blocks_free(index, n);
 }
 
+bool bucket_t::belongs_to_this(void* ptr) const noexcept 
+{
+    const std::byte* p = static_cast<std::byte*>(ptr);
+    return (p >= m_data && p < (m_data + (blockSize * blockCount)));
+}
+
 size_t bucket_t::find_contiguous_blocks(size_t n) const noexcept 
 {
     for (size_t blockIdx = 0; blockIdx < blockCount; ++blockIdx)
     {
         if (!is_block_in_use(blockIdx))
         {
+            size_t contiguousCount = 1;  
             size_t firstFreeBlockIdx = blockIdx;
-            for (blockIdx = blockIdx + 1; blockIdx < blockCount; ++blockIdx)
+            
+            while (blockIdx + 1 < blockCount && !is_block_in_use(blockIdx + 1))
             {
-                const size_t numFreeBlocks = blockIdx - firstFreeBlockIdx;
-                if (numFreeBlocks >= n)
+                contiguousCount++;
+                if (contiguousCount >= n)
                 {
                     return firstFreeBlockIdx;
                 }
-
-                if (is_block_in_use(blockIdx))
-                {
-                    break;
-                }
+                blockIdx++;
             }
         }
     }
-
     return blockCount;
 }
 
 bool bucket_t::is_block_in_use(size_t index) const noexcept 
 {
-    assert(index < 1 + ((blockCount - 1) / 8));
-
     const size_t byteIndex = index / 8;
-    const size_t byteOffset = 8 - (index - (byteIndex * 8));
-    return (m_ledger[byteIndex] & std::byte(0b00000001 << byteOffset)) > std::byte(0);
+    const size_t bitOffset = 7 - (index % 8);  
+    return (m_ledger[byteIndex] & (std::byte(1) << bitOffset)) != std::byte(0);
 }
 
 void bucket_t::set_blocks_in_use(size_t index, size_t n) noexcept
 {
-    assert(index < 1 + ((blockCount - 1) / 8));
-
-    const size_t byteIndex = index / 8;
-    const size_t byteOffset = 8 - (index - (byteIndex * 8));
-    m_ledger[byteIndex] |= std::byte(0b00000001 << byteOffset); 
+    for (size_t i = 0; i < n; ++i)
+    {
+        const size_t currentIndex = index + i;
+        const size_t byteIndex = currentIndex / 8;
+        const size_t bitOffset = 7 - (currentIndex % 8);
+        m_ledger[byteIndex] |= (std::byte(1) << bitOffset);
+    } 
 }
 
 void bucket_t::set_blocks_free(size_t index, size_t n) noexcept
 {
-    assert(index < 1 + ((blockCount - 1) / 8));
-
-    const size_t byteIndex = index / 8;
-    const size_t byteOffset = 8 - (index - (byteIndex * 8));
-    m_ledger[byteIndex] &= std::byte(~(0b00000001 << byteOffset)); 
+    for (size_t i = 0; i < n; ++i)
+    {
+        const size_t currentIndex = index + i;
+        const size_t byteIndex = currentIndex / 8;
+        const size_t bitOffset = 7 - (currentIndex % 8);
+        m_ledger[byteIndex] &= ~(std::byte(1) << bitOffset);
+    } 
 }

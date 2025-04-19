@@ -93,17 +93,12 @@ namespace ecs
             for (const archetype_id archetypeID : archetypes) 
             {
                 const archetype_set& archetypeSet = m_archetypeSets[archetypeID];
-                for (size_t i = 0; i < archetypeSet.get_num_entities(); ++i)
+                const auto& indexMap = archetypeSet.index_map();
+                
+                // Only iterate over valid indices in the index map
+                for (const auto& [entityIndex, entityId] : indexMap)
                 {
-                    const size_t numEntities = archetypeSet.get_num_entities();
-                    const size_t entityIndex = numEntities - i - 1;
-                    if (entityIndex >= numEntities)
-                    {
-                        continue;
-                    }
-
-                    const entity_id entity = archetypeSet.get_entity_at_index(entityIndex);
-                    EntityHandle handle = EntityHandle(m_world, entity, archetypeID, batchComponentActionProcessor);
+                    EntityHandle handle = EntityHandle(m_world, entityId, archetypeID, batchComponentActionProcessor);
                     function(handle, *static_cast<Components*>(archetypeSet.get_component_at_index(GetComponentsRegistry()->GetComponentID<Components>(), entityIndex))...);
                 }
             }
@@ -132,6 +127,7 @@ namespace ecs
             inline const archetype& get_archetype() const { return m_archetype; }
             inline const std::unordered_map<entity_id, size_t>& entity_map() const { return m_entityToIndexMap; }
             inline const entity_id get_entity_at_index(const size_t index) const { return m_indexToEntityMap.at(index);}
+            inline const std::unordered_map<size_t, entity_id>& index_map() const { return m_indexToEntityMap; }
         
         private:
             archetype m_archetype;

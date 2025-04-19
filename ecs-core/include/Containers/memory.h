@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <tuple>
 #include <algorithm>
+#include <iostream>
 
 namespace ecs
 {
@@ -15,7 +16,7 @@ namespace ecs
 
     void* Calloc(size_t count, size_t size);
 
-    namespace mem 
+    namespace memory_pool
     {
         /**
          * @brief A bucket of memory blocks.
@@ -121,20 +122,20 @@ namespace ecs
 
         template<size_t id, size_t idx>
         struct get_count : std::integral_constant<size_t, 
-            std::tuple_element<idx, bucket_descriptors_t<id>>::s_blockCount>
+            std::tuple_element_t<idx, bucket_descriptors_t<id>>::s_blockCount>
         {};
 
         template<size_t id, size_t... Idx>
-        auto& get_instance(std::index_sequence<Idx...>) noexcept 
+        auto& GetMemoryPool(std::index_sequence<Idx...>) noexcept 
         {
             static poolType<id> instance{{{get_size<id, Idx>::value, get_count<id, Idx>::value} ...}};
             return instance;
         }
 
         template<size_t id>
-        auto& get_instance() noexcept 
+        auto& GetMemoryPool() noexcept 
         {
-            return get_instance<id>(std::make_index_sequence<bucketCount<id>>());
+            return GetMemoryPool<id>(std::make_index_sequence<bucketCount<id>>());
         }
 
         /**
@@ -153,9 +154,9 @@ namespace ecs
         };
 
         template<size_t id>
-        [[nodiscard]] void* allocate(size_t bytes)
+        [[nodiscard]] void* Allocate(size_t bytes)
         {
-            poolType<id>& pool = get_instance<id>();
+            poolType<id>& pool = GetMemoryPool<id>();
             std::array<allocation_info_t, bucketCount<id>> deltas;
             size_t index = 0;
 
@@ -192,9 +193,9 @@ namespace ecs
         }
 
         template<size_t Id>
-        void deallocate(void* ptr, size_t bytes) noexcept
+        void Deallocate(void* ptr, size_t bytes) noexcept
         {
-            poolType<Id>& pool = get_instance<Id>();
+            poolType<Id>& pool = GetMemoryPool<Id>();
 
             for (bucket_t& bucket : pool)
             {
@@ -228,7 +229,7 @@ namespace ecs
         template<size_t Id>
         bool InitializeMemoryPool() noexcept 
         {
-            (void) get_instance<Id>();
+            (void) GetMemoryPool<Id>();
             return IsMemoryPoolDefined<Id>();
         }
     }

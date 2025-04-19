@@ -1,7 +1,7 @@
 #include "Core/Archetypes.h"
 #include <iostream>
 
-ecs::archetype::archetype()
+ecs::archetype::archetype() 
 {
     
 }
