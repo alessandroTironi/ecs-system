@@ -32,7 +32,7 @@ bucket_t::bucket_t(size_t inBlockSize, size_t inBlockCount)
     const size_t dataSize = blockSize * blockCount;
     m_data = static_cast<std::byte*>(Malloc(dataSize));
     assert(m_data != nullptr);
-    const size_t ledgerSize = 1 + ((blockCount - 1) / 8);
+    const size_t ledgerSize = 1 + ((blockCount - 1) >> 3);
     m_ledger = static_cast<std::byte*>(Malloc(ledgerSize));
     assert(m_ledger != nullptr);
     std::memset(m_data, 0, dataSize);
@@ -107,8 +107,8 @@ size_t bucket_t::find_contiguous_blocks(size_t n) const noexcept
 
 bool bucket_t::is_block_in_use(size_t index) const noexcept 
 {
-    const size_t byteIndex = index / 8;
-    const size_t bitOffset = 7 - (index % 8);  
+    const size_t byteIndex = index >> 3;
+    const size_t bitOffset = 7 - (index - (byteIndex * 8));  
     return (m_ledger[byteIndex] & (std::byte(1) << bitOffset)) != std::byte(0);
 }
 
@@ -117,8 +117,8 @@ void bucket_t::set_blocks_in_use(size_t index, size_t n) noexcept
     for (size_t i = 0; i < n; ++i)
     {
         const size_t currentIndex = index + i;
-        const size_t byteIndex = currentIndex / 8;
-        const size_t bitOffset = 7 - (currentIndex % 8);
+        const size_t byteIndex = currentIndex >> 3;
+        const size_t bitOffset = 7 - (currentIndex - (byteIndex * 8));
         m_ledger[byteIndex] |= (std::byte(1) << bitOffset);
     } 
 }
@@ -128,8 +128,8 @@ void bucket_t::set_blocks_free(size_t index, size_t n) noexcept
     for (size_t i = 0; i < n; ++i)
     {
         const size_t currentIndex = index + i;
-        const size_t byteIndex = currentIndex / 8;
-        const size_t bitOffset = 7 - (currentIndex % 8);
+        const size_t byteIndex = currentIndex >> 3;
+        const size_t bitOffset = 7 - (currentIndex - (byteIndex * 8));
         m_ledger[byteIndex] &= ~(std::byte(1) << bitOffset);
     } 
 }
