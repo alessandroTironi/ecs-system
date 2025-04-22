@@ -107,7 +107,7 @@ size_t bucket_t::find_contiguous_blocks(size_t n) const noexcept
 
 bool bucket_t::is_block_in_use(size_t index) const noexcept 
 {
-    const size_t byteIndex = index >> 3;
+    const size_t byteIndex = index >> 3; // <- divide by 8
     const size_t bitOffset = 7 - (index - (byteIndex * 8));  
     return (m_ledger[byteIndex] & (std::byte(1) << bitOffset)) != std::byte(0);
 }
@@ -117,7 +117,7 @@ void bucket_t::set_blocks_in_use(size_t index, size_t n) noexcept
     for (size_t i = 0; i < n; ++i)
     {
         const size_t currentIndex = index + i;
-        const size_t byteIndex = currentIndex >> 3;
+        const size_t byteIndex = currentIndex >> 3; // <- divide by 8
         const size_t bitOffset = 7 - (currentIndex - (byteIndex * 8));
         m_ledger[byteIndex] |= (std::byte(1) << bitOffset);
     } 
@@ -128,7 +128,7 @@ void bucket_t::set_blocks_free(size_t index, size_t n) noexcept
     for (size_t i = 0; i < n; ++i)
     {
         const size_t currentIndex = index + i;
-        const size_t byteIndex = currentIndex >> 3;
+        const size_t byteIndex = currentIndex >> 3; // <- divide by 8
         const size_t bitOffset = 7 - (currentIndex - (byteIndex * 8));
         m_ledger[byteIndex] &= ~(std::byte(1) << bitOffset);
     } 

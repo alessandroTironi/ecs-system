@@ -129,15 +129,15 @@ namespace ecs
             void remove_entity(entity_id entity);
             void copy_entity_to(const entity_id entity, archetype_set& destination);
             inline const archetype& get_archetype() const { return m_archetype; }
-            inline const memory_pool::unordered_map<entity_id, size_t>& entity_map() const { return m_entityToIndexMap; }
+            inline const std::unordered_map<entity_id, size_t>& entity_map() const { return m_entityToIndexMap; }
             inline const entity_id get_entity_at_index(const size_t index) const { return m_indexToEntityMap.at(index);}
-            inline const memory_pool::unordered_map<size_t, entity_id>& index_map() const { return m_indexToEntityMap; }
+            inline const std::unordered_map<size_t, entity_id>& index_map() const { return m_indexToEntityMap; }
         
         private:
             archetype m_archetype;
-            memory_pool::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;
-            memory_pool::unordered_map<entity_id, size_t> m_entityToIndexMap;
-            memory_pool::unordered_map<size_t, entity_id> m_indexToEntityMap; //@todo replace this with a plain array for cache locality
+            std::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;
+            std::unordered_map<entity_id, size_t> m_entityToIndexMap;
+            std::unordered_map<size_t, entity_id> m_indexToEntityMap; //@todo replace this with a plain array for cache locality
         };
 
         void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
@@ -162,8 +162,8 @@ namespace ecs
         World* GetWorld() const;
 
         /* A map of archetypes to their IDs. */
-        memory_pool::unordered_map<archetype, archetype_id> m_archetypesIDMap;
-        memory_pool::unordered_map<entity_id, archetype_id> m_entitiesArchetypeHashesMap; 
+        std::unordered_map<archetype, archetype_id> m_archetypesIDMap;
+        std::unordered_map<entity_id, archetype_id> m_entitiesArchetypeHashesMap; 
 
         /* Generator for unique archetype IDs.*/
         IDGenerator<archetype_id> m_archetypeIDGenerator;
@@ -176,7 +176,7 @@ namespace ecs
          * Maps each component ID to a vector made of the IDs of any archetype that contains that component.
          * This is used by the query system to find all the archetypes that contain the given component.
          */
-        memory_pool::unordered_map<component_id, ArchetypesSet> m_componentToArchetypeSetMap;
+        pm_unordered_map<component_id, ArchetypesSet, MAX_COMPONENTS> m_componentToArchetypeSetMap;
 
         /* A reference to the world. */
         std::shared_ptr<World> m_world;

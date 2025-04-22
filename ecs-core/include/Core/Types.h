@@ -7,6 +7,11 @@
 #include <typeinfo>
 #include <typeindex>
 #include "CompactString.h"
+#include "Containers/memory.h"
+#include "Containers/UnorderedMapPoolAllocator.h"
+
+#define MAX_COMPONENTS 2048
+#define MAX_ENTITIES 30000
 
 namespace ecs
 {
@@ -16,8 +21,6 @@ namespace ecs
     const static entity_id INVALID_ENTITY_ID = std::numeric_limits<entity_id>::max();
 
     typedef unsigned int archetype_id;
-
-    #define GetTypeHash(obj) typeid(obj).hash_code()
 
     /**
      * @brief A key for types.
@@ -43,6 +46,35 @@ namespace ecs
     };
 
     typedef compact_string<40> name;
+
+    // Definition of memory buckets for the pool memory system.
+    struct bucket_entityArchetypePair
+    {
+        static constexpr size_t s_blockSize = sizeof(std::pair<entity_id, archetype_id>);
+        static constexpr size_t s_blockCount = 21000;
+    };
+
+    struct bucket_entityArchetypeHashNode
+    {
+        static constexpr size_t s_blockSize = 
+            sizeof(std::__detail::_Hash_node<std::pair<entity_id, archetype_id>, false>);
+        static constexpr size_t s_blockCount = 30000;
+    };
+
+    template<>
+    struct memory_pool::bucket_descriptors<2>
+    {
+        using type = std::tuple<bucket_entityArchetypePair, bucket_entityArchetypeHashNode>;
+    };
+
+    template<typename TKey, typename TValue, size_t MaxPairs = 10000>
+    using pm_unordered_map = std::unordered_map<
+        TKey,
+        TValue,
+        std::hash<TKey>,
+        std::equal_to<TKey>,
+        memory_pool::unordered_map_pool_allocator<std::pair<const TKey, TValue>, MaxPairs, MaxPairs>
+    >;
 }
 
 namespace std

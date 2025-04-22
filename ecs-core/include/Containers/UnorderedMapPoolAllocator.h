@@ -10,12 +10,12 @@
 #include <unordered_map>
 #include "memory.h"
 
-namespace ecs
+namespace ecs 
 {
     namespace memory_pool
     {
-        template<typename T = uint8_t, size_t Id = 1>
-        class pool_memory_allocator
+        template<typename T, size_t PairBlockCount = 10000, size_t HashNodeBlockCount = 10000>
+        class unordered_map_pool_allocator
         {
         public:
             using value_type = T;
@@ -26,29 +26,41 @@ namespace ecs
             using propagate_on_container_copy_assignment = std::false_type;
             using propagate_on_container_move_assignment = std::true_type;
             using propagate_on_container_swap = std::false_type;
-            using is_always_equal = std::false_type;  
+            using is_always_equal = std::false_type;
+
+            struct pairBucket_t
+            {
+                static constexpr size_t s_blockSize = sizeof(T);
+                static constexpr size_t s_blockCount = PairBlockCount;
+            };
+
+            struct hashNodeBucket_t
+            {
+                static constexpr size_t s_blockSize = sizeof(std::__detail::_Hash_node<T, false>);
+                static constexpr size_t s_blockCount = HashNodeBlockCount;
+            };
 
             template<typename U>
             struct rebind 
             {
-                using other = pool_memory_allocator<U, Id>;
+                using other = unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>;
             };
 
-            pool_memory_allocator() noexcept 
+            unordered_map_pool_allocator() noexcept 
                 : m_upstreamResource{std::pmr::get_default_resource()} 
             {}
 
-            pool_memory_allocator(std::pmr::memory_resource* upstreamResource) noexcept 
+            unordered_map_pool_allocator(std::pmr::memory_resource* upstreamResource) noexcept 
                 : m_upstreamResource{upstreamResource} 
             {}
 
             template<typename U>
-            pool_memory_allocator(const pool_memory_allocator<U, Id>& other) noexcept 
+            unordered_map_pool_allocator(const unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>& other) noexcept 
                 : m_upstreamResource{other.upstreamResource()} 
             {}
 
             template<typename U>
-            pool_memory_allocator& operator=(const pool_memory_allocator<U, Id>& other) noexcept 
+            unordered_map_pool_allocator& operator=(const unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>& other) noexcept 
             {
                 m_upstreamResource = other.upstreamResource();
                 return *this;
@@ -60,27 +72,22 @@ namespace ecs
             }
 
             template <typename U>
-            bool operator==(const pool_memory_allocator<U, Id>& other) noexcept
+            bool operator==(const unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>& other) noexcept
             { 
                 return m_upstreamResource == other.upstreamResource(); 
             }
 
             template <typename U>
-            bool operator!=(const pool_memory_allocator<U, Id>& other) noexcept 
+            bool operator!=(const unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>& other) noexcept 
             {
                 return !(*this == other);
             }
 
-            static bool initializeMemoryPool() noexcept 
-            {
-                return InitializeMemoryPool<Id>();
-            }
-
             pointer allocate(size_type n, const void* hint = nullptr)
             {
-                if constexpr (IsMemoryPoolDefined<Id>())
+                if constexpr (IsExplicitMemoryPoolDefined<pairBucket_t, hashNodeBucket_t>())
                 {
-                    return static_cast<pointer>(Allocate<Id>(n * sizeof(T)));
+                    return static_cast<pointer>(Allocate<pairBucket_t, hashNodeBucket_t>(n * sizeof(T)));
                 }
                 else if (m_upstreamResource != nullptr)
                 {
@@ -92,11 +99,11 @@ namespace ecs
                 }
             }
 
-            void deallocate(pointer p, size_type n) 
+            void deallocate(pointer p, size_type n)
             {
-                if constexpr (IsMemoryPoolDefined<Id>())
+                if constexpr (IsExplicitMemoryPoolDefined<pairBucket_t, hashNodeBucket_t>())
                 {
-                    Deallocate<Id>(p, n * sizeof(T));
+                    Deallocate<pairBucket_t, hashNodeBucket_t>(p, n * sizeof(T));
                 }
                 else if (m_upstreamResource != nullptr)
                 {
@@ -107,18 +114,9 @@ namespace ecs
                     assert(false);
                 }
             }
-            
+
         private:
             std::pmr::memory_resource* m_upstreamResource{nullptr};
         };
-
-        template<typename TKey, typename TValue, size_t Id = 1>
-        using unordered_map = std::unordered_map< 
-            TKey,
-            TValue,
-            std::hash<TKey>,
-            std::equal_to<TKey>,
-            pool_memory_allocator<std::pair<const TKey, TValue>, Id>
-        >;
     }
 }
