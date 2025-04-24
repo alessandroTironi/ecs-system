@@ -29,12 +29,6 @@ namespace ecs
             using is_always_equal = std::false_type;
             using pair_type = std::pair<const TKey, TValue>;
 
-            struct pairBucket_t
-            {
-                static constexpr size_t s_blockSize = sizeof(pair_type);
-                static constexpr size_t s_blockCount = PairBlockCount;
-            };
-
             struct hashNodeBucket_t
             {
                 static constexpr size_t s_blockSize = sizeof(std::__detail::_Hash_node<pair_type, false>);
@@ -92,23 +86,18 @@ namespace ecs
 
             pointer allocate(size_type n, const void* hint = nullptr)
             {
-                if constexpr (IsExplicitMemoryPoolDefined<pairBucket_t, hashNodeBucket_t, pointerBucket_t>())
+                if constexpr (IsExplicitMemoryPoolDefined<hashNodeBucket_t, pointerBucket_t>())
                 {
                     const size_t sizeOfInstance = sizeof(value_type);
-                    if (sizeOfInstance == pairBucket_t::s_blockSize)
-                    {
-                        return static_cast<pointer>(AllocateFromSpecificBucket<pairBucket_t, 
-                            hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 0));
-                    }
-                    else if (sizeOfInstance == hashNodeBucket_t::s_blockSize)
+                    if (sizeOfInstance == hashNodeBucket_t::s_blockSize)
                     {   
-                        return static_cast<pointer>(AllocateFromSpecificBucket<pairBucket_t, 
-                            hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 1));
+                        return static_cast<pointer>(AllocateFromSpecificBucket< 
+                            hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 0));
                     }
                     else if (sizeOfInstance == pointerBucket_t::s_blockSize)
                     {
-                        return static_cast<pointer>(AllocateFromSpecificBucket<pairBucket_t, 
-                            hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 2));
+                        return static_cast<pointer>(AllocateFromSpecificBucket< 
+                            hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 1));
                     }
                 }
                 else if (m_upstreamResource != nullptr)
@@ -123,9 +112,9 @@ namespace ecs
 
             void deallocate(pointer p, size_type n)
             {
-                if constexpr (IsExplicitMemoryPoolDefined<pairBucket_t, hashNodeBucket_t, pointerBucket_t>())
+                if constexpr (IsExplicitMemoryPoolDefined<hashNodeBucket_t, pointerBucket_t>())
                 {
-                    Deallocate<pairBucket_t, hashNodeBucket_t, pointerBucket_t>(p, n * sizeof(T));
+                    Deallocate<hashNodeBucket_t, pointerBucket_t>(p, n * sizeof(T));
                 }
                 else if (m_upstreamResource != nullptr)
                 {
