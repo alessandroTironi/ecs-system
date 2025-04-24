@@ -32,7 +32,7 @@ bucket_t::bucket_t(size_t inBlockSize, size_t inBlockCount)
     const size_t dataSize = blockSize * blockCount;
     m_data = static_cast<std::byte*>(Malloc(dataSize));
     assert(m_data != nullptr);
-    const size_t ledgerSize = 1 + ((blockCount - 1) >> 3);
+    const size_t ledgerSize = (blockCount + 7) >> 3;
     m_ledger = static_cast<std::byte*>(Malloc(ledgerSize));
     assert(m_ledger != nullptr);
     std::memset(m_data, 0, dataSize);

@@ -163,7 +163,7 @@ namespace ecs
 
         /* A map of archetypes to their IDs. */
         std::unordered_map<archetype, archetype_id> m_archetypesIDMap;
-        std::unordered_map<entity_id, archetype_id> m_entitiesArchetypeHashesMap; 
+        pm_unordered_map<entity_id, archetype_id, MAX_ENTITIES> m_entitiesArchetypeHashesMap; 
 
         /* Generator for unique archetype IDs.*/
         IDGenerator<archetype_id> m_archetypeIDGenerator;
@@ -176,7 +176,7 @@ namespace ecs
          * Maps each component ID to a vector made of the IDs of any archetype that contains that component.
          * This is used by the query system to find all the archetypes that contain the given component.
          */
-        pm_unordered_map<component_id, ArchetypesSet, MAX_COMPONENTS> m_componentToArchetypeSetMap;
+        std::unordered_map<component_id, ArchetypesSet> m_componentToArchetypeSetMap;
 
         /* A reference to the world. */
         std::shared_ptr<World> m_world;

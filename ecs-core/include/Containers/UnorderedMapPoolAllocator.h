@@ -14,7 +14,7 @@ namespace ecs
 {
     namespace memory_pool
     {
-        template<typename T, size_t PairBlockCount = 10000, size_t HashNodeBlockCount = 10000>
+        template<typename T, typename TKey, typename TValue, size_t PairBlockCount = 10000, size_t HashNodeBlockCount = 10000>
         class unordered_map_pool_allocator
         {
         public:
@@ -27,23 +27,30 @@ namespace ecs
             using propagate_on_container_move_assignment = std::true_type;
             using propagate_on_container_swap = std::false_type;
             using is_always_equal = std::false_type;
+            using pair_type = std::pair<const TKey, TValue>;
 
             struct pairBucket_t
             {
-                static constexpr size_t s_blockSize = sizeof(T);
+                static constexpr size_t s_blockSize = sizeof(pair_type);
                 static constexpr size_t s_blockCount = PairBlockCount;
             };
 
             struct hashNodeBucket_t
             {
-                static constexpr size_t s_blockSize = sizeof(std::__detail::_Hash_node<T, false>);
+                static constexpr size_t s_blockSize = sizeof(std::__detail::_Hash_node<pair_type, false>);
+                static constexpr size_t s_blockCount = HashNodeBlockCount;
+            };
+
+            struct pointerBucket_t
+            {
+                static constexpr size_t s_blockSize = sizeof(void*);
                 static constexpr size_t s_blockCount = HashNodeBlockCount;
             };
 
             template<typename U>
             struct rebind 
             {
-                using other = unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>;
+                using other = unordered_map_pool_allocator<U, TKey, TValue, PairBlockCount, HashNodeBlockCount>;
             };
 
             unordered_map_pool_allocator() noexcept 
@@ -55,12 +62,12 @@ namespace ecs
             {}
 
             template<typename U>
-            unordered_map_pool_allocator(const unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>& other) noexcept 
+            unordered_map_pool_allocator(const unordered_map_pool_allocator<U, TKey, TValue, PairBlockCount, HashNodeBlockCount>& other) noexcept 
                 : m_upstreamResource{other.upstreamResource()} 
             {}
 
             template<typename U>
-            unordered_map_pool_allocator& operator=(const unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>& other) noexcept 
+            unordered_map_pool_allocator& operator=(const unordered_map_pool_allocator<U, TKey, TValue, PairBlockCount, HashNodeBlockCount>& other) noexcept 
             {
                 m_upstreamResource = other.upstreamResource();
                 return *this;
@@ -72,22 +79,37 @@ namespace ecs
             }
 
             template <typename U>
-            bool operator==(const unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>& other) noexcept
+            bool operator==(const unordered_map_pool_allocator<U, TKey, TValue, PairBlockCount, HashNodeBlockCount>& other) noexcept
             { 
                 return m_upstreamResource == other.upstreamResource(); 
             }
 
             template <typename U>
-            bool operator!=(const unordered_map_pool_allocator<U, PairBlockCount, HashNodeBlockCount>& other) noexcept 
+            bool operator!=(const unordered_map_pool_allocator<U, TKey, TValue, PairBlockCount, HashNodeBlockCount>& other) noexcept 
             {
                 return !(*this == other);
             }
 
             pointer allocate(size_type n, const void* hint = nullptr)
             {
-                if constexpr (IsExplicitMemoryPoolDefined<pairBucket_t, hashNodeBucket_t>())
+                if constexpr (IsExplicitMemoryPoolDefined<pairBucket_t, hashNodeBucket_t, pointerBucket_t>())
                 {
-                    return static_cast<pointer>(Allocate<pairBucket_t, hashNodeBucket_t>(n * sizeof(T)));
+                    const size_t sizeOfInstance = sizeof(value_type);
+                    if (sizeOfInstance == pairBucket_t::s_blockSize)
+                    {
+                        return static_cast<pointer>(AllocateFromSpecificBucket<pairBucket_t, 
+                            hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 0));
+                    }
+                    else if (sizeOfInstance == hashNodeBucket_t::s_blockSize)
+                    {   
+                        return static_cast<pointer>(AllocateFromSpecificBucket<pairBucket_t, 
+                            hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 1));
+                    }
+                    else if (sizeOfInstance == pointerBucket_t::s_blockSize)
+                    {
+                        return static_cast<pointer>(AllocateFromSpecificBucket<pairBucket_t, 
+                            hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 2));
+                    }
                 }
                 else if (m_upstreamResource != nullptr)
                 {
@@ -101,9 +123,9 @@ namespace ecs
 
             void deallocate(pointer p, size_type n)
             {
-                if constexpr (IsExplicitMemoryPoolDefined<pairBucket_t, hashNodeBucket_t>())
+                if constexpr (IsExplicitMemoryPoolDefined<pairBucket_t, hashNodeBucket_t, pointerBucket_t>())
                 {
-                    Deallocate<pairBucket_t, hashNodeBucket_t>(p, n * sizeof(T));
+                    Deallocate<pairBucket_t, hashNodeBucket_t, pointerBucket_t>(p, n * sizeof(T));
                 }
                 else if (m_upstreamResource != nullptr)
                 {

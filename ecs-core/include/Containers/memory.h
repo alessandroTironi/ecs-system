@@ -255,8 +255,27 @@ namespace ecs
             {
                 if (void* ptr = pool[d.index].allocate(bytes); ptr != nullptr)
                 {
+                    std::cout << "Picked allocator " << d.index << std::endl;
                     return ptr;
                 }
+            }
+
+            throw std::bad_alloc();
+        }
+
+        template<typename... TBuckets>
+        [[nodiscard]] void* AllocateFromSpecificBucket(size_t bytes, size_t index)
+        {
+            ExplicitMemoryPool<TBuckets...>& pool = GetExplicitMemoryPool<TBuckets...>();
+            if (index >= explicitBucketCount<TBuckets...>)
+            {
+                throw std::bad_alloc();
+            }
+
+            bucket_t& bucket = pool[index];
+            if (void* ptr = bucket.allocate(bytes); ptr != nullptr)
+            {
+                return ptr;
             }
 
             throw std::bad_alloc();
@@ -281,7 +300,7 @@ namespace ecs
         template<typename... TBuckets>
         void Deallocate(void* ptr, size_t bytes) noexcept 
         {
-            ExplicitMemoryPool<TBuckets...> pool = GetExplicitMemoryPool<TBuckets...>();
+            ExplicitMemoryPool<TBuckets...>& pool = GetExplicitMemoryPool<TBuckets...>();
             for (bucket_t& bucket : pool)
             {
                 if (bucket.belongs_to_this(ptr))

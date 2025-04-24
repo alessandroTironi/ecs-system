@@ -11,7 +11,7 @@
 #include "Containers/UnorderedMapPoolAllocator.h"
 
 #define MAX_COMPONENTS 2048
-#define MAX_ENTITIES 30000
+#define MAX_ENTITIES 80000
 
 namespace ecs
 {
@@ -73,7 +73,7 @@ namespace ecs
         TValue,
         std::hash<TKey>,
         std::equal_to<TKey>,
-        memory_pool::unordered_map_pool_allocator<std::pair<const TKey, TValue>, MaxPairs, MaxPairs>
+        memory_pool::unordered_map_pool_allocator<std::pair<const TKey, TValue>, TKey, TValue, MaxPairs, MaxPairs>
     >;
 }
 
