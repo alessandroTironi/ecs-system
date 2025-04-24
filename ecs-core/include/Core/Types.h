@@ -47,26 +47,6 @@ namespace ecs
 
     typedef compact_string<40> name;
 
-    // Definition of memory buckets for the pool memory system.
-    struct bucket_entityArchetypePair
-    {
-        static constexpr size_t s_blockSize = sizeof(std::pair<entity_id, archetype_id>);
-        static constexpr size_t s_blockCount = 21000;
-    };
-
-    struct bucket_entityArchetypeHashNode
-    {
-        static constexpr size_t s_blockSize = 
-            sizeof(std::__detail::_Hash_node<std::pair<entity_id, archetype_id>, false>);
-        static constexpr size_t s_blockCount = 30000;
-    };
-
-    template<>
-    struct memory_pool::bucket_descriptors<2>
-    {
-        using type = std::tuple<bucket_entityArchetypePair, bucket_entityArchetypeHashNode>;
-    };
-
     template<typename TKey, typename TValue, size_t MaxPairs = 10000>
     using pm_unordered_map = std::unordered_map<
         TKey,
