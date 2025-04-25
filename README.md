@@ -4,6 +4,14 @@ An Entity Component System (ECS) written in C++ 20 for fun and learning purposes
 
 This system is not intended for use in professional projects and it's still under development. 
 
+## Content
+
+This CMake project contains three subprojects exposed below. Any external dependency (google test, SDL) are automatically downloaded during the cmake build process.
+
+- **ecs-core**: the core of the ECS implementation. It is compiled as a static library that must be linked to any project meant to make use of it.
+- **ecs-test**: a suite of unit tests implemented with the [gtest](https://github.com/google/googletest) framework. 
+- **ecs-runner**: an SDL application that showcases the basic functionalities of the ECS system, spawning 20000 particles launched in random directions and bouncing on the borders of the window.
+
 ## Getting started
 
 The project uses CMake as building framework. 
@@ -93,11 +101,3 @@ class MovementSystem : public ecs::ISystem
 };
 
 ```
-
-## Content
-
-This CMake project contains three subprojects exposed below. Any external dependency (google test, SDL) are automatically downloaded during the cmake build process.
-
-- **ecs-core**: the core of the ECS implementation. It is compiled as a static library that must be linked to any project meant to make use of it.
-- **ecs-test**: a suite of unit tests implemented with the [gtest](https://github.com/google/googletest) framework. 
-- **ecs-runner**: an SDL application that showcases the basic functionalities of the ECS system, spawning 20000 particles launched in random directions and bouncing on the borders of the window.
