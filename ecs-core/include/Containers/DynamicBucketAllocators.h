@@ -116,10 +116,16 @@ namespace ecs
 		template<typename... TBuckets>
 		using DynamicMemoryPool = std::array<dynamic_bucket_t, DynamicBucketCount<TBuckets...>>;
 
+        /**
+         * Returns the block size of a single dynamic bucket instance at compile time.
+         */
 		template<typename TBucket>
         struct GetDynamicBucketBlockSize : std::integral_constant<size_t, TBucket::s_blockSize>
         {};
 
+        /**
+         * Returns the block count of a single dynamic bucket instance at compile time.
+         */
 		template<typename TBucket>
         struct GetDynamicBucketBlockCount : std::integral_constant<size_t, TBucket::s_blockCount>
         {};
@@ -143,6 +149,14 @@ namespace ecs
             return instance;
         }
 
+        /**
+         * @brief Allocates the required amount of bytes from a specific bucket of a dynamic memory
+         * pool, triggering a resize of the pool if needed.
+         * 
+         * @param bytes the amount of bytes that we want to allocate.
+         * @param index of the bucket that we want to allocate memory to.
+         * @return pointer to allocated data.
+         */
 		template<typename... TBuckets>
         [[nodiscard]] void* AllocateFromDynamicBucket(size_t bytes, size_t index)
         {
@@ -161,6 +175,12 @@ namespace ecs
             throw std::bad_alloc();
         }
 
+        /**
+         * @brief Deallocates memory from a dynamic memory pool. 
+         * 
+         * @param ptr to the memory that we want to deallocate. 
+         * @param bytes amount of memory that we want to deallocate.
+         */
 		template<typename... TBuckets>
         void DeallocateFromDynamicBucket(void* ptr, size_t bytes) noexcept 
         {
@@ -175,12 +195,25 @@ namespace ecs
             }
         }
 
+        /**
+         * @brief Returns true if a dynamic memory pool defined by the provided bucket descriptors 
+         * does actually exist at runtime.
+         * 
+         * @tparam TBuckets the descriptors of the buckets that define the memory pool. 
+         * @return true if the memory poll is defined.
+         */
         template<typename... TBuckets>
         constexpr bool IsDynamicMemoryPoolDefined() noexcept 
         {
             return DynamicBucketCount<TBuckets...> != 0;
         }
 
+        /**
+         * @brief Initializes a dynamic memory pool defined by the provided bucket descriptors
+         * 
+         * @tparam TBuckets the descriptors of the buckets that define the memory pool. 
+         * @return true if the memory pool is effectively initialized.
+         */
         template<typename... TBuckets>
         bool InitializeDynamicMemoryPool() noexcept 
         {
