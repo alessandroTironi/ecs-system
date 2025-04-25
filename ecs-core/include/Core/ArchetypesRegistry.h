@@ -163,7 +163,7 @@ namespace ecs
 
         /* A map of archetypes to their IDs. */
         std::unordered_map<archetype, archetype_id> m_archetypesIDMap;
-        pm_unordered_map<entity_id, archetype_id, MAX_ENTITIES> m_entitiesArchetypeHashesMap; 
+        std::unordered_map<entity_id, archetype_id> m_entitiesArchetypeHashesMap; 
 
         /* Generator for unique archetype IDs.*/
         IDGenerator<archetype_id> m_archetypeIDGenerator;
