@@ -8,14 +8,14 @@ namespace ecs
 {
 	namespace memory_pool
 	{
-		struct dynamic_bucket_t
+		struct bucket_container_t
         {
         public:
             const size_t blockSize;
             const size_t blockCount;
 
-            dynamic_bucket_t(size_t inBlockSize, size_t inBlockCount);
-            ~dynamic_bucket_t();
+            bucket_container_t(size_t inBlockSize, size_t inBlockCount);
+            ~bucket_container_t();
 
             bool belongs_to_this(void* ptr) const noexcept;
 
@@ -54,10 +54,10 @@ namespace ecs
              */
             bool is_block_in_use(size_t index) const noexcept;
 
-			struct bucket_instance_t
+			struct dynamic_bucket_t
 			{
-				bucket_instance_t() {}
-				bucket_instance_t(std::byte* inData, std::byte* inLedger)
+				dynamic_bucket_t() {}
+				dynamic_bucket_t(std::byte* inData, std::byte* inLedger)
 					: data{inData}, ledger{inLedger} {}
 
 				std::byte* data{nullptr};
@@ -86,7 +86,7 @@ namespace ecs
 			size_t find_bucket_instance_index(void* ptr) const;
 
             /** Contains allocated data. */
-            std::vector<bucket_instance_t> m_data;
+            std::vector<dynamic_bucket_t> m_data;
         };
 
 		/**
@@ -114,7 +114,7 @@ namespace ecs
 		 * A dynamic memory pool is a memory pool that allows for growth if the capacity is exceeded.
 		 */
 		template<typename... TBuckets>
-		using DynamicMemoryPool = std::array<dynamic_bucket_t, DynamicBucketCount<TBuckets...>>;
+		using DynamicMemoryPool = std::array<bucket_container_t, DynamicBucketCount<TBuckets...>>;
 
         /**
          * Returns the block size of a single dynamic bucket instance at compile time.
@@ -166,7 +166,7 @@ namespace ecs
                 throw std::bad_alloc();
             }
 
-            dynamic_bucket_t& bucket = pool[index];
+            bucket_container_t& bucket = pool[index];
             if (void* ptr = bucket.allocate(bytes); ptr != nullptr)
             {
                 return ptr;
@@ -185,7 +185,7 @@ namespace ecs
         void DeallocateFromDynamicBucket(void* ptr, size_t bytes) noexcept 
         {
             DynamicMemoryPool<TBuckets...>& pool = GetDynamicMemoryPool<TBuckets...>();
-            for (dynamic_bucket_t& bucket : pool)
+            for (bucket_container_t& bucket : pool)
             {
                 if (bucket.belongs_to_this(ptr))
                 {
