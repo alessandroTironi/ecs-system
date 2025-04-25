@@ -10,17 +10,14 @@
 #include "ComponentData.h"
 #include "PackedComponentArray.h"
 #include "Containers/rbtree.h"
-#include "Containers/PoolMemoryAllocator.h"
+#include "Containers/SetPoolAllocator.h"
 
 namespace ecs 
 {
     struct archetype 
     {
     public:
-        using Signature = std::set<component_id, 
-            std::less<component_id>,
-            memory_pool::pool_memory_allocator<component_id, 1>
-            >;
+        using Signature = pm_set<component_id, 128>;
 
         archetype();
         archetype(std::initializer_list<component_id> signature);

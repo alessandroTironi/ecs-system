@@ -2,13 +2,18 @@
 
 #include <array>
 #include <unordered_map>
+#include <set>
 #include <vector>
 #include <limits>
 #include <typeinfo>
 #include <typeindex>
+#include <iostream>
+#include <cmath>
+#include <utility>
 #include "CompactString.h"
 #include "Containers/memory.h"
 #include "Containers/UnorderedMapPoolAllocator.h"
+#include "Containers/SetPoolAllocator.h"
 
 #define MAX_COMPONENTS 2048
 #define MAX_ENTITIES 80000
@@ -47,13 +52,22 @@ namespace ecs
 
     typedef compact_string<40> name;
 
-    template<typename TKey, typename TValue, size_t MaxPairs = 10000>
+
+    template<typename TKey, typename TValue, size_t MaxPairs, size_t MaxPointers>
     using pm_unordered_map = std::unordered_map<
         TKey,
         TValue,
         std::hash<TKey>,
         std::equal_to<TKey>,
-        memory_pool::unordered_map_pool_allocator<std::pair<const TKey, TValue>, TKey, TValue, MaxPairs, MaxPairs>
+        memory_pool::unordered_map_pool_allocator<std::pair<const TKey, TValue>, TKey, TValue, 
+            MaxPairs, MaxPointers>
+    >;
+
+    template <typename TElement, size_t BlockCountPerChunk>
+    using pm_set = std::set< 
+        TElement,
+        std::less<TElement>,
+        memory_pool::set_pool_memory_allocator<TElement, TElement, BlockCountPerChunk>
     >;
 }
 

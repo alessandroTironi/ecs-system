@@ -88,7 +88,7 @@ namespace ecs
             {
                 if constexpr (IsExplicitMemoryPoolDefined<hashNodeBucket_t, pointerBucket_t>())
                 {
-                    const size_t sizeOfInstance = sizeof(value_type);
+                    const size_t sizeOfInstance = sizeof(T);
                     if (sizeOfInstance == hashNodeBucket_t::s_blockSize)
                     {   
                         return static_cast<pointer>(AllocateFromSpecificBucket< 
