@@ -9,6 +9,7 @@
 #include <memory_resource>
 #include <unordered_map>
 #include "memory.h"
+#include "DynamicBucketAllocators.h"
 
 namespace ecs 
 {
@@ -86,17 +87,17 @@ namespace ecs
 
             pointer allocate(size_type n, const void* hint = nullptr)
             {
-                if constexpr (IsExplicitMemoryPoolDefined<hashNodeBucket_t, pointerBucket_t>())
+                if constexpr (IsDynamicMemoryPoolDefined<hashNodeBucket_t, pointerBucket_t>())
                 {
                     const size_t sizeOfInstance = sizeof(T);
                     if (sizeOfInstance == hashNodeBucket_t::s_blockSize)
                     {   
-                        return static_cast<pointer>(AllocateFromSpecificBucket< 
+                        return static_cast<pointer>(AllocateFromDynamicBucket< 
                             hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 0));
                     }
                     else if (sizeOfInstance == pointerBucket_t::s_blockSize)
                     {
-                        return static_cast<pointer>(AllocateFromSpecificBucket< 
+                        return static_cast<pointer>(AllocateFromDynamicBucket< 
                             hashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 1));
                     }
                 }
@@ -112,9 +113,9 @@ namespace ecs
 
             void deallocate(pointer p, size_type n)
             {
-                if constexpr (IsExplicitMemoryPoolDefined<hashNodeBucket_t, pointerBucket_t>())
+                if constexpr (IsDynamicMemoryPoolDefined<hashNodeBucket_t, pointerBucket_t>())
                 {
-                    Deallocate<hashNodeBucket_t, pointerBucket_t>(p, n * sizeof(T));
+                    DeallocateFromDynamicBucket<hashNodeBucket_t, pointerBucket_t>(p, n * sizeof(T));
                 }
                 else if (m_upstreamResource != nullptr)
                 {
