@@ -132,15 +132,23 @@ namespace ecs
             void remove_entity(entity_id entity);
             void copy_entity_to(const entity_id entity, archetype_set& destination);
             inline const archetype& get_archetype() const { return m_archetype; }
-            inline const std::unordered_map<entity_id, size_t>& entity_map() const { return m_entityToIndexMap; }
+            inline const pm_unordered_map<entity_id, size_t, MAX_ENTITIES, MAX_ENTITIES>& entity_map() const 
+            { 
+                return m_entityToIndexMap; 
+            }
+
             inline const entity_id get_entity_at_index(const size_t index) const { return m_indexToEntityMap.at(index);}
-            inline const std::unordered_map<size_t, entity_id>& index_map() const { return m_indexToEntityMap; }
+            inline const pm_unordered_map<size_t, entity_id, MAX_ENTITIES, MAX_ENTITIES>& index_map() const 
+            { 
+                return m_indexToEntityMap; 
+            }
         
         private:
             archetype m_archetype;
-            std::unordered_map<component_id, std::shared_ptr<packed_component_array_t>> m_componentArraysMap;
-            std::unordered_map<entity_id, size_t> m_entityToIndexMap;
-            std::unordered_map<size_t, entity_id> m_indexToEntityMap; //@todo replace this with a plain array for cache locality
+            pm_unordered_map<component_id, std::shared_ptr<packed_component_array_t>, 
+                MAX_COMPONENTS, MAX_COMPONENTS> m_componentArraysMap;
+            pm_unordered_map<entity_id, size_t, MAX_ENTITIES, MAX_ENTITIES> m_entityToIndexMap;
+            pm_unordered_map<size_t, entity_id, MAX_ENTITIES, MAX_ENTITIES> m_indexToEntityMap; //@todo replace this with a plain array for cache locality
         };
 
         void AddEntity(entity_id entity, std::initializer_list<component_data> componentTypes);
@@ -166,7 +174,7 @@ namespace ecs
 
         /* A map of archetypes to their IDs. */
         pm_unordered_map<archetype, archetype_id, MAX_ENTITIES, MAX_ENTITIES> m_archetypesIDMap;
-        std::unordered_map<entity_id, archetype_id> m_entitiesArchetypeHashesMap; 
+        pm_unordered_map<entity_id, archetype_id, MAX_ENTITIES, MAX_ENTITIES> m_entitiesArchetypeHashesMap; 
 
         /* Generator for unique archetype IDs.*/
         IDGenerator<archetype_id> m_archetypeIDGenerator;

@@ -87,6 +87,9 @@ namespace ecs
 
             /** Contains allocated data. */
             std::vector<dynamic_bucket_t> m_data;
+
+            /** Contains pointers to portions of memory exceeding the default block count. */
+            std::vector<void*> m_fallbackAllocations;
         };
 
 		/**

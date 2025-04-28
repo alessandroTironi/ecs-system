@@ -20,6 +20,13 @@ bucket_container_t::~bucket_container_t()
 		Free(bucketInstance.data);
 		Free(bucketInstance.ledger);
 	}
+
+    for (void* p : m_fallbackAllocations)
+    {
+        Free(p);
+    }
+
+    m_fallbackAllocations.clear();
 }
 
 void bucket_container_t::allocate_bucket_instance()
@@ -45,6 +52,14 @@ void* bucket_container_t::allocate(size_t bytes) noexcept
     size_t index = find_contiguous_blocks(n);
     if (index == blockCount)
     {
+        if (n > blockCount)
+        {
+            // fallback to regular malloc if memory to allocate is too large
+            void* p = Malloc(n * sizeof(blockSize));
+            m_fallbackAllocations.push_back(p);
+            return p;
+        }
+
         allocate_bucket_instance();
 		index = find_contiguous_blocks(n);
     }

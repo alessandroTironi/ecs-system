@@ -96,7 +96,9 @@ namespace ecs
 
             pointer allocate(size_type n, const void* hint = nullptr)
             {
-                if constexpr (IsDynamicMemoryPoolDefined<cachedHashNodeBucket_t, uncachedHashNodeBucket_t, pointerBucket_t>())
+                pointer allocatedPtr = nullptr;
+                if constexpr (IsDynamicMemoryPoolDefined<cachedHashNodeBucket_t, uncachedHashNodeBucket_t, 
+                    pointerBucket_t>())
                 {
                     if constexpr (std::is_same<T, cached_hash_node_type>())
                     {   
