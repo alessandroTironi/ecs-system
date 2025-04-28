@@ -8,9 +8,12 @@
 #include "Archetypes.h"
 #include "PackedComponentArray.h"
 #include "ComponentsRegistry.h"
+#include "ComponentData.h"
 #include "IDGenerator.h"
 #include "BatchComponentActionProcessor.h"
 #include "Containers/PoolMemoryAllocator.h"
+#include "Containers/SetPoolAllocator.h"
+#include "Containers/DynamicBucketAllocators.h"
 #include "Containers/memory.h"
 
 namespace ecs
@@ -162,7 +165,7 @@ namespace ecs
         World* GetWorld() const;
 
         /* A map of archetypes to their IDs. */
-        std::unordered_map<archetype, archetype_id> m_archetypesIDMap;
+        pm_unordered_map<archetype, archetype_id, MAX_ENTITIES, MAX_ENTITIES> m_archetypesIDMap;
         std::unordered_map<entity_id, archetype_id> m_entitiesArchetypeHashesMap; 
 
         /* Generator for unique archetype IDs.*/
