@@ -16,7 +16,7 @@
 #include "Containers/SetPoolAllocator.h"
 
 #define MAX_COMPONENTS 2048
-#define MAX_ENTITIES 80000
+#define MAX_ENTITIES 20000
 
 namespace ecs
 {

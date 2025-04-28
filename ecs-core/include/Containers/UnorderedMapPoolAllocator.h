@@ -29,22 +29,25 @@ namespace ecs
             using propagate_on_container_swap = std::false_type;
             using is_always_equal = std::false_type;
             using pair_type = std::pair<TKey const, TValue>;
+            using cached_hash_node_type = std::__detail::_Hash_node<pair_type, true>;
+            using uncached_hash_node_type = std::__detail::_Hash_node<pair_type, false>;
+            using hash_node_pointer_type = std::__detail::_Hash_node_base*;
 
             struct cachedHashNodeBucket_t
             {
-                static constexpr size_t s_blockSize = sizeof(std::__detail::_Hash_node<pair_type, true>);
+                static constexpr size_t s_blockSize = sizeof(cached_hash_node_type);
                 static constexpr size_t s_blockCount = HashNodeBlockCount;
             };
 
             struct uncachedHashNodeBucket_t
             {
-                static constexpr size_t s_blockSize = sizeof(std::__detail::_Hash_node<pair_type, false>);
+                static constexpr size_t s_blockSize = sizeof(uncached_hash_node_type);
                 static constexpr size_t s_blockCount = HashNodeBlockCount;
             };
 
             struct pointerBucket_t
             {
-                static constexpr size_t s_blockSize = sizeof(void*);
+                static constexpr size_t s_blockSize = sizeof(hash_node_pointer_type);
                 static constexpr size_t s_blockCount = HashNodeBlockCount;
             };
 
@@ -95,19 +98,17 @@ namespace ecs
             {
                 if constexpr (IsDynamicMemoryPoolDefined<cachedHashNodeBucket_t, uncachedHashNodeBucket_t, pointerBucket_t>())
                 {
-                    const size_t sizeOfInstance = sizeof(T);
-                   
-                    if (sizeOfInstance == cachedHashNodeBucket_t::s_blockSize)
+                    if constexpr (std::is_same<T, cached_hash_node_type>())
                     {   
                         return static_cast<pointer>(AllocateFromDynamicBucket< 
                             cachedHashNodeBucket_t, uncachedHashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 0));
                     }
-                    else if (sizeOfInstance == uncachedHashNodeBucket_t::s_blockSize)
+                    else if constexpr (std::is_same<T, uncached_hash_node_type>())
                     {
                         return static_cast<pointer>(AllocateFromDynamicBucket< 
                             cachedHashNodeBucket_t, uncachedHashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 1));
                     }
-                    else if (sizeOfInstance == pointerBucket_t::s_blockSize)
+                    else if constexpr (std::is_same<T, hash_node_pointer_type>())
                     {
                         return static_cast<pointer>(AllocateFromDynamicBucket< 
                             cachedHashNodeBucket_t, uncachedHashNodeBucket_t, pointerBucket_t>(n * sizeof(T), 2));
@@ -121,10 +122,6 @@ namespace ecs
                 {
                     throw std::bad_alloc();
                 }
-
-                std::cout << "Could not find a bucket for " << sizeof(T) << " bytes. Size of hashnode is "
-                    << cachedHashNodeBucket_t::s_blockSize << "; pointer size is " << pointerBucket_t::s_blockSize
-                    << std::endl;
 
                 return nullptr;
             }

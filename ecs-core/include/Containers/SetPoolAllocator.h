@@ -36,6 +36,16 @@ namespace ecs
 			using propagate_on_container_move_assignment = std::true_type;
 			using propagate_on_container_swap = std::false_type;
 			using is_always_equal = std::false_type;
+#ifdef __GLIBCXX__
+            // GCC's libstdc++ implementation
+            using rbnode_type = std::_Rb_tree_node<TElement>;
+#elif defined(_LIBCPP_VERSION)
+            // LLVM's libc++ implementation
+            using rbnode_type =  __tree_node<T, void*>;
+#elif defined(_MSC_VER)
+            // Microsoft's STL implementation
+            using rbnode_type = _Tree_node<T, void*>;
+#endif
 
 			template<typename U>
             struct rebind 
@@ -82,16 +92,7 @@ namespace ecs
 
 			struct rbNodeBucket_t
             {
-#ifdef __GLIBCXX__
-                // GCC's libstdc++ implementation
-                static constexpr size_t s_blockSize = sizeof(std::_Rb_tree_node<TElement>);
-#elif defined(_LIBCPP_VERSION)
-                // LLVM's libc++ implementation
-                static constexpr size_t s_blockSize = sizeof( __tree_node<T, void*>);
-#elif defined(_MSC_VER)
-                // Microsoft's STL implementation
-                static constexpr size_t s_blockSize = sizeof(_Tree_node<T, void*>);
-#endif
+                static constexpr size_t s_blockSize = sizeof(rbnode_type);
                 static constexpr size_t s_blockCount = MaxElements;
             };
 
