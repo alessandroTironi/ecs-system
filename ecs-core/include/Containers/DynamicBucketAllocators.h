@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include <vector>
+#include <optional>
 #include "memory.h"
 
 namespace ecs
@@ -28,7 +29,7 @@ namespace ecs
              * @param n The amount of needed contiguous blocks.
              * @return The first block's index, or blockCount on failure.
              */
-            size_t find_contiguous_blocks(size_t n) const noexcept;
+            std::optional<size_t> find_contiguous_blocks(size_t n) const noexcept;
 
             /**
              * @brief Marks n blocks in the ledger as "in use" starting from index.
@@ -57,17 +58,23 @@ namespace ecs
 			struct dynamic_bucket_t
 			{
 				dynamic_bucket_t() {}
-				dynamic_bucket_t(std::byte* inData, std::byte* inLedger)
-					: data{inData}, ledger{inLedger} {}
+				dynamic_bucket_t(std::byte* inData, std::byte* inLedger, bool isMemoryBlockStart)
+					: data{inData}, ledger{inLedger}, m_isMemoryBlockStart(isMemoryBlockStart) {}
 
 				std::byte* data{nullptr};
 				std::byte* ledger{nullptr};
+                
+                inline bool is_memory_block_start() const noexcept { return m_isMemoryBlockStart; }
+            private:
+                bool m_isMemoryBlockStart = true;
 			};
 
             /**
              * @brief Allocates a new instance of this bucket
              */
-			void allocate_bucket_instance();
+			void allocate_contiguous_bucket_instances(size_t numInstances);
+
+            bool are_blocks_contiguous(size_t index1, size_t index2) const;
 
             /**
              * @brief Calculates the index of the bucket instance that contains a specific block.

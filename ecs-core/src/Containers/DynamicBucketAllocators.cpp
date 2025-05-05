@@ -10,16 +10,19 @@ using namespace ecs::memory_pool;
 bucket_container_t::bucket_container_t(size_t inBlockSize, size_t inBlockCount)
     : blockSize{inBlockSize}, blockCount{inBlockCount}
 {
-	allocate_bucket_instance();
+	allocate_contiguous_bucket_instances(1);
 }
 
 bucket_container_t::~bucket_container_t()
 {
-	for (dynamic_bucket_t& bucketInstance : m_data)
-	{
-		Free(bucketInstance.data);
-		Free(bucketInstance.ledger);
-	}
+    for (dynamic_bucket_t& bucketInstance : m_data)
+    {
+        if (bucketInstance.is_memory_block_start())
+        {
+            Free(bucketInstance.data);
+            Free(bucketInstance.ledger);
+        }
+    }
 
     for (void* p : m_fallbackAllocations)
     {
@@ -29,19 +32,46 @@ bucket_container_t::~bucket_container_t()
     m_fallbackAllocations.clear();
 }
 
-void bucket_container_t::allocate_bucket_instance()
+void bucket_container_t::allocate_contiguous_bucket_instances(size_t numInstances)
 {
     dynamic_bucket_t instance;
-    const size_t dataSize = blockSize * blockCount;
-    instance.data = static_cast<std::byte*>(Malloc(dataSize));
-    assert(instance.data != nullptr);
-    const size_t ledgerSize = (blockCount + 7) >> 3;
-    instance.ledger = static_cast<std::byte*>(Malloc(ledgerSize));
-    assert(instance.ledger != nullptr);
-    std::memset(instance.data, 0, dataSize);
-    std::memset(instance.ledger, 0, ledgerSize);
+    const size_t dataSize = blockSize * blockCount * numInstances;
+    std::byte* data = static_cast<std::byte*>(Malloc(dataSize));
+    assert(data != nullptr);
+    const size_t singleLedgerSize = (blockCount + 7) >> 3;
+    const size_t ledgerSize = singleLedgerSize * numInstances;
+    std::byte* ledger = static_cast<std::byte*>(Malloc(ledgerSize));
+    assert(ledger != nullptr);
+    std::memset(data, 0, dataSize);
+    std::memset(ledger, 0, ledgerSize);
 
-    m_data.push_back(instance);
+    bool isMemoryBlockStart = true;
+    for (size_t i = 0; i < numInstances; ++i)
+    {
+        std::byte* chunkBegin = data + blockCount * i;
+        std::byte* chunkLedger = ledger + singleLedgerSize * i;
+        m_data.emplace_back(chunkBegin, chunkLedger, isMemoryBlockStart);
+        isMemoryBlockStart = false;
+    }
+}
+
+bool bucket_container_t::are_blocks_contiguous(size_t index1, size_t index2) const
+{
+    if (index1 + 1 != index2)
+    {
+        return false;
+    }
+
+    const size_t instanceIndex1 = calculate_bucket_instance_index(index1);
+    const size_t instanceIndex2 = calculate_bucket_instance_index(index2);
+    if (instanceIndex1 == instanceIndex2)
+    {
+        return true;
+    }
+
+    const dynamic_bucket_t& instance1 = m_data[instanceIndex1];
+    const dynamic_bucket_t& instance2 = m_data[instanceIndex2];
+    return instanceIndex1 + 1 == instanceIndex2 && instance1.data + blockCount == instance2.data;
 }
 
 void* bucket_container_t::allocate(size_t bytes) noexcept 
@@ -49,22 +79,24 @@ void* bucket_container_t::allocate(size_t bytes) noexcept
     // Calculate required number of blocks 
     const size_t n = 1 + ((bytes - 1) / blockSize);
 
-    size_t index = find_contiguous_blocks(n);
-    if (index == blockCount)
+    std::optional<size_t> optIndex = find_contiguous_blocks(n);
+    if (optIndex == std::nullopt)
     {
-        if (n > blockCount)
+        const size_t numBuckets = (n + blockCount - 1) / blockCount;
+        allocate_contiguous_bucket_instances(numBuckets);
+		optIndex = find_contiguous_blocks(n);
+
+        if (optIndex == std::nullopt)
         {
             // fallback to regular malloc if memory to allocate is too large
             void* p = Malloc(n * sizeof(blockSize));
             m_fallbackAllocations.push_back(p);
             return p;
         }
-
-        allocate_bucket_instance();
-		index = find_contiguous_blocks(n);
     }
 
     // Update the ledger
+    const size_t index = *optIndex;
     set_blocks_in_use(index, n);
 
 	const size_t bucketInstanceIndex = calculate_bucket_instance_index(index);
@@ -105,39 +137,41 @@ bool bucket_container_t::belongs_to_this(void* ptr) const noexcept
     return false;
 }
 
-size_t bucket_container_t::find_contiguous_blocks(size_t n) const noexcept 
+std::optional<size_t> bucket_container_t::find_contiguous_blocks(size_t n) const noexcept 
 {
-    for (size_t instanceIndex = 0; instanceIndex < m_data.size(); ++instanceIndex)
+    const size_t totalBlocks = blockCount * m_data.size();
+    for (size_t blockIdx = 0; blockIdx < totalBlocks; ++blockIdx)
     {
-        const size_t startingIndex = instanceIndex * blockCount;
-        const size_t finalIndex = startingIndex + blockCount;
-
-        for (size_t blockIdx = startingIndex; blockIdx < finalIndex; ++blockIdx)
+        if (!is_block_in_use(blockIdx))
         {
-            if (!is_block_in_use(blockIdx))
+            size_t contiguousCount = 1;
+            size_t firstFreeBlockIdx = blockIdx;
+            if (contiguousCount >= n)
             {
-                size_t contiguousCount = 1;  
-                size_t firstFreeBlockIdx = blockIdx;
-                if (contiguousCount >= n)
-                {
-                    return firstFreeBlockIdx;
-                }
+                return firstFreeBlockIdx;
+            }
 
-                while (blockIdx + 1 < finalIndex && !is_block_in_use(blockIdx + 1))
+            const size_t lastBlockIdx = firstFreeBlockIdx + n > totalBlocks?
+                totalBlocks : firstFreeBlockIdx + n;
+            for (blockIdx = blockIdx + 1; blockIdx < lastBlockIdx; ++blockIdx)
+            {
+                if (!is_block_in_use(blockIdx) && are_blocks_contiguous(blockIdx - 1, blockIdx))
                 {
-                    contiguousCount++;
+                    contiguousCount += 1;
                     if (contiguousCount >= n)
                     {
                         return firstFreeBlockIdx;
                     }
-                    blockIdx++;
+                }
+                else
+                {
+                    break;
                 }
             }
         }
     }
-
     
-    return blockCount;
+    return std::nullopt;
 }
 
 bool bucket_container_t::is_block_in_use(size_t index) const noexcept 
