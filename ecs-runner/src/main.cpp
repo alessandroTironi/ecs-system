@@ -177,6 +177,7 @@ int main()
     };
 
     // Create entities with random positions, velocities, and colors
+    auto startTime = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < numEntities; ++i)
     {
         const ecs::entity_id entity = world->CreateEntity<comps::Velocity, comps::Rect, comps::Color>();
@@ -189,6 +190,12 @@ int main()
         velocity.x = generateRandomVelocity();
         velocity.y = generateRandomVelocity();   
     }
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "Created " << numEntities << " entities in " 
+              << duration.count() << " milliseconds." << std::endl;
+              // before free list: 11920ms
+              // after free list: 163ms
 
     // Setup systems 
     world->AddSystem<systems::MovementSystem>();
