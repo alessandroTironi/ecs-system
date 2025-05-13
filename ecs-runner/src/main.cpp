@@ -7,6 +7,7 @@
 
 #include "Core/World.h"
 #include "Core/ArchetypeQuery.h"
+#include "Logging/Logger.h"
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
@@ -104,25 +105,28 @@ int main()
 {
     using namespace std::chrono_literals;
 
-    std::cout << "Initializing ECS instance..." << std::endl;
+    ecs::Logger* logger = new ecs::Logger();
+    logger->Run();
+
+    ECS_LOG(Log, "Initializing ECS instance...");
     std::shared_ptr<ecs::World> world = std::make_shared<ecs::World>();
     world->Initialize();
 
     // Initialize SDL
-    std::cout << "Initializing SDL instance..." << std::endl;
+    ECS_LOG(Log, "Initializing SDL instance...");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
-        std::cerr << "SDL could not be initialized!\n"
-               "SDL_Error: " << SDL_GetError() << std::endl;
+        ECS_LOG(Error, "SDL could not be initialized!\n"
+                "SDL_Error: {}", SDL_GetError());
         return 0;
     }
 
     // Initialize TTF
-    std::cout << "Initializing TTF instance..." << std::endl;
+    ECS_LOG(Log, "Initializing TTF instance...");
     if(TTF_Init() < 0)
     {
-        std::cerr << "TTF could not be initialized!\n"
-               "TTF_Error: " << TTF_GetError() << std::endl;
+        ECS_LOG(Error, "TTF could not be initialized!\n"
+                "TTF_Error: {}", TTF_GetError());
         return 0;
     }
 
@@ -135,8 +139,8 @@ int main()
                                           if(!window)
     if (window == nullptr)
     {
-        std::cerr << "Window could not be created!\n"
-               "SDL_Error: "<< SDL_GetError() << std::endl;
+        ECS_LOG(Error, "Window could not be created!\n"
+                "SDL_Error: {}", SDL_GetError());
         return 0;
     }
 
@@ -146,15 +150,15 @@ int main()
         | SDL_RENDERER_ACCELERATED);
     if(!renderer)
     {
-        std::cerr << "Renderer could not be created!\n"
-                "SDL_Error: " << SDL_GetError() << std::endl;
+        ECS_LOG(Error, "Renderer could not be created!\n"
+                "SDL_Error: {}", SDL_GetError());
         return 0;
     }
 
     // Set blend mode for proper alpha blending
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    std::cout << "Running ECS instance..." << std::endl;
+    ECS_LOG(Log, "Running ECS instance...");
 
     // Setup entities 
     SDL_Rect rect(0, 0, 5, 5);
@@ -192,8 +196,7 @@ int main()
     }
     auto endTime = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-    std::cout << "Created " << numEntities << " entities in " 
-              << duration.count() << " milliseconds." << std::endl;
+    ECS_LOG(Log, "Created {} entities in {} milliseconds.", numEntities, duration.count());
               // before free list: 11920ms
               // after free list: 163ms
 
@@ -207,8 +210,8 @@ int main()
     TTF_Font* font = TTF_OpenFont("fonts/arial.ttf", 24);
     if (!font)
     {
-        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
-        std::cerr << "Current working directory: " << std::filesystem::current_path() << std::endl;
+        ECS_LOG(Error, "Failed to load font: {}", TTF_GetError());
+        ECS_LOG(Error, "Current working directory: {}", std::filesystem::current_path().string());
         return 0;
     }
 
@@ -217,7 +220,7 @@ int main()
     SDL_Surface* textSurface = TTF_RenderText_Solid(font, "Frame rate", textColor);
     if (!textSurface)
     {
-        std::cerr << "Failed to render text: " << TTF_GetError() << std::endl;
+        ECS_LOG(Error, "Failed to render text: {}", TTF_GetError());
         return 0;
     }
 
@@ -226,7 +229,7 @@ int main()
 
     if (!textTexture)
     {
-        std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
+        ECS_LOG(Error, "Failed to create texture: {}", SDL_GetError());
         return 0;
     }
 
@@ -286,7 +289,7 @@ int main()
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-    std::cout << "Terminating ECS instance..." << std::endl;
+    ECS_LOG(Log, "Terminating ECS instance...");
 
     return 0;
 }
