@@ -138,7 +138,7 @@ memory_blocks_free_list::block_t& memory_blocks_free_list::add(const size_t inde
     }
 
     m_list[m_size] = newBlock;
-    assert(!m_list[m_size].has_loops(m_size));
+    assert(!m_list[m_size].has_loops());
     return m_list[m_size++];
 }
 
@@ -188,7 +188,7 @@ void memory_blocks_free_list::remove_block(size_t blockIndex)
     }
     
     m_size -= 1;
-    assert(!m_list[blockIndex].has_loops(blockIndex));
+    assert(!m_list[blockIndex].has_loops());
     assert(m_size == 0 || m_firstBlock.value() < m_size);
 }
 

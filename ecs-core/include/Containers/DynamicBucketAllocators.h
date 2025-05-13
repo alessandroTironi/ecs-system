@@ -25,29 +25,6 @@ namespace ecs
             void deallocate(void* ptr, size_t bytes) noexcept;
 
         private:
-            /** 
-             * Finds n free contiguous blocks in the ledger. 
-             * @param n The amount of needed contiguous blocks.
-             * @return The first block's index, or blockCount on failure.
-             */
-            std::optional<size_t> find_contiguous_blocks(size_t n) const noexcept;
-
-            /**
-             * @brief Marks n blocks in the ledger as "in use" starting from index.
-             * 
-             * @param index Index of the first block.
-             * @param n Amount of blocks to be marked as "in-use".
-             */
-            void set_blocks_in_use(size_t index, size_t n) noexcept;
-
-            /**
-             * @brief Marks n blocks in the ledger as "free" starting from index.
-             * 
-             * @param index Index of the first block.
-             * @param n Amount of blocks to be marked as free.
-             */
-            void set_blocks_free(size_t index, size_t n) noexcept;
-
             /**
              * @brief Tells wether a memory block is currently in use or not.
              * 
@@ -59,11 +36,10 @@ namespace ecs
 			struct dynamic_bucket_t
 			{
 				dynamic_bucket_t() {}
-				dynamic_bucket_t(std::byte* inData, std::byte* inLedger, bool isMemoryBlockStart)
-					: data{inData}, ledger{inLedger}, m_isMemoryBlockStart(isMemoryBlockStart) {}
+				dynamic_bucket_t(std::byte* inData, bool isMemoryBlockStart)
+					: data{inData}, m_isMemoryBlockStart(isMemoryBlockStart) {}
 
 				std::byte* data{nullptr};
-				std::byte* ledger{nullptr};
                 
                 inline bool is_memory_block_start() const noexcept { return m_isMemoryBlockStart; }
             private:

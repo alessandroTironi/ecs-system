@@ -20,7 +20,6 @@ bucket_container_t::~bucket_container_t()
         if (bucketInstance.is_memory_block_start())
         {
             Free(bucketInstance.data);
-            Free(bucketInstance.ledger);
         }
     }
 
@@ -37,19 +36,13 @@ void bucket_container_t::allocate_contiguous_bucket_instances(size_t numInstance
     const size_t dataSize = blockSize * blockCount * numInstances;
     std::byte* data = static_cast<std::byte*>(Malloc(dataSize));
     assert(data != nullptr);
-    const size_t singleLedgerSize = (blockCount + 7) >> 3;
-    const size_t ledgerSize = singleLedgerSize * numInstances;
-    std::byte* ledger = static_cast<std::byte*>(Malloc(ledgerSize));
-    assert(ledger != nullptr);
     std::memset(data, 0, dataSize);
-    std::memset(ledger, 0, ledgerSize);
 
     bool isMemoryBlockStart = true;
     for (size_t i = 0; i < numInstances; ++i)
     {
         std::byte* chunkBegin = data + blockCount * i;
-        std::byte* chunkLedger = ledger + singleLedgerSize * i;
-        m_data.emplace_back(chunkBegin, chunkLedger, isMemoryBlockStart);
+        m_data.emplace_back(chunkBegin, isMemoryBlockStart);
         isMemoryBlockStart = false;
     }
 
@@ -128,74 +121,9 @@ bool bucket_container_t::belongs_to_this(void* ptr) const noexcept
     return false;
 }
 
-std::optional<size_t> bucket_container_t::find_contiguous_blocks(size_t n) const noexcept 
-{
-    const size_t totalBlocks = blockCount * m_data.size();
-    for (size_t blockIdx = 0; blockIdx < totalBlocks; ++blockIdx)
-    {
-        if (!is_block_in_use(blockIdx))
-        {
-            size_t contiguousCount = 1;
-            size_t firstFreeBlockIdx = blockIdx;
-            if (contiguousCount >= n)
-            {
-                return firstFreeBlockIdx;
-            }
-
-            const size_t lastBlockIdx = firstFreeBlockIdx + n > totalBlocks?
-                totalBlocks : firstFreeBlockIdx + n;
-            for (blockIdx = blockIdx + 1; blockIdx < lastBlockIdx; ++blockIdx)
-            {
-                if (!is_block_in_use(blockIdx) && are_blocks_contiguous(blockIdx - 1, blockIdx))
-                {
-                    contiguousCount += 1;
-                    if (contiguousCount >= n)
-                    {
-                        return firstFreeBlockIdx;
-                    }
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-    }
-    
-    return std::nullopt;
-}
-
 bool bucket_container_t::is_block_in_use(size_t index) const noexcept 
 {
     return !m_memoryTracker.IsBlockFree(index);
-}
-
-void bucket_container_t::set_blocks_in_use(size_t index, size_t n) noexcept
-{
-    const size_t instanceIndex = calculate_bucket_instance_index(index);
-    const size_t localIndex = index - (instanceIndex * blockCount);
-
-    for (size_t i = 0; i < n; ++i)
-    {    
-        const size_t currentIndex = localIndex + i;
-        const size_t byteIndex = currentIndex >> 3; // <- divide by 8
-        const size_t bitOffset = 7 - (currentIndex - (byteIndex * 8));
-        m_data[instanceIndex].ledger[byteIndex] |= (std::byte(1) << bitOffset);
-    } 
-}
-
-void bucket_container_t::set_blocks_free(size_t index, size_t n) noexcept
-{
-    const size_t instanceIndex = calculate_bucket_instance_index(index);
-    const size_t localIndex = index - (instanceIndex * blockCount);
-
-    for (size_t i = 0; i < n; ++i)
-    {
-        const size_t currentIndex = localIndex + i;
-        const size_t byteIndex = currentIndex >> 3; // <- divide by 8
-        const size_t bitOffset = 7 - (currentIndex - (byteIndex * 8));
-        m_data[instanceIndex].ledger[byteIndex] &= ~(std::byte(1) << bitOffset);
-    } 
 }
 
 size_t bucket_container_t::calculate_bucket_instance_index(const size_t blockIndex) const

@@ -24,7 +24,7 @@ namespace ecs
                     , m_next{inNext}
                     , m_prev{inPrev}
                 {
-                    assert(!has_loops(blockIndex));
+                    assert(!has_loops());
                 }
 
                 inline size_t first_index() const noexcept { return m_index; }
@@ -35,30 +35,36 @@ namespace ecs
 
                 inline void set_block_index(size_t blockIndex) 
                 { 
+#ifdef DEBUG_BUILD
                     m_blockIndex = blockIndex; 
-                    assert(!has_loops(blockIndex));
+                    assert(!has_loops());
+#endif
                 }
 
                 inline void set_next(std::optional<size_t> inNext) 
                 {
                     m_next = inNext;
-                    assert(!has_loops(m_blockIndex));
+                    assert(!has_loops());
                 }
 
                 inline void set_prev(std::optional<size_t> inPrev)
                 {
                     m_prev = inPrev;
-                    assert(!has_loops(m_blockIndex));
+                    assert(!has_loops());
                 }
 
                 static block_t merge_blocks(const block_t& b1, const block_t& b2, size_t newIndex);
 
-                inline bool has_loops(const std::optional<size_t> index) const
+                inline bool has_loops() const
                 {
-                    if (!index.has_value())
+#ifdef DEBUG_BUILD
+                    if (!m_blockIndex.has_value())
                         return false;
-                    return m_next.has_value() && m_next.value() == *index 
-                        || m_prev.has_value() && m_prev.value() == *index;
+                    return m_next.has_value() && m_next.value() == *m_blockIndex 
+                        || m_prev.has_value() && m_prev.value() == *m_blockIndex;
+#else 
+                    return false;
+#endif
                 }
 
             private:
@@ -66,7 +72,9 @@ namespace ecs
                 size_t m_size = 0;
                 std::optional<size_t> m_next = std::nullopt;
                 std::optional<size_t> m_prev = std::nullopt;
+#ifdef DEBUG_BUILD
                 std::optional<size_t> m_blockIndex = std::nullopt;
+#endif
             };
 
             memory_blocks_free_list();
