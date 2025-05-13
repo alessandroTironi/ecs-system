@@ -25,10 +25,7 @@ namespace ecs
         friend class EntityHandle;
         friend class BatchComponentActionProcessor;
     public:
-        using ArchetypesSet = std::set<archetype_id, 
-            std::less<archetype_id>,
-            memory_pool::pool_memory_allocator<archetype_id, 1>
-            >;
+        using ArchetypesSet = pm_set<archetype_id, 128>;
 
         ArchetypesRegistry() = default;
         ArchetypesRegistry(std::shared_ptr<World> world) : m_world(world) {}
