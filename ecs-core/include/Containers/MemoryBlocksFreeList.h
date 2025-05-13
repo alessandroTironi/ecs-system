@@ -15,33 +15,58 @@ namespace ecs
             {
             public:
                 block_t() = default;
-                block_t(const size_t& inIndex, const size_t& inSize,
+                block_t(const std::optional<size_t> blockIndex, const size_t& inIndex, const size_t& inSize,
                     std::optional<size_t> inNext = std::nullopt, 
                     std::optional<size_t> inPrev = std::nullopt) noexcept
-                    : m_index{inIndex}
+                    : m_blockIndex{blockIndex}
+                    , m_index{inIndex}
                     , m_size{inSize}
-                    , next{inNext}
-                    , prev{inPrev}
-                {}
-
-                std::optional<size_t> next = std::nullopt;
-                std::optional<size_t> prev = std::nullopt;
+                    , m_next{inNext}
+                    , m_prev{inPrev}
+                {
+                    assert(!has_loops(blockIndex));
+                }
 
                 inline size_t first_index() const noexcept { return m_index; }
                 inline size_t last_index() const noexcept { return m_index + m_size - 1; }
                 inline size_t size() const noexcept { return m_size; }
+                inline std::optional<size_t> next() const noexcept { return m_next; }
+                inline std::optional<size_t> prev() const noexcept { return m_prev; }
 
-                static block_t merge_blocks(const block_t& b1, const block_t& b2);
+                inline void set_block_index(size_t blockIndex) 
+                { 
+                    m_blockIndex = blockIndex; 
+                    assert(!has_loops(blockIndex));
+                }
 
-                inline bool has_loops(const size_t index) const
+                inline void set_next(std::optional<size_t> inNext) 
                 {
-                    return next.has_value() && next.value() == index 
-                        || prev.has_value() && prev.value() == index;
+                    m_next = inNext;
+                    assert(!has_loops(m_blockIndex));
+                }
+
+                inline void set_prev(std::optional<size_t> inPrev)
+                {
+                    m_prev = inPrev;
+                    assert(!has_loops(m_blockIndex));
+                }
+
+                static block_t merge_blocks(const block_t& b1, const block_t& b2, size_t newIndex);
+
+                inline bool has_loops(const std::optional<size_t> index) const
+                {
+                    if (!index.has_value())
+                        return false;
+                    return m_next.has_value() && m_next.value() == *index 
+                        || m_prev.has_value() && m_prev.value() == *index;
                 }
 
             private:
                 size_t m_index = 0;
                 size_t m_size = 0;
+                std::optional<size_t> m_next = std::nullopt;
+                std::optional<size_t> m_prev = std::nullopt;
+                std::optional<size_t> m_blockIndex = std::nullopt;
             };
 
             memory_blocks_free_list();
@@ -59,7 +84,7 @@ namespace ecs
                 size_t blockIndex = m_firstBlock.value();
                 for (size_t i = 0; i < index; ++i)
                 {
-                    blockIndex = m_list[blockIndex].next.value();
+                    blockIndex = m_list[blockIndex].next().value();
                 }
 
                 return m_list[blockIndex];
