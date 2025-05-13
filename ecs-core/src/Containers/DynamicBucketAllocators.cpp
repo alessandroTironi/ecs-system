@@ -34,7 +34,6 @@ bucket_container_t::~bucket_container_t()
 
 void bucket_container_t::allocate_contiguous_bucket_instances(size_t numInstances)
 {
-    dynamic_bucket_t instance;
     const size_t dataSize = blockSize * blockCount * numInstances;
     std::byte* data = static_cast<std::byte*>(Malloc(dataSize));
     assert(data != nullptr);
@@ -53,6 +52,9 @@ void bucket_container_t::allocate_contiguous_bucket_instances(size_t numInstance
         m_data.emplace_back(chunkBegin, chunkLedger, isMemoryBlockStart);
         isMemoryBlockStart = false;
     }
+
+    m_memoryTracker.AddFreeBlock((m_data.size() - numInstances) * blockCount, 
+        numInstances * blockCount);
 }
 
 bool bucket_container_t::are_blocks_contiguous(size_t index1, size_t index2) const
@@ -79,26 +81,15 @@ void* bucket_container_t::allocate(size_t bytes) noexcept
     // Calculate required number of blocks 
     const size_t n = 1 + ((bytes - 1) / blockSize);
 
-    std::optional<size_t> optIndex = find_contiguous_blocks(n);
-    if (optIndex == std::nullopt)
+    std::optional<size_t> optIndex = m_memoryTracker.FindAndRemoveFreeBlock(n);
+    if (!optIndex.has_value())
     {
-        const size_t numBuckets = (n + blockCount - 1) / blockCount;
-        allocate_contiguous_bucket_instances(numBuckets);
-		optIndex = find_contiguous_blocks(n);
-
-        if (optIndex == std::nullopt)
-        {
-            // fallback to regular malloc if memory to allocate is too large
-            void* p = Malloc(n * sizeof(blockSize));
-            m_fallbackAllocations.push_back(p);
-            return p;
-        }
+        void* ptr = Malloc(n * blockSize);
+        m_fallbackAllocations.push_back(ptr);
+        return ptr;
     }
 
-    // Update the ledger
     const size_t index = *optIndex;
-    set_blocks_in_use(index, n);
-
 	const size_t bucketInstanceIndex = calculate_bucket_instance_index(index);
 	dynamic_bucket_t& bucketInstance = m_data[bucketInstanceIndex];
 	const size_t localIndex = index - (bucketInstanceIndex * blockCount);
@@ -120,7 +111,7 @@ void bucket_container_t::deallocate(void* ptr, size_t bytes) noexcept
     const size_t n = 1 + ((bytes - 1) / blockSize);
 
     // Update the ledger
-    set_blocks_free(index, n);
+    m_memoryTracker.AddFreeBlock(index, n);
 }
 
 bool bucket_container_t::belongs_to_this(void* ptr) const noexcept 
@@ -176,11 +167,7 @@ std::optional<size_t> bucket_container_t::find_contiguous_blocks(size_t n) const
 
 bool bucket_container_t::is_block_in_use(size_t index) const noexcept 
 {
-    const size_t instanceIndex = calculate_bucket_instance_index(index);
-    const size_t localIndex = index - (instanceIndex * blockCount);
-    const size_t byteIndex = localIndex >> 3; // <- divide by 8
-    const size_t bitOffset = 7 - (localIndex - (byteIndex * 8));  
-    return (m_data[instanceIndex].ledger[byteIndex] & (std::byte(1) << bitOffset)) != std::byte(0);
+    return !m_memoryTracker.IsBlockFree(index);
 }
 
 void bucket_container_t::set_blocks_in_use(size_t index, size_t n) noexcept
