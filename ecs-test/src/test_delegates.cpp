@@ -23,34 +23,34 @@ protected:
 
 TEST_F(TestDelegates, TestVoidDelegate)
 {
-    ecs::delegate_t<void> voidDelegate = 
-        ecs::delegate_t<void>::create([&]() {m_counter += 1; });
+    DEFINE_VOID_DELEGATE(IncrementCounter);
+    IncrementCounter delegate = IncrementCounter::create([&]() {m_counter += 1; });
 
-    voidDelegate();
+    delegate.invoke();
     ASSERT_EQ(m_counter, 1);
 }
 
 TEST_F(TestDelegates, TestVoidDelegateWithArguments)
 {
-    ecs::delegate_t<void, int> delegate =
-        ecs::delegate_t<void, int>::create([&](int i) { m_counter += i; });
+    DEFINE_VOID_DELEGATE(SumToCounter, int);
+    SumToCounter delegate = SumToCounter::create([&](int i) { m_counter += i; });
 
-    delegate(5);
+    delegate.invoke(5);
     ASSERT_EQ(m_counter, 5);
 }
 
 TEST_F(TestDelegates, TestDelegateWithReturnType)
 {
-    ecs::delegate_t<int> delegate =
-        ecs::delegate_t<int>::create([&]() { return 10; });
+    DEFINE_DELEGATE_RET(Return10, int);
+    Return10 delegate = Return10::create([&]() { return 10; });
 
-    ASSERT_EQ(delegate(), 10);
+    ASSERT_EQ(delegate.invoke(), 10);
 }
 
 TEST_F(TestDelegates, TestDelegateWithReturnTypeAndArguments)
 {
-    ecs::delegate_t<int, int> delegate =
-        ecs::delegate_t<int, int>::create([&](int i) { return 10 + i; });
+    DEFINE_DELEGATE_RET(SumTo10, int, int);
+    SumTo10 delegate = SumTo10::create([&](int i) { return 10 + i; });
 
-    ASSERT_EQ(delegate(5), 15);
+    ASSERT_EQ(delegate.invoke(5), 15);
 }

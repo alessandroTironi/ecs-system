@@ -12,19 +12,35 @@ namespace ecs
 
         delegate_t() = default;
 
-        TReturnType operator()(TArgs... args)
+        TReturnType invoke(TArgs... args)
         {
-            return m_function(args...);
+            if constexpr (std::is_same_v<TReturnType, void>)
+            {
+                m_function(args...);
+            }
+            else
+            {
+                return m_function(args...);
+            }
         }
 
-        static delegate_t<TReturnType, TArgs...> create(FunctionType function)
+        bool is_bound() const noexcept
         {
-            return delegate_t<TReturnType, TArgs...>(function);
+            return m_function != nullptr;
+        }
+
+        static delegate_t<TReturnType, TArgs...> create(FunctionType&& function)
+        {
+            return delegate_t<TReturnType, TArgs...>(std::move(function));
         }
 
     private:
         delegate_t(FunctionType function) : m_function{function} {}
 
-        FunctionType m_function;
+        FunctionType m_function = nullptr;
     };
 }
+
+#define DEFINE_VOID_DELEGATE(DelegateTypeName, ...) using DelegateTypeName = ecs::delegate_t<void, ## __VA_ARGS__>
+
+#define DEFINE_DELEGATE_RET(DelegateTypeName, ReturnType, ...) using DelegateTypeName = ecs::delegate_t<ReturnType, ## __VA_ARGS__>
