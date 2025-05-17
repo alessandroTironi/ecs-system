@@ -36,7 +36,7 @@ void Logger::Stop()
 
 void Logger::Log(const std::string& message, ELogVerbosity verbosity)
 {
-	m_buffer.produce_item(log_message_t(message, verbosity));
+	m_buffer.emplace_item(message, verbosity);
 }
 
 void Logger::ConsumeBuffer()

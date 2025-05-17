@@ -63,6 +63,23 @@ namespace ecs
             return true;
         }
 
+		template<typename... Args>
+		inline bool emplace_item(Args&&... args) noexcept
+		{
+			if (m_bufferCount.load(std::memory_order_relaxed) >= m_capacity)
+			{
+				return false;
+			}
+
+			const size_t index = m_producerIndex.load(std::memory_order_relaxed);
+			m_data[index].~T();
+			new(&m_data[index]) T(std::forward<Args>(args)...);
+
+			m_producerIndex.store((index + 1) % m_capacity, std::memory_order_relaxed);
+            m_bufferCount.fetch_add(1, std::memory_order_relaxed);
+            return true;
+		}
+
         inline bool consume_item(T& outItem) noexcept 
         {
             if (m_bufferCount.load(std::memory_order_relaxed) == 0)
@@ -87,20 +104,16 @@ namespace ecs
 
             // Allocate new memory
             T* newData = static_cast<T*>(Malloc(sizeof(T) * newCapacity));
-            
-            // Construct new elements
-            for (size_t i = 0; i < newCapacity; ++i) 
+			for (size_t i = 0; i < m_capacity; ++i)
 			{
-                if (i < m_capacity) 
-				{
-                    new (&newData[i]) T(std::move(m_data[i]));
-                    m_data[i].~T();
-                } 
-				else 
-				{
-                    new (&newData[i]) T();
-                }
-            }
+				new (&newData[i]) T(std::move(m_data[i]));
+                m_data[i].~T();
+			}
+
+			for (size_t i = m_capacity; i < newCapacity; ++i)
+			{
+				new (&newData[i]) T();
+			}
             
             // Free old memory
             Free(m_data);
