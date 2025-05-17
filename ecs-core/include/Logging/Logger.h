@@ -8,6 +8,8 @@
 #include <chrono>
 #include <format>
 
+#include "Containers/RingBuffer.h"
+
 namespace ecs
 {
 	enum class ELogVerbosity : uint8_t
@@ -52,13 +54,9 @@ namespace ecs
 			{}
 		};
 
-		std::vector<log_message_t> m_buffer; 
+		ring_buffer<log_message_t> m_buffer; 
 		std::thread m_consumerThread; 
-		std::atomic<size_t> m_bufferCount{0};
-		std::atomic<size_t> m_producerIndex{0};
-		std::atomic<size_t> m_consumerIndex{0};
 		std::atomic<bool> m_running{false};
-		size_t capacity = 32;
 	};
 
 	inline static Logger* gLogger = new Logger(true);

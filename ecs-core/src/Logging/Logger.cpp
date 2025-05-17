@@ -6,7 +6,7 @@ using namespace ecs;
 
 Logger::Logger(bool autoRun)
 {
-	m_buffer.resize(capacity);
+	m_buffer.resize_buffer(32);
 
 	if (autoRun)
 	{
@@ -36,15 +36,7 @@ void Logger::Stop()
 
 void Logger::Log(const std::string& message, ELogVerbosity verbosity)
 {
-	if (m_bufferCount.load(std::memory_order_relaxed) >= m_buffer.size())
-	{
-		return; // Buffer is full, drop the message
-	}
-
-	m_buffer[m_producerIndex.load(std::memory_order_relaxed)] = log_message_t(message, verbosity);
-	m_producerIndex.store((m_producerIndex.load(std::memory_order_relaxed) + 1) % m_buffer.size(), 	
-		std::memory_order_relaxed);
-	m_bufferCount.fetch_add(1, std::memory_order_relaxed);
+	m_buffer.produce_item(log_message_t(message, verbosity));
 }
 
 void Logger::ConsumeBuffer()
@@ -53,14 +45,9 @@ void Logger::ConsumeBuffer()
 
 	while (m_running.load(std::memory_order_relaxed))
 	{
-		if (m_bufferCount.load(std::memory_order_relaxed) > 0)
+		log_message_t message;
+		if (m_buffer.consume_item(message))
 		{
-			const log_message_t& message = m_buffer[m_consumerIndex.load(std::memory_order_relaxed)];
-			m_consumerIndex.store((m_consumerIndex.load(std::memory_order_relaxed) + 1) % m_buffer.size(), 
-				std::memory_order_relaxed);
-
-			m_bufferCount.fetch_sub(1, std::memory_order_relaxed);
-
 			int textColor = 0x07; // Default white text
 			switch (message.verbosity)
 			{
@@ -75,6 +62,6 @@ void Logger::ConsumeBuffer()
 			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), textColor);
 			std::cout << "[" << message.timestamp << "]: " << message.message << std::endl;
 			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x07); // Reset to default text color
-		}	
+		}
 	}
 }
