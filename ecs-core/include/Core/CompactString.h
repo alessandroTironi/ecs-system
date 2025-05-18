@@ -3,6 +3,7 @@
 #include <string>
 #include <cstring>
 #include <functional>
+#include <format>
 
 namespace ecs 
 {
@@ -97,6 +98,24 @@ namespace ecs
     };
 
 }
+
+/**
+ * Specialization for std::formatter, which allows a compact_string to be 
+ * passed to a std::format call.
+ */
+template <size_t N>
+struct std::formatter<ecs::compact_string<N>, char> 
+{
+    constexpr auto parse(std::format_parse_context& ctx) 
+    {
+        return ctx.begin();
+    }
+    
+    auto format(const ecs::compact_string<N>& str, std::format_context& ctx) const 
+    {
+        return std::format_to(ctx.out(), "{}", str.c_str()); 
+    }
+};
 
 
 namespace std 
