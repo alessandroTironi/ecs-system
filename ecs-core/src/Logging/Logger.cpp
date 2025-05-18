@@ -39,6 +39,8 @@ void Logger::Log(const std::string& message, ELogVerbosity verbosity)
 	m_buffer.emplace_item(message, verbosity);
 }
 
+
+
 void Logger::ConsumeBuffer()
 {
 	m_running.store(true, std::memory_order_relaxed);

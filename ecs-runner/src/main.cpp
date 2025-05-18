@@ -8,6 +8,7 @@
 #include "Core/World.h"
 #include "Core/ArchetypeQuery.h"
 #include "Logging/Logger.h"
+#include "Profiling/Profiler.h"
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
@@ -41,6 +42,8 @@ namespace systems
     {
         void Update(std::weak_ptr<ecs::World> world, ecs::real_t deltaTime) override
         {
+            SCOPE_CYCLE_COUNTER(MovementSystem);
+
             ecs::query<comps::Rect, comps::Velocity>::MakeQuery(world).forEach(
                 [deltaTime](ecs::EntityHandle entity, comps::Rect& rect, comps::Velocity& velocity)
                 {
@@ -85,6 +88,8 @@ namespace systems
 
         void Update(std::weak_ptr<ecs::World> world, ecs::real_t deltaTime) override
         {
+            SCOPE_CYCLE_COUNTER(RenderingSystem);
+
             ecs::query<comps::Rect, comps::Color>::MakeQuery(world).forEach(
                 [&](ecs::EntityHandle entity, comps::Rect& rect, comps::Color& color)
                 {
@@ -107,6 +112,8 @@ int main()
 
     ecs::Logger* logger = new ecs::Logger();
     logger->Run();
+
+    PROFILER_RUN();
 
     ECS_LOG(Log, "Initializing ECS instance...");
     std::shared_ptr<ecs::World> world = std::make_shared<ecs::World>();
@@ -240,6 +247,8 @@ int main()
 
     while (s_keepUpdating)
     {
+        PROFILER_START_NEW_FRAME()
+
         currentTime = SDL_GetTicks64();
         Uint64 elapsedTicks = currentTime - previousTime;
         const float deltaTime = static_cast<float>(elapsedTicks) / 1000.0f;
@@ -280,6 +289,8 @@ int main()
             SDL_Delay(targetFrameTime - frameTimeSoFar);
         }
     }
+
+    PROFILER_STOP();
 
     // Cleanup
     SDL_DestroyTexture(textTexture);
