@@ -11,10 +11,16 @@
 
 #define ENABLE_PROFILER DEBUG_BUILD
 
+
 namespace ecs
 {
 	namespace profiling
 	{
+		namespace gui 
+		{
+			class ProfilerGraphicsApp;
+		}
+
 		class Profiler
 		{
 		public:
@@ -41,6 +47,8 @@ namespace ecs
 			frame_data_t m_currentFrameData;
 			std::vector<frame_data_t> m_recordedFrames;
 			std::atomic<bool> m_endFrameProcessing{false};
+
+			std::unique_ptr<gui::ProfilerGraphicsApp> m_gui;
 
 			static std::unique_ptr<Profiler> m_instance;
 		};

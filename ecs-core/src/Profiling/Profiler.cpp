@@ -1,4 +1,5 @@
 #include "Profiling/Profiler.h"
+#include "Profiling/ProfilerGraphicsApp.h"
 
 using namespace ecs::profiling;
 
@@ -7,6 +8,8 @@ std::unique_ptr<Profiler> Profiler::m_instance = std::make_unique<Profiler>();
 Profiler::Profiler()
 {
 	m_frameBuffer.resize_buffer(128);
+
+	m_gui = std::make_unique<gui::ProfilerGraphicsApp>();
 }
 
 Profiler::~Profiler()
@@ -20,6 +23,11 @@ void Profiler::StartRecording()
 	{
 		m_running.store(true, std::memory_order_relaxed);
 		m_profilerThread = std::thread(&Profiler::ProcessData, this);
+
+		if (m_gui.get())
+		{
+			m_gui->Open();
+		}
 	}
 	
 }
@@ -29,6 +37,11 @@ void Profiler::StopRecording()
 	if (m_running.load(std::memory_order_relaxed))
 	{
 		m_running.store(false, std::memory_order_relaxed);
+
+		if (m_gui.get())
+		{
+			m_gui->Close();
+		}
 
 		if (m_profilerThread.joinable())
 		{
