@@ -1,5 +1,5 @@
-#include "Profiling/CycleCounter.h"
-#include "Profiling/Profiler.h"
+#include "CycleCounter.h"
+#include "Profiler.h"
 
 using namespace ecs::profiling;
 

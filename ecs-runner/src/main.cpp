@@ -8,7 +8,7 @@
 #include "Core/World.h"
 #include "Core/ArchetypeQuery.h"
 #include "Logging/Logger.h"
-#include "Profiling/Profiler.h"
+#include "Profiler.h"
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"

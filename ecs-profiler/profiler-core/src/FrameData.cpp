@@ -1,5 +1,4 @@
-#include "Profiling/FrameData.h"
-#include "Logging/Logger.h"
+#include "FrameData.h"
 #include <format>
 #include <string>
 
@@ -16,9 +15,9 @@ void frame_data_t::aggregate_data()
 		data.framePercent = (data.totalTimeMs / frameTime) * 100.0;
 		totalTime += data.totalTimeMs;
 
-		ECS_LOG(Log, "{}: \ttime: {:.4f}ms ({:.2f}%)", it->first, data.totalTimeMs, data.framePercent);
+		//ECS_LOG(Log, "{}: \ttime: {:.4f}ms ({:.2f}%)", it->first, data.totalTimeMs, data.framePercent);
 	}
 
-	ECS_LOG(Log, "Other: \t\ttime: {:.4f}ms ({:.2f}%)", frameTime - totalTime, 
-			(1.0 - (totalTime / frameTime)) * 100.0);
+	//ECS_LOG(Log, "Other: \t\ttime: {:.4f}ms ({:.2f}%)", frameTime - totalTime, 
+	//		(1.0 - (totalTime / frameTime)) * 100.0);
 }

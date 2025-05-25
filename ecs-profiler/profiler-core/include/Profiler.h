@@ -4,8 +4,6 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
-#include "Containers/RingBuffer.h"
-#include "Core/Types.h"
 #include "CycleCounter.h"
 #include "FrameData.h"
 
@@ -16,11 +14,6 @@ namespace ecs
 {
 	namespace profiling
 	{
-		namespace gui 
-		{
-			class ProfilerGraphicsApp;
-		}
-
 		class Profiler
 		{
 		public:
@@ -40,15 +33,20 @@ namespace ecs
 			void ProcessData();
 			void ProcessCycleCounter(const ScopeCycleCounter& counter);
 
+			bool TryPopCounter(ScopeCycleCounter& outCounter);
+			bool TryPushCounter(const ScopeCycleCounter& counter);
+
 			std::thread m_profilerThread;
 			std::atomic<bool> m_running = false;
-			ring_buffer<ScopeCycleCounter> m_frameBuffer;
+			std::vector<ScopeCycleCounter> m_cycleCountersBuffer;
+			std::atomic<size_t> m_bufferCount{0};
+			std::atomic<size_t> m_producerIndex{0};
+			std::atomic<size_t> m_consumerIndex{0};
+			size_t m_capacity = 128;
 
 			frame_data_t m_currentFrameData;
 			std::vector<frame_data_t> m_recordedFrames;
 			std::atomic<bool> m_endFrameProcessing{false};
-
-			std::unique_ptr<gui::ProfilerGraphicsApp> m_gui;
 
 			static std::unique_ptr<Profiler> m_instance;
 		};

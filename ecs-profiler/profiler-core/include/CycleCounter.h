@@ -1,13 +1,12 @@
 #pragma once 
 
-#include "Core/Types.h"
 #include <chrono>
 
 namespace ecs
 {
 	namespace profiling
 	{
-		using cycle_counter_name = ecs::compact_string<128>;
+		using cycle_counter_name = std::string;
 
 		class ScopeCycleCounter
 		{

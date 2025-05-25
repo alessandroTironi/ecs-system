@@ -114,6 +114,7 @@ target_link_libraries(ecs-core PUBLIC
   ${OPENGL_LIBRARIES}
   ${SDL2_LIBRARY}
   ${SDL2MAIN_LIBRARY}
+  profiler-core
 )
 
 # Define platform-specific compile definitions

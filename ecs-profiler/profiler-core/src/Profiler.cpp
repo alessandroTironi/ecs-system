@@ -1,5 +1,4 @@
-#include "Profiling/Profiler.h"
-#include "Profiling/ProfilerGraphicsApp.h"
+#include "Profiler.h"
 
 using namespace ecs::profiling;
 
@@ -7,9 +6,8 @@ std::unique_ptr<Profiler> Profiler::m_instance = std::make_unique<Profiler>();
 
 Profiler::Profiler()
 {
-	m_frameBuffer.resize_buffer(128);
-
-	m_gui = std::make_unique<gui::ProfilerGraphicsApp>();
+	m_cycleCountersBuffer.reserve(m_capacity);
+	m_cycleCountersBuffer.resize(m_capacity);
 }
 
 Profiler::~Profiler()
@@ -23,11 +21,6 @@ void Profiler::StartRecording()
 	{
 		m_running.store(true, std::memory_order_relaxed);
 		m_profilerThread = std::thread(&Profiler::ProcessData, this);
-
-		if (m_gui.get())
-		{
-			m_gui->Open();
-		}
 	}
 	
 }
@@ -37,11 +30,6 @@ void Profiler::StopRecording()
 	if (m_running.load(std::memory_order_relaxed))
 	{
 		m_running.store(false, std::memory_order_relaxed);
-
-		if (m_gui.get())
-		{
-			m_gui->Close();
-		}
 
 		if (m_profilerThread.joinable())
 		{
@@ -62,7 +50,7 @@ void Profiler::ProcessData()
 		ScopeCycleCounter counter;
 		if (m_endFrameProcessing.load(std::memory_order_relaxed))
 		{
-			while (m_frameBuffer.consume_item(counter))
+			while (TryPopCounter(counter))
 			{
 				ProcessCycleCounter(counter);
 			}
@@ -77,7 +65,7 @@ void Profiler::ProcessData()
 			m_endFrameProcessing.store(false, std::memory_order_relaxed);
 		}
 
-		if (!m_frameBuffer.consume_item(counter))
+		if (!TryPopCounter(counter))
 		{
 			continue;
 		}
@@ -111,11 +99,43 @@ void Profiler::AddCycleCounter(const ScopeCycleCounter& counter)
 {
 	if (m_running.load(std::memory_order_relaxed))
 	{
-		m_frameBuffer.produce_item(counter);
+		TryPushCounter(counter);
 	}
 }
 
 void Profiler::StartNewFrame()
 {
 	m_endFrameProcessing.store(true, std::memory_order_relaxed);
+}
+
+bool Profiler::TryPopCounter(ScopeCycleCounter& outCounter)
+{
+	if (m_bufferCount.load(std::memory_order_acquire) == 0)
+	{
+		return false;
+	}
+
+	const size_t index = m_consumerIndex.load(std::memory_order_relaxed);
+	outCounter = m_cycleCountersBuffer[index]; 
+	
+	// Use release ordering to ensure index update is visible to producers
+	m_consumerIndex.store((index + 1) % m_capacity, std::memory_order_release);
+	m_bufferCount.fetch_sub(1, std::memory_order_release);
+	return true;
+}
+
+bool Profiler::TryPushCounter(const ScopeCycleCounter& counter)
+{
+	if (m_bufferCount.load(std::memory_order_acquire) >= m_capacity)
+	{
+		return false;
+	}
+
+	const size_t index = m_producerIndex.load(std::memory_order_relaxed);
+	m_cycleCountersBuffer[index] = counter; 
+	
+	// Use release ordering to ensure data is visible before index update
+	m_producerIndex.store((index + 1) % m_capacity, std::memory_order_release);
+	m_bufferCount.fetch_add(1, std::memory_order_release);
+	return true;
 }
