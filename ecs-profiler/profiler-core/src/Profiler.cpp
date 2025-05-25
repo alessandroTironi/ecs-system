@@ -1,4 +1,6 @@
 #include "Profiler.h"
+#include "FileWriter.h"
+#include "Session.h"
 
 using namespace ecs::profiling;
 
@@ -8,6 +10,8 @@ Profiler::Profiler()
 {
 	m_cycleCountersBuffer.reserve(m_capacity);
 	m_cycleCountersBuffer.resize(m_capacity);
+
+	m_session = std::make_shared<Session>();
 }
 
 Profiler::~Profiler()
@@ -55,11 +59,13 @@ void Profiler::ProcessData()
 				ProcessCycleCounter(counter);
 			}
 
-			m_currentFrameData.frameEndTime = std::chrono::high_resolution_clock::now();
+			m_currentFrameData.frameEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 			m_currentFrameData.aggregate_data();
-			m_recordedFrames.push_back(m_currentFrameData);
+			m_session->PushFrameData(m_currentFrameData);
 
-			m_currentFrameData.frameBeginTime = std::chrono::high_resolution_clock::now();
+			m_currentFrameData.frameBeginTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 			m_currentFrameData.countersData.clear();
 
 			m_endFrameProcessing.store(false, std::memory_order_relaxed);
@@ -75,8 +81,16 @@ void Profiler::ProcessData()
 	}
 
 	m_currentFrameData.aggregate_data();
-	m_recordedFrames.push_back(m_currentFrameData);
-	m_recordedFrames.clear();
+	m_session->PushFrameData(m_currentFrameData);
+
+	std::unique_ptr<FileWriter> writer = std::make_unique<FileWriter>("profiler-session.bin");
+	if (writer != nullptr)
+	{
+		writer->Write(m_session);
+		writer->JoinWritingThread();
+	}
+
+	m_session->Clear();
 }
 
 void Profiler::ProcessCycleCounter(const ScopeCycleCounter& counter)

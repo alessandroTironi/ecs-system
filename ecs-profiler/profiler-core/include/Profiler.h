@@ -14,6 +14,8 @@ namespace ecs
 {
 	namespace profiling
 	{
+		class Session;
+
 		class Profiler
 		{
 		public:
@@ -45,7 +47,7 @@ namespace ecs
 			size_t m_capacity = 128;
 
 			frame_data_t m_currentFrameData;
-			std::vector<frame_data_t> m_recordedFrames;
+			std::shared_ptr<Session> m_session;
 			std::atomic<bool> m_endFrameProcessing{false};
 
 			static std::unique_ptr<Profiler> m_instance;

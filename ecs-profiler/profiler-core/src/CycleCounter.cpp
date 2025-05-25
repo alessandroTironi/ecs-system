@@ -1,5 +1,6 @@
 #include "CycleCounter.h"
 #include "Profiler.h"
+#include <stacktrace>
 
 using namespace ecs::profiling;
 

@@ -1,6 +1,23 @@
 cmake_minimum_required(VERSION 3.14)
 project(profiler-core)
 
+include(FetchContent)
+
+# Add dependency to cereal serialization library
+FetchContent_Declare(
+    cereal
+    GIT_REPOSITORY https://github.com/USCiLab/cereal.git
+    GIT_TAG v1.3.2
+)
+
+# Populate cereal but don't call add_subdirectory
+FetchContent_GetProperties(cereal)
+if(NOT cereal_POPULATED)
+    FetchContent_Populate(cereal)
+    # Don't call add_subdirectory to avoid cereal's CMakeLists.txt
+    # We only need the headers anyway
+endif()
+
 # project source files
 set(PROFILER_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/include")
 set(PROFILER_SRC_DIR "${CMAKE_CURRENT_LIST_DIR}/src")
@@ -19,6 +36,8 @@ set_target_properties(profiler-core PROPERTIES OUTPUT_NAME "fang-prof") # temp n
 target_include_directories(profiler-core 
     PUBLIC
         ${PROFILER_INCLUDE_DIR}
+        ${cereal_SOURCE_DIR}/include
     PRIVATE
         ${PROFILER_SRC_DIR}
+        
 )
