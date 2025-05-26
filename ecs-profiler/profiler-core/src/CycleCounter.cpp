@@ -4,6 +4,8 @@
 
 using namespace ecs::profiling;
 
+uint32_t ScopeCycleCounter::s_currrentDepth = 0;
+
 ScopeCycleCounter::ScopeCycleCounter(cycle_counter_name id)
 {
 	if (id.size() > 0)
@@ -12,6 +14,9 @@ ScopeCycleCounter::ScopeCycleCounter(cycle_counter_name id)
 
 		m_recordBeginTime = std::chrono::high_resolution_clock::now();
 		m_id = id;
+
+		m_depth = s_currrentDepth;
+		s_currrentDepth += 1;
 	}
 }
 
@@ -22,5 +27,7 @@ ScopeCycleCounter::~ScopeCycleCounter()
 		m_recordEndTime = std::chrono::high_resolution_clock::now();
 
 		Profiler::Instance()->AddCycleCounter(*this);
+
+		s_currrentDepth -= 1;
 	}
 }

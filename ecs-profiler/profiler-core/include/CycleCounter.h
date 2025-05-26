@@ -22,11 +22,15 @@ namespace ecs
 			}
 
 			inline void invalidate() noexcept { m_valid = false; }
+			inline size_t depth() const noexcept { return m_depth; }
 		private:
 			std::chrono::high_resolution_clock::time_point m_recordBeginTime;
 			std::chrono::high_resolution_clock::time_point m_recordEndTime;
+			size_t m_depth = 0;
 			cycle_counter_name m_id;
 			bool m_valid = false;
+
+			static uint32_t s_currrentDepth;
 		};
 	}
 }

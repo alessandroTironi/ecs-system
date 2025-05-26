@@ -447,7 +447,7 @@ void ProfilerApp::DrawTimeline(const ecs::profiling::frame_data_t& frameData, do
     }
     
     // Find maximum depth for layout
-    uint32_t maxDepth = 0;
+    size_t maxDepth = 0;
     for (auto it = frameData.countersData.begin(); it != frameData.countersData.end(); ++it) 
     {
         maxDepth = std::max(maxDepth, it->second.depth);

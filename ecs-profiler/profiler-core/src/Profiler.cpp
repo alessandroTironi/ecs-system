@@ -98,6 +98,7 @@ void Profiler::ProcessCycleCounter(const ScopeCycleCounter& counter)
 	cycle_counter_data_t& counterData = m_currentFrameData.countersData[counter.id()];
 	const double duration = counter.duration_ms();
 	counterData.totalTimeMs += duration;
+	counterData.depth = counter.depth();
 	if (duration > counterData.maxTimeMs)
 	{
 		counterData.maxTimeMs = duration;

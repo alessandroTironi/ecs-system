@@ -21,7 +21,7 @@ namespace ecs
 			double minTimeMs = std::numeric_limits<double>::max();
 			double averageTimeMs = 0.0;
 			double framePercent = 0.0;
-			uint32_t depth = 0;
+			size_t depth = 0;
 
 			template<class Archive>
 			void serialize(Archive& archive)
