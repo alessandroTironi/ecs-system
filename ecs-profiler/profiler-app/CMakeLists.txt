@@ -35,6 +35,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
+# Fetch Dear ImGui File Dialogue
+FetchContent_Declare(
+    ImGuiFileDialog 
+    GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git
+    GIT_TAG v0.6.7
+)
+FetchContent_MakeAvailable(ImGuiFileDialog)
+
 # Create ImGui library
 set(IMGUI_SOURCES
     ${imgui_SOURCE_DIR}/imgui.cpp
@@ -51,6 +59,11 @@ add_library(imgui STATIC ${IMGUI_SOURCES})
 target_include_directories(imgui PUBLIC
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
+    "include"
+)
+
+target_include_directories(ImGuiFileDialog 
+    PUBLIC ${imgui_SOURCE_DIR}
 )
 
 target_link_libraries(imgui PUBLIC
@@ -68,6 +81,7 @@ add_executable(profiler-app ${SOURCES})
 target_link_libraries(profiler-app PRIVATE
     profiler-core
     imgui
+    ImGuiFileDialog
     OpenGL::GL
     glfw
     glad
@@ -77,4 +91,5 @@ target_link_libraries(profiler-app PRIVATE
 target_include_directories(profiler-app PRIVATE
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
+    ${ImGuiFileDialog_SOURCE_DIR}
 )
