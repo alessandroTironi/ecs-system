@@ -158,7 +158,7 @@ void ProfilerApp::Run()
 
 void ProfilerApp::RenderMainWindow()
 {
-    static bool showTimeline = false;
+    static bool showTimeline = true;
     static bool showStatistics = false;
     static bool showSettings = false;
     static bool enablePausing = false;
@@ -277,21 +277,15 @@ void ProfilerApp::RenderMainWindow()
 
         
         
-        /*
+        
         // Example profiler data
-        static std::vector<ProfilerEntry> sampleEntries = {
-            {"Frame", 0.0f, 16.2f, IM_COL32(100, 150, 200, 255), 0},
-            {"Update", 0.5f, 3.2f, IM_COL32(150, 200, 100, 255), 1},
-            {"Physics", 1.0f, 2.1f, IM_COL32(200, 150, 100, 255), 2},
-            {"Collision", 1.2f, 1.5f, IM_COL32(200, 100, 150, 255), 3},
-            {"AI Update", 3.8f, 1.8f, IM_COL32(150, 100, 200, 255), 2},
-            {"Render", 4.0f, 11.5f, IM_COL32(200, 100, 100, 255), 1},
-            {"Scene Prep", 4.2f, 2.1f, IM_COL32(180, 120, 80, 255), 2},
-            {"Draw Calls", 6.5f, 8.2f, IM_COL32(120, 180, 80, 255), 2},
-            {"Shadows", 7.0f, 3.1f, IM_COL32(80, 120, 180, 255), 3},
-            {"Lighting", 10.5f, 3.8f, IM_COL32(180, 80, 120, 255), 3},
-            {"Post Process", 14.8f, 1.2f, IM_COL32(120, 80, 180, 255), 2}
-        };
+        ecs::profiling::frame_data_t frameData;
+        frameData.frameBeginTime = 0.0;
+        frameData.frameEndTime = 16.67;
+        frameData.countersData["Frame"] = { 16.67, 5.0, 4.0, 5.0, 1.0, 0 };
+        frameData.countersData["Update"] = { 16.66, 5.0, 4.0, 5.0, 16.66 / 16.67, 1 };
+        frameData.countersData["Physics"] = { 8.0, 5.0, 4.0, 5.0, 0.5, 2 };
+        frameData.countersData["AI"] = { 8.67, 5.0, 4.0, 5.0, 0.5, 2 };
         
         // Status bar with frame info
         ImGui::Text("Frame Time: 16.2ms (Target: %.2fms @ %.0f FPS) %s", 
@@ -309,9 +303,11 @@ void ProfilerApp::RenderMainWindow()
         // Show timeline if enabled
         if (showTimeline) 
         {
-            DrawProfilerTimeline(sampleEntries, targetFrameTime);
+            DrawTimeline(frameData, targetFrameTime);
         }
         
+        
+        /*
         // Show statistics panel if enabled
         if (showStatistics) 
         {
@@ -341,6 +337,7 @@ void ProfilerApp::RenderMainWindow()
             }
         }
         */
+        
         
         // Show settings panel if enabled
         if (showSettings) {
@@ -396,4 +393,163 @@ void ProfilerApp::RenderMainWindow()
     ImGui::End();
 
     
+}
+
+void ProfilerApp::DrawTimeline(const ecs::profiling::frame_data_t& frameData, double frameTimeMs)
+{
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    ImVec2 canvasPos = ImGui::GetCursorScreenPos();
+    ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+    
+    // Timeline configuration
+    const float timelineHeight = 200.0f;
+    const float entryHeight = 18.0f;
+    const float entrySpacing = 2.0f;
+    const float leftMargin = 100.0f;
+    const float rightMargin = 20.0f;
+    const float topMargin = 30.0f;
+    
+    // Ensure minimum width for timeline
+    if (canvasSize.x < 300.0f) canvasSize.x = 300.0f;
+    
+    // Calculate timeline bounds
+    ImVec2 timelineStart = ImVec2(canvasPos.x + leftMargin, canvasPos.y + topMargin);
+    float timelineWidth = canvasSize.x - leftMargin - rightMargin;
+    
+    // Draw background
+    drawList->AddRectFilled(canvasPos, 
+                           ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + timelineHeight),
+                           IM_COL32(30, 30, 30, 255));
+    
+    // Draw frame time reference line
+    float frameEndX = timelineStart.x + (frameTimeMs / frameTimeMs) * timelineWidth;
+    drawList->AddLine(ImVec2(frameEndX, timelineStart.y - 10),
+                     ImVec2(frameEndX, timelineStart.y + timelineHeight - topMargin),
+                     IM_COL32(255, 255, 0, 150), 2.0f);
+    
+    // Draw time scale
+    const int numTicks = 8;
+    for (int i = 0; i <= numTicks; ++i) {
+        float t = (float)i / numTicks;
+        float x = timelineStart.x + t * timelineWidth;
+        float timeMs = t * frameTimeMs;
+        
+        // Tick mark
+        drawList->AddLine(ImVec2(x, timelineStart.y - 5),
+                         ImVec2(x, timelineStart.y),
+                         IM_COL32(150, 150, 150, 255));
+        
+        // Time label
+        char timeStr[32];
+        snprintf(timeStr, sizeof(timeStr), "%.1fms", timeMs);
+        drawList->AddText(ImVec2(x - 15, timelineStart.y - 25), 
+                         IM_COL32(200, 200, 200, 255), timeStr);
+    }
+    
+    // Find maximum depth for layout
+    uint32_t maxDepth = 0;
+    for (auto it = frameData.countersData.begin(); it != frameData.countersData.end(); ++it) 
+    {
+        maxDepth = std::max(maxDepth, it->second.depth);
+    }
+    
+    // Draw profiler entries
+    double startTime = 0.0;
+    static std::vector<ImU32> colors =
+    {
+        IM_COL32(100, 150, 200, 255),
+        IM_COL32(150, 200, 100, 255),
+        IM_COL32(200, 150, 100, 255),
+        IM_COL32(200, 100, 150, 255),
+        IM_COL32(150, 100, 200, 255),
+        IM_COL32(200, 100, 100, 255),
+        IM_COL32(180, 120, 80, 255),
+        IM_COL32(120, 180, 80, 255),
+        IM_COL32(80, 120, 180, 255),
+        IM_COL32(180, 80, 120, 255),
+        IM_COL32(120, 80, 180, 255)
+    };
+    int colorIdx = 0;
+    for (auto it = frameData.countersData.begin(); it != frameData.countersData.end(); ++it) 
+    {
+        const std::string& name = it->first;
+        const auto& counter = it->second;
+
+        // Calculate rectangle position and size
+        double startX = timelineStart.x + (startTime / frameTimeMs) * timelineWidth;
+        double endX = timelineStart.x + ((startTime + counter.totalTimeMs) / frameTimeMs) * timelineWidth;
+        double width = endX - startX;
+        
+        // Ensure minimum width for visibility
+        if (width < 2.0f) 
+        {
+            width = 2.0f;
+            endX = startX + width;
+        }
+        
+        // Calculate Y position based on depth
+        float yPos = timelineStart.y + counter.depth * (entryHeight + entrySpacing);
+        
+        // Draw rectangle
+        ImVec2 rectMin = ImVec2(startX, yPos);
+        ImVec2 rectMax = ImVec2(endX, yPos + entryHeight);
+        
+        drawList->AddRectFilled(rectMin, rectMax, colors[colorIdx++]);
+        if (colorIdx >= colors.size())
+        {
+            colorIdx = 0;
+        }
+
+        drawList->AddRect(rectMin, rectMax, IM_COL32(255, 255, 255, 100));
+        
+        // Draw text label if rectangle is wide enough
+        if (width > 60.0f) {
+            ImVec2 textSize = ImGui::CalcTextSize(name.c_str());
+            ImVec2 textPos = ImVec2(startX + 4, yPos + (entryHeight - textSize.y) * 0.5f);
+            
+            // Clip text to rectangle bounds
+            drawList->PushClipRect(rectMin, rectMax);
+            drawList->AddText(textPos, IM_COL32(255, 255, 255, 255), name.c_str());
+            drawList->PopClipRect();
+        }
+        
+        // Tooltip on hover
+        if (ImGui::IsMouseHoveringRect(rectMin, rectMax)) {
+            ImGui::BeginTooltip();
+            ImGui::Text("Function: %s", name.c_str());
+            ImGui::Text("Duration: %.3f ms", counter.totalTimeMs);
+            ImGui::Text("Start: %.3f ms", startTime);
+            ImGui::Text("Depth: %d", counter.depth);
+            ImGui::EndTooltip();
+        }
+
+        startTime += counter.totalTimeMs;
+    }
+    
+    // Draw function names on the left
+    for (auto it = frameData.countersData.begin(); it != frameData.countersData.end(); ++it) 
+    {
+        const auto& entry = it->second;
+        float yPos = timelineStart.y + it->second.depth * (entryHeight + entrySpacing);
+        ImVec2 textPos = ImVec2(canvasPos.x + 5, yPos + (entryHeight - ImGui::GetTextLineHeight()) * 0.5f);
+        
+        /*
+        // Only draw if not overlapping with other entries at same depth
+        bool shouldDraw = true;
+        for (auto it2 = frameData.countersData.begin(); it2 != frameData.countersData.end(); ++it2)
+        {
+            const auto& other = it2->second;
+            if (&other != &entry && other.depth == entry.depth && 
+                abs(other.startTime - entry.startTime) < 0.1f) {
+                shouldDraw = entry.startTime <= other.startTime;
+                break;
+            }
+        }
+        */
+        
+        drawList->AddText(textPos, IM_COL32(200, 200, 200, 255), it->first.c_str());
+    }
+    
+    // Reserve space for the timeline
+    ImGui::Dummy(ImVec2(canvasSize.x, timelineHeight));
 }

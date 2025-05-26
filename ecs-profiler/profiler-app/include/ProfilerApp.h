@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <memory>
+#include <string>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -19,6 +20,7 @@ public:
     void Run();
 private:
     void RenderMainWindow();
+    void DrawTimeline(const ecs::profiling::frame_data_t& frameData, double frameTimeMs = 16.67);
 
     GLFWwindow* m_window;
     std::shared_ptr<ecs::profiling::Session> m_session;
