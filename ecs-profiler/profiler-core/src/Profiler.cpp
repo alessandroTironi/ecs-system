@@ -59,9 +59,9 @@ void Profiler::ProcessData()
 				ProcessCycleCounter(counter);
 			}
 
+			/*
 			m_currentFrameData.frameEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(
 				std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-			m_currentFrameData.aggregate_data();
 			m_session->PushFrameData(m_currentFrameData);
 
 			m_currentFrameData.frameBeginTime = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -69,6 +69,7 @@ void Profiler::ProcessData()
 			m_currentFrameData.countersData.clear();
 
 			m_endFrameProcessing.store(false, std::memory_order_relaxed);
+			*/
 		}
 
 		if (!TryPopCounter(counter))
@@ -80,7 +81,6 @@ void Profiler::ProcessData()
 		counter.invalidate();
 	}
 
-	m_currentFrameData.aggregate_data();
 	m_session->PushFrameData(m_currentFrameData);
 
 	std::unique_ptr<FileWriter> writer = std::make_unique<FileWriter>("profiler-session.bin");
@@ -95,6 +95,7 @@ void Profiler::ProcessData()
 
 void Profiler::ProcessCycleCounter(const ScopeCycleCounter& counter)
 {
+	/*
 	cycle_counter_data_t& counterData = m_currentFrameData.countersData[counter.id()];
 	const double duration = counter.duration_ms();
 	counterData.totalTimeMs += duration;
@@ -108,6 +109,7 @@ void Profiler::ProcessCycleCounter(const ScopeCycleCounter& counter)
 	{
 		counterData.minTimeMs = duration;
 	}
+	*/
 }
 
 void Profiler::AddCycleCounter(const ScopeCycleCounter& counter)

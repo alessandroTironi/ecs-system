@@ -38,6 +38,9 @@ target_include_directories(profiler-core
         ${PROFILER_INCLUDE_DIR}
         ${cereal_SOURCE_DIR}/include
     PRIVATE
-        ${PROFILER_SRC_DIR}
-        
+        ${PROFILER_SRC_DIR}   
 )
+
+target_link_libraries(profiler-core 
+    PRIVATE 
+        dbghelp)

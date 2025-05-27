@@ -110,245 +110,245 @@ void ProfilerApp::Run()
 
 void ProfilerApp::RenderMainWindow()
 {
-    static bool showTimeline = true;
-    static bool showStatistics = false;
-    static bool showSettings = false;
-    static bool enablePausing = false;
-    static float targetFrameTime = 16.67f;
-    static int selectedFrameHistory = 0;
-
-    // Get the main viewport and set window to fill it
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
-
-    ImGuiWindowFlags windowFlags = 0;
-    windowFlags |= ImGuiWindowFlags_NoTitleBar;
-    windowFlags |= ImGuiWindowFlags_NoCollapse;
-    windowFlags |= ImGuiWindowFlags_NoResize;
-    windowFlags |= ImGuiWindowFlags_NoMove;
-    windowFlags |= ImGuiWindowFlags_MenuBar;
     
-    if (ImGui::Begin("Frame Profiler", nullptr, windowFlags)) {
-        // Menu Bar
-        if (ImGui::BeginMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Save Profile Data", "Ctrl+S")) 
-                {
-                    // In a real implementation, save profiler data to file
-                }
-                if (ImGui::MenuItem("Load Profile Data", "Ctrl+O")) 
-                {
-                    IGFD::FileDialogConfig config;
-                    config.path = ".";
-                    ImGuiFileDialog::Instance()->OpenDialog("ChooseSessionFile", "Choose Session File", ".bin,.", config);
-                }
+    // static bool showTimeline = true;
+    // static bool showStatistics = false;
+    // static bool showSettings = false;
+    // static bool enablePausing = false;
+    // static float targetFrameTime = 16.67f;
+    // static int selectedFrameHistory = 0;
 
-                ImGui::Separator();
-                if (ImGui::MenuItem("Export to CSV")) {
-                    // Export timing data to CSV format
-                }
-                if (ImGui::MenuItem("Export Screenshot")) {
-                    // Save timeline as image
-                }
-                ImGui::Separator();
-                if (ImGui::MenuItem("Exit", "Alt+F4")) {
-                    // Close profiler window
-                }
-                ImGui::EndMenu();
-            }
-            
-            if (ImGui::BeginMenu("View")) {
-                ImGui::MenuItem("Timeline", nullptr, &showTimeline);
-                ImGui::MenuItem("Statistics", nullptr, &showStatistics);
-                ImGui::MenuItem("Settings", nullptr, &showSettings);
-                ImGui::Separator();
-                if (ImGui::MenuItem("Reset Zoom")) {
-                    // Reset timeline zoom to fit all data
-                }
-                if (ImGui::MenuItem("Fit to Window")) {
-                    // Adjust timeline to fit current window size
-                }
-                ImGui::EndMenu();
-            }
-            
-            if (ImGui::BeginMenu("Capture")) {
-                ImGui::MenuItem("Pause/Resume", "Space", &enablePausing);
-                ImGui::Separator();
-                if (ImGui::MenuItem("Single Frame Capture", "F1")) {
-                    // Capture next single frame
-                }
-                if (ImGui::MenuItem("Clear History", "F2")) {
-                    // Clear all captured frame data
-                }
-                ImGui::Separator();
-                if (ImGui::BeginMenu("Frame History")) {
-                    const char* frameOptions[] = {"Current", "Frame -1", "Frame -2", "Frame -3", "Frame -4"};
-                    for (int i = 0; i < 5; i++) {
-                        if (ImGui::MenuItem(frameOptions[i], nullptr, selectedFrameHistory == i)) {
-                            selectedFrameHistory = i;
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMenu();
-            }
-            
-            if (ImGui::BeginMenu("Tools")) {
-                if (ImGui::MenuItem("Memory Profiler")) {
-                    // Open memory profiler window
-                }
-                if (ImGui::MenuItem("GPU Profiler")) {
-                    // Open GPU profiler window
-                }
-                ImGui::Separator();
-                if (ImGui::MenuItem("Performance Counters")) {
-                    // Show performance counters window
-                }
-                if (ImGui::MenuItem("Call Stack Viewer")) {
-                    // Show call stack for selected function
-                }
-                ImGui::EndMenu();
-            }
-            
-            if (ImGui::BeginMenu("Help")) {
-                if (ImGui::MenuItem("About")) {
-                    // Show about dialog
-                }
-                if (ImGui::MenuItem("Keyboard Shortcuts")) {
-                    // Show shortcuts help
-                }
-                if (ImGui::MenuItem("Documentation")) {
-                    // Open documentation
-                }
-                ImGui::EndMenu();
-            }
-            
-            ImGui::EndMenuBar();
-        }
+    // // Get the main viewport and set window to fill it
+    // const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    // ImGui::SetNextWindowPos(viewport->WorkPos);
+    // ImGui::SetNextWindowSize(viewport->WorkSize);
 
-        
-        
-        
-        // Example profiler data
-        ecs::profiling::frame_data_t frameData;
-        frameData.frameBeginTime = 0.0;
-        frameData.frameEndTime = 16.67;
-        frameData.countersData["Frame"] = { 16.67, 5.0, 4.0, 5.0, 1.0, 0 };
-        frameData.countersData["Update"] = { 16.66, 5.0, 4.0, 5.0, 16.66 / 16.67, 1 };
-        frameData.countersData["Physics"] = { 8.0, 5.0, 4.0, 5.0, 0.5, 2 };
-        frameData.countersData["AI"] = { 8.67, 5.0, 4.0, 5.0, 0.5, 2 };
-        
-        // Status bar with frame info
-        ImGui::Text("Frame Time: 16.2ms (Target: %.2fms @ %.0f FPS) %s", 
-                   targetFrameTime, 1000.0f/targetFrameTime, 
-                   enablePausing ? "[PAUSED]" : "");
-        
-        if (selectedFrameHistory > 0) {
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "(Viewing Frame -%d)", selectedFrameHistory);
-        }
-        
-        ImGui::Separator();
-        
-        
-        // Show timeline if enabled
-        if (showTimeline) 
-        {
-            DrawTimeline(targetFrameTime);
-        }
-        
-        
-        /*
-        // Show statistics panel if enabled
-        if (showStatistics) 
-        {
-            ImGui::Separator();
-            if (ImGui::CollapsingHeader("Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
-                ImGui::Columns(3, "StatsColumns");
-                ImGui::Text("Function");
-                ImGui::NextColumn();
-                ImGui::Text("Time (ms)");
-                ImGui::NextColumn();
-                ImGui::Text("Percentage");
-                ImGui::NextColumn();
-                ImGui::Separator();
-                
-                float totalTime = 16.2f;
-                for (const auto& entry : sampleEntries) {
-                    if (entry.depth > 0) { // Skip root frame entry
-                        ImGui::Text("%s", entry.name.c_str());
-                        ImGui::NextColumn();
-                        ImGui::Text("%.3f", entry.duration);
-                        ImGui::NextColumn();
-                        ImGui::Text("%.1f%%", (entry.duration / totalTime) * 100.0f);
-                        ImGui::NextColumn();
-                    }
-                }
-                ImGui::Columns(1);
-            }
-        }
-        */
-        
-        
-        // Show settings panel if enabled
-        if (showSettings) {
-            ImGui::Separator();
-            if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                ImGui::SliderFloat("Target Frame Time (ms)", &targetFrameTime, 8.33f, 33.33f, "%.2f");
-                ImGui::Text("Target FPS: %.0f", 1000.0f / targetFrameTime);
-                
-                ImGui::Checkbox("Auto-pause on frame spikes", &enablePausing);
-                
-                static int maxHistoryFrames = 60;
-                ImGui::SliderInt("History Buffer Size", &maxHistoryFrames, 10, 300);
-                
-                static bool showTooltips = true;
-                ImGui::Checkbox("Show tooltips", &showTooltips);
-            }
-        }
-        
-        // Quick control buttons
-        ImGui::Separator();
-        if (ImGui::Button("Refresh Data")) 
-        {
-            // In a real implementation, you'd update the profiler data here
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button(enablePausing ? "Resume" : "Pause")) 
-        {
-            enablePausing = !enablePausing;
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Clear History")) 
-        {
-            
-            // Clear frame history
-        }
-    }
-
-    if (ImGuiFileDialog::Instance()->Display("ChooseSessionFile", 
-            ImGuiWindowFlags_None, ImVec2(800, 600)))
-        {
-            if (ImGuiFileDialog::Instance()->IsOk())
-            {
-                std::string fileName = ImGuiFileDialog::Instance()->GetFilePathName();
-                m_session = std::shared_ptr<ecs::profiling::Session>(
-                    ecs::profiling::Session::CreateFromFile(fileName));
-            }
-
-            ImGuiFileDialog::Instance()->Close();
-        }
-
-    ImGui::End();
-
+    // ImGuiWindowFlags windowFlags = 0;
+    // windowFlags |= ImGuiWindowFlags_NoTitleBar;
+    // windowFlags |= ImGuiWindowFlags_NoCollapse;
+    // windowFlags |= ImGuiWindowFlags_NoResize;
+    // windowFlags |= ImGuiWindowFlags_NoMove;
+    // windowFlags |= ImGuiWindowFlags_MenuBar;
     
+    // if (ImGui::Begin("Frame Profiler", nullptr, windowFlags)) {
+    //     // Menu Bar
+    //     if (ImGui::BeginMenuBar()) {
+    //         if (ImGui::BeginMenu("File")) {
+    //             if (ImGui::MenuItem("Save Profile Data", "Ctrl+S")) 
+    //             {
+    //                 // In a real implementation, save profiler data to file
+    //             }
+    //             if (ImGui::MenuItem("Load Profile Data", "Ctrl+O")) 
+    //             {
+    //                 IGFD::FileDialogConfig config;
+    //                 config.path = ".";
+    //                 ImGuiFileDialog::Instance()->OpenDialog("ChooseSessionFile", "Choose Session File", ".bin,.", config);
+    //             }
+
+    //             ImGui::Separator();
+    //             if (ImGui::MenuItem("Export to CSV")) {
+    //                 // Export timing data to CSV format
+    //             }
+    //             if (ImGui::MenuItem("Export Screenshot")) {
+    //                 // Save timeline as image
+    //             }
+    //             ImGui::Separator();
+    //             if (ImGui::MenuItem("Exit", "Alt+F4")) {
+    //                 // Close profiler window
+    //             }
+    //             ImGui::EndMenu();
+    //         }
+            
+    //         if (ImGui::BeginMenu("View")) {
+    //             ImGui::MenuItem("Timeline", nullptr, &showTimeline);
+    //             ImGui::MenuItem("Statistics", nullptr, &showStatistics);
+    //             ImGui::MenuItem("Settings", nullptr, &showSettings);
+    //             ImGui::Separator();
+    //             if (ImGui::MenuItem("Reset Zoom")) {
+    //                 // Reset timeline zoom to fit all data
+    //             }
+    //             if (ImGui::MenuItem("Fit to Window")) {
+    //                 // Adjust timeline to fit current window size
+    //             }
+    //             ImGui::EndMenu();
+    //         }
+            
+    //         if (ImGui::BeginMenu("Capture")) {
+    //             ImGui::MenuItem("Pause/Resume", "Space", &enablePausing);
+    //             ImGui::Separator();
+    //             if (ImGui::MenuItem("Single Frame Capture", "F1")) {
+    //                 // Capture next single frame
+    //             }
+    //             if (ImGui::MenuItem("Clear History", "F2")) {
+    //                 // Clear all captured frame data
+    //             }
+    //             ImGui::Separator();
+    //             if (ImGui::BeginMenu("Frame History")) {
+    //                 const char* frameOptions[] = {"Current", "Frame -1", "Frame -2", "Frame -3", "Frame -4"};
+    //                 for (int i = 0; i < 5; i++) {
+    //                     if (ImGui::MenuItem(frameOptions[i], nullptr, selectedFrameHistory == i)) {
+    //                         selectedFrameHistory = i;
+    //                     }
+    //                 }
+    //                 ImGui::EndMenu();
+    //             }
+    //             ImGui::EndMenu();
+    //         }
+            
+    //         if (ImGui::BeginMenu("Tools")) {
+    //             if (ImGui::MenuItem("Memory Profiler")) {
+    //                 // Open memory profiler window
+    //             }
+    //             if (ImGui::MenuItem("GPU Profiler")) {
+    //                 // Open GPU profiler window
+    //             }
+    //             ImGui::Separator();
+    //             if (ImGui::MenuItem("Performance Counters")) {
+    //                 // Show performance counters window
+    //             }
+    //             if (ImGui::MenuItem("Call Stack Viewer")) {
+    //                 // Show call stack for selected function
+    //             }
+    //             ImGui::EndMenu();
+    //         }
+            
+    //         if (ImGui::BeginMenu("Help")) {
+    //             if (ImGui::MenuItem("About")) {
+    //                 // Show about dialog
+    //             }
+    //             if (ImGui::MenuItem("Keyboard Shortcuts")) {
+    //                 // Show shortcuts help
+    //             }
+    //             if (ImGui::MenuItem("Documentation")) {
+    //                 // Open documentation
+    //             }
+    //             ImGui::EndMenu();
+    //         }
+            
+    //         ImGui::EndMenuBar();
+    //     }
+
+        
+        
+        
+    //     // Example profiler data
+    //     ecs::profiling::frame_data_t frameData;
+    //     frameData.frameBeginTime = 0.0;
+    //     frameData.frameEndTime = 16.67;
+    //     frameData.countersData["Frame"] = { 16.67, 5.0, 4.0, 5.0, 1.0, 0 };
+    //     frameData.countersData["Update"] = { 16.66, 5.0, 4.0, 5.0, 16.66 / 16.67, 1 };
+    //     frameData.countersData["Physics"] = { 8.0, 5.0, 4.0, 5.0, 0.5, 2 };
+    //     frameData.countersData["AI"] = { 8.67, 5.0, 4.0, 5.0, 0.5, 2 };
+        
+    //     // Status bar with frame info
+    //     ImGui::Text("Frame Time: 16.2ms (Target: %.2fms @ %.0f FPS) %s", 
+    //                targetFrameTime, 1000.0f/targetFrameTime, 
+    //                enablePausing ? "[PAUSED]" : "");
+        
+    //     if (selectedFrameHistory > 0) {
+    //         ImGui::SameLine();
+    //         ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "(Viewing Frame -%d)", selectedFrameHistory);
+    //     }
+        
+    //     ImGui::Separator();
+        
+        
+    //     // Show timeline if enabled
+    //     if (showTimeline) 
+    //     {
+    //         DrawTimeline(targetFrameTime);
+    //     }
+        
+        
+    //     /*
+    //     // Show statistics panel if enabled
+    //     if (showStatistics) 
+    //     {
+    //         ImGui::Separator();
+    //         if (ImGui::CollapsingHeader("Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
+    //             ImGui::Columns(3, "StatsColumns");
+    //             ImGui::Text("Function");
+    //             ImGui::NextColumn();
+    //             ImGui::Text("Time (ms)");
+    //             ImGui::NextColumn();
+    //             ImGui::Text("Percentage");
+    //             ImGui::NextColumn();
+    //             ImGui::Separator();
+                
+    //             float totalTime = 16.2f;
+    //             for (const auto& entry : sampleEntries) {
+    //                 if (entry.depth > 0) { // Skip root frame entry
+    //                     ImGui::Text("%s", entry.name.c_str());
+    //                     ImGui::NextColumn();
+    //                     ImGui::Text("%.3f", entry.duration);
+    //                     ImGui::NextColumn();
+    //                     ImGui::Text("%.1f%%", (entry.duration / totalTime) * 100.0f);
+    //                     ImGui::NextColumn();
+    //                 }
+    //             }
+    //             ImGui::Columns(1);
+    //         }
+    //     }
+    //     */
+        
+        
+    //     // Show settings panel if enabled
+    //     if (showSettings) {
+    //         ImGui::Separator();
+    //         if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+    //             ImGui::SliderFloat("Target Frame Time (ms)", &targetFrameTime, 8.33f, 33.33f, "%.2f");
+    //             ImGui::Text("Target FPS: %.0f", 1000.0f / targetFrameTime);
+                
+    //             ImGui::Checkbox("Auto-pause on frame spikes", &enablePausing);
+                
+    //             static int maxHistoryFrames = 60;
+    //             ImGui::SliderInt("History Buffer Size", &maxHistoryFrames, 10, 300);
+                
+    //             static bool showTooltips = true;
+    //             ImGui::Checkbox("Show tooltips", &showTooltips);
+    //         }
+    //     }
+        
+    //     // Quick control buttons
+    //     ImGui::Separator();
+    //     if (ImGui::Button("Refresh Data")) 
+    //     {
+    //         // In a real implementation, you'd update the profiler data here
+    //     }
+
+    //     ImGui::SameLine();
+    //     if (ImGui::Button(enablePausing ? "Resume" : "Pause")) 
+    //     {
+    //         enablePausing = !enablePausing;
+    //     }
+
+    //     ImGui::SameLine();
+    //     if (ImGui::Button("Clear History")) 
+    //     {
+            
+    //         // Clear frame history
+    //     }
+    // }
+
+    // if (ImGuiFileDialog::Instance()->Display("ChooseSessionFile", 
+    //         ImGuiWindowFlags_None, ImVec2(800, 600)))
+    //     {
+    //         if (ImGuiFileDialog::Instance()->IsOk())
+    //         {
+    //             std::string fileName = ImGuiFileDialog::Instance()->GetFilePathName();
+    //             m_session = std::shared_ptr<ecs::profiling::Session>(
+    //                 ecs::profiling::Session::CreateFromFile(fileName));
+    //         }
+
+    //         ImGuiFileDialog::Instance()->Close();
+    //     }
+
+    // ImGui::End();
 }
 
 void ProfilerApp::DrawTimeline(double frameTimeMs)
 {
+    /*
     if (m_session.get() == nullptr)
     {
         return;
@@ -767,4 +767,5 @@ void ProfilerApp::DrawTimeline(double frameTimeMs)
     
     // Reserve space for the timeline and controls
     ImGui::Dummy(ImVec2(canvasSize.x, timelineHeight + 25.0f));
+    */
 }
